@@ -1,0 +1,117 @@
+{
+    "meta": {
+        "name": "TA-jira-service-desk-simple-addon", 
+        "restRoot": "TA_jira_service_desk_simple_addon", 
+        "apiVersion": "3.0.0", 
+        "version": "1.0.0", 
+        "displayName": "JIRA Service Desk simple addon"
+    }, 
+    "pages": {
+        "configuration": {
+            "title": "Configuration", 
+            "tabs": [
+                {
+                    "name": "logging", 
+                    "title": "Logging", 
+                    "entity": [
+                        {
+                            "defaultValue": "INFO", 
+                            "label": "Log level", 
+                            "type": "singleSelect", 
+                            "field": "loglevel", 
+                            "options": {
+                                "autoCompleteFields": [
+                                    {
+                                        "label": "DEBUG", 
+                                        "value": "DEBUG"
+                                    }, 
+                                    {
+                                        "label": "INFO", 
+                                        "value": "INFO"
+                                    }, 
+                                    {
+                                        "label": "WARNING", 
+                                        "value": "WARNING"
+                                    }, 
+                                    {
+                                        "label": "ERROR", 
+                                        "value": "ERROR"
+                                    }, 
+                                    {
+                                        "label": "CRITICAL", 
+                                        "value": "CRITICAL"
+                                    }
+                                ], 
+                                "disableSearch": true
+                            }
+                        }
+                    ]
+                }, 
+                {
+                    "name": "additional_parameters", 
+                    "title": "Add-on Settings", 
+                    "entity": [
+                        {
+                            "validators": [
+                                {
+                                    "errorMsg": "Max length of text input is 8192", 
+                                    "minLength": 0, 
+                                    "maxLength": 8192, 
+                                    "type": "string"
+                                }
+                            ], 
+                            "help": "jira.atlassian.net (SSL is enforced and the URL submitted will be substituted with https://)", 
+                            "type": "text", 
+                            "required": true, 
+                            "defaultValue": "jira.atlassian.net",
+                            "field": "jira_url", 
+                            "label": "JIRA Service Desk URL"
+                        }, 
+                        {
+                            "validators": [
+                                {
+                                    "errorMsg": "Max length of text input is 8192", 
+                                    "minLength": 0, 
+                                    "maxLength": 8192, 
+                                    "type": "string"
+                                }
+                            ], 
+                            "help": "Enter the account name to be used for the authentication", 
+                            "type": "text", 
+                            "required": true, 
+                            "defaultValue": "", 
+                            "field": "jira_username", 
+                            "label": "JIRA username"
+                        }, 
+                        {
+                            "validators": [
+                                {
+                                    "errorMsg": "Max length of password is 8192", 
+                                    "minLength": 0, 
+                                    "maxLength": 8192, 
+                                    "type": "string"
+                                }
+                            ], 
+                            "encrypted": true, 
+                            "help": "Enter the password token associated with this account", 
+                            "type": "text", 
+                            "required": true, 
+                            "defaultValue": "", 
+                            "field": "jira_password", 
+                            "label": "JIRA token password"
+                        }, 
+                        {
+                            "help": "Check this box to perform SSL certificate validation", 
+                            "type": "checkbox", 
+                            "required": false, 
+                            "defaultValue": 0, 
+                            "field": "jira_ssl_certificate_validation", 
+                            "label": "SSL certificate validation"
+                        }
+                    ]
+                }
+            ], 
+            "description": "Set up your add-on"
+        }
+    }
+}

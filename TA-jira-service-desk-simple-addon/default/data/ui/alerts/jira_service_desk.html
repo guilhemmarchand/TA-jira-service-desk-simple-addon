@@ -1,0 +1,113 @@
+<form class="form-horizontal form-complex">
+
+    <div>
+        <br />
+        <h4>JIRA main fields:</h4>
+        <br />
+    </div>
+
+    <div class="control-group">
+        <label class="control-label" for="jira_service_desk_jira_project">Project <span class="required">*</span> </label>
+        <div class="controls">
+            <splunk-search-dropdown name="action.jira_service_desk.param.jira_project" id="jira_service_desk_jira_project"
+                                    search="| jirafill opt=1 | stats count by key, key_projects | dedup key_projects | sort key_projects | fields key, key_projects"
+                                    label-field="key_projects" value-field="key"
+                                    allow-custom-value
+            />
+        </div>
+    </div>
+    <div class="control-group">
+        <label class="control-label" for="jira_service_desk_jira_issue_type">Issue Type <span class="required">*</span> </label>
+        <div class="controls">
+            <splunk-search-dropdown name="action.jira_service_desk.param.jira_issue_type" id="jira_service_desk_jira_issue_type"
+                                    search="| jirafill opt=2 | stats count by issues | dedup issues | sort issues | fields issues"
+                                    label-field="issues" value-field="issues"
+                                    allow-custom-value
+            />
+        </div>
+    </div>
+    <div class="control-group">
+        <label class="control-label" for="jira_service_desk_jira_priority">Priority <span class="required">*</span> </label>
+        <div class="controls">
+            <splunk-search-dropdown name="action.jira_service_desk.param.jira_priority" id="jira_service_desk_jira_priority"
+                                    search="| jirafill opt=3 | stats count by priorities | dedup priorities | sort priorities | fields priorities"
+                                    label-field="priorities" value-field="priorities"
+                                    allow-custom-value
+            />
+        </div>
+    </div>
+    <div class="control-group">
+        <label class="control-label" for="jira_service_desk_jira_priority_dynamic">Dynamic Priority  </label>
+        <div class="controls">
+            <input type="text" name="action.jira_service_desk.param.jira_priority_dynamic" id="jira_service_desk_priority_dynamic"/>
+            <span class="help-block">
+                <br />Override priority using a field result, ex $result.jira_priority$. (optional, case sensitive, ticket creation will fail if incorrectly defined)
+            </span>
+        </div>
+    </div>
+    <div class="control-group">
+        <label class="control-label" for="jira_service_desk_jira_summary">Summary <span class="required">*</span> </label>
+        <div class="controls">
+            <input type="text" name="action.jira_service_desk.param.jira_summary" id="jira_service_desk_jira_summary"/>
+        </div>
+    </div>
+    <div class="control-group">
+        <label class="control-label" for="jira_service_desk_jira_description">Description  </label>
+        <div class="controls">
+            <textarea name="action.jira_service_desk.param.jira_description" id="jira_service_desk_jira_description" style="height: 120px;"></textarea>
+            <span class="help-block">
+                <br />Issue description, this text can include tokens based on the search results (E.g: $result.src$)
+            </span>
+        </div>
+    </div>
+    <div class="control-group">
+        <label class="control-label" for="jira_service_desk_jira_assignee">Assignee  </label>
+        <div class="controls">
+            <input type="text" name="action.jira_service_desk.param.jira_assignee" id="jira_service_desk_jira_assignee"/>
+            <span class="help-block">
+                <br />Issue assignee. (optional)
+            </span>
+        </div>
+    </div>
+    <div class="control-group">
+        <label class="control-label" for="jira_service_desk_jira_labels">Labels </label>
+        <div class="controls">
+            <input type="text" name="action.jira_service_desk.param.jira_labels" id="jira_service_desk_jira_labels"/>
+            <span class="help-block">
+                <br />Comma separated list of labels for the issue. (optional, spaces in labels are not allowed)
+            </span>
+        </div>
+    </div>
+
+    <div>
+        <br />
+        <h4>JIRA custom field: (optional)</h4>
+        <br />
+    </div>
+
+    <div class="control-group">
+        <label class="control-label" for="jira_service_desk_jira_customfields">custom fields structure  </label>
+        <div class="controls">
+            <textarea name="action.jira_service_desk.param.jira_customfields" id="jira_service_desk_jira_customfields" style="height: 120px;"></textarea>
+            <span class="help-block">
+
+                <br />
+                Optional, insert custom fields structure separated by commas, and its values: (<a href="https://developer.atlassian.com/server/jira/platform/jira-rest-api-examples">https://developer.atlassian.com/server/jira/platform/jira-rest-api-examples</a>)
+                <br />
+                <br />
+                The structure of the custom field value definition depends on its type which can be a text input, a dropdown or multiselect input, etc. See JIRA rest API documentation.
+                <br />
+                <br />
+                example:
+                <br />
+                <br />
+                "customfield_10048": "$result.singleline_text$",<br />
+                "customfield_10052": {"value": "$result.single_choice$"},<br />
+                "customfield_10053": [ {"value": "$result.multi_choice_grp1$" }, {"value": "$result.multi_choice_grp2" }]<br />
+                <br />
+
+            </span>
+        </div>
+    </div>
+
+</form>

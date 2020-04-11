@@ -1,0 +1,53 @@
+{
+  "schemaVersion": "1.0.0",
+  "info": {
+    "title": "JIRA Service Desk simple addon",
+    "id": {
+      "group": null,
+      "name": "TA-jira-service-desk-simple-addon",
+      "version": "1.0.0"
+    },
+    "author": [
+      {
+        "name": "Guilhem Marchand",
+        "email": null,
+        "company": null
+      }
+    ],
+    "releaseDate": null,
+    "description": "The JIRA service desk simple addon allows the creation of tickets to Atlasian JIRA Service Desk via a workflow action, which can be actioned via an adaptive response for ES customers.",
+    "classification": {
+      "intendedAudience": null,
+      "categories": [],
+      "developmentStatus": null
+    },
+    "commonInformationModels": null,
+    "license": {
+      "name": null,
+      "text": null,
+      "uri": null
+    },
+    "privacyPolicy": {
+      "name": null,
+      "text": null,
+      "uri": null
+    },
+    "releaseNotes": {
+      "name": null,
+      "text": null,
+      "uri": null
+    }
+  },
+  "dependencies": {
+  },
+  "tasks": [],
+  "inputGroups": {
+  },
+  "incompatibleApps": {
+  },
+  "platformRequirements": {
+    "splunk": {
+      "Enterprise": "*"
+    }
+  }
+}

@@ -1,0 +1,17 @@
+[ta_jira_service_desk_simple_addon_settings/logging]
+version = 7.3.1
+modtime = 1568907462.689040000
+
+[passwords/credential%3A__REST_CREDENTIAL__%23TA-jira-service-desk-simple-addon%23configs%2Fconf-ta_jira_service_desk_simple_addon_settings%3Aadditional_parameters%60%60splunk_cred_sep%60%601%3A]
+owner = admin
+version = 7.3.1
+modtime = 1568907478.510125000
+
+[passwords/credential%3A__REST_CREDENTIAL__%23TA-jira-service-desk-simple-addon%23configs%2Fconf-ta_jira_service_desk_simple_addon_settings%3Aadditional_parameters%60%60splunk_cred_sep%60%602%3A]
+owner = admin
+version = 7.3.1
+modtime = 1568907478.517018000
+
+[ta_jira_service_desk_simple_addon_settings/additional_parameters]
+version = 7.3.1
+modtime = 1568907478.522625000

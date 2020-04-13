@@ -153,13 +153,14 @@ To add a list of custom fields, make sure you add a comma after each custom fiel
 How to retrieve the IDs of the custom fields configured ?
 ---------------------------------------------------------
 
-**You can retrieve the list of fields and their ID and values by the using a curl command to your JIRA instance:**
+**Use the builtin report and associate custom command to retrieve the list of JIRA fields information:**
 
-::
+.. image:: img/userguide_getfields1.png
+   :alt: userguide_getfields1.png
+   :align: center
 
-    curl -u username:'secret' 'https://myjira.domain.com/rest/api/2/issue/createmeta?projectKeys=MYPROJECT&issuetypeNames=Task&expand=projects.issuetypes.fields'
+**This report achieves a REST call to JIRA to get the list of fields and their details per project and per type of issues, search for custom fields:**
 
-
-Where username is the user account, secret replaced by the token, myjira.domain.com replaced by the JIRA URL and MYPROJECT replaced by the relevant JIRA project.
-
-**Another option is to search in JIRA, then go in advanced search, look for the custom field, JIRA exposed a cf_* information which contains the ID of the custom field.**
+.. image:: img/userguide_getfields2.png
+   :alt: userguide_getfields2.png
+   :align: center

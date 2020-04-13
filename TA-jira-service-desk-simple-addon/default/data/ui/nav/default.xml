@@ -1,25 +1,31 @@
 <nav search_view="search" color="#708794">
-<view name="overview" label="Overview" default="true"/>
-  <collection label="Search">
-    <view name="search" />
-    <view name="reports" />
-    <view name="dashboards" />
-    <view name="alerts" />
-    <view name="analysis_workspace" />
-  </collection>
-<collection label="Logging reports">
-	<saved name="JIRA Service Desk - modular action logs" />
-	<saved name="JIRA Service Desk - modular resilient store action logs" />
-	<saved name="JIRA Service Desk - Issue creation successes" />
-	<saved name="JIRA Service Desk - temporary issue creation failures" />
-	<saved name="JIRA Service Desk - permanent issue creation failures" />
-</collection>
-<collection label="Builtin alerts">
-	<saved name="JIRA Service Desk - detection of temporary issue creation failure" />
-	<saved name="JIRA Service Desk - detection of permanent issue creation failure" />
-	<saved name="JIRA Service Desk - Resilient store Tracker" />
-</collection>
-<view name="alerts" />
-<view name="configuration" />
-<a href="search">Run a search</a>
+	<view name="overview" label="Overview" default="true"/>
+	<collection label="Search">
+		<view name="search" />
+		<view name="reports" />
+		<view name="dashboards" />
+		<view name="alerts" />
+		<view name="analysis_workspace" />
+	</collection>
+	<collection label="Get JIRA info">
+		<saved name="JIRA Service Desk - Get projects" />
+		<saved name="JIRA Service Desk - Get issue types" />
+		<saved name="JIRA Service Desk - Get issue priorities" />
+		<saved name="JIRA Service Desk - Get fields description" />
+	</collection>
+	<collection label="Logging reports">
+		<saved name="JIRA Service Desk - modular action logs" />
+		<saved name="JIRA Service Desk - modular resilient store action logs" />
+		<saved name="JIRA Service Desk - Issue creation successes" />
+		<saved name="JIRA Service Desk - temporary issue creation failures" />
+		<saved name="JIRA Service Desk - permanent issue creation failures" />
+	</collection>
+	<collection label="Builtin alerts">
+		<saved name="JIRA Service Desk - detection of temporary issue creation failure" />
+		<saved name="JIRA Service Desk - detection of permanent issue creation failure" />
+		<saved name="JIRA Service Desk - Resilient store Tracker" />
+	</collection>
+	<view name="alerts" />
+	<view name="configuration" />
+	<a href="search">Run a search</a>
 </nav>

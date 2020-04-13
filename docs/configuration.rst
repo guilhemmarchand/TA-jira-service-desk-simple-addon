@@ -34,18 +34,13 @@ In normal circumstances, the logging level should be defined to INFO, required l
 Validating the connectivity
 ===========================
 
-**You can validate the connectivity very easily by simulating the creation of an alert, if the JIRA project and associated information are made available, the connection is successful:**
+**You can validate the connectivity very easily by opening any of the JIRA Get information reports, which achieve rest calls to the JIRA API to retrieve different information such as the list of projects available:**
 
-- Enter a search window
-- type ``|makeresults``
-- Click save as new alert
-- Scroll down to alert actions and add the JIRA Service Desk action
-
-.. image:: img/config2.png
-   :alt: config2.png
+.. image:: img/config_getprojects.png
+   :alt: config_getprojects.png
    :align: center
 
-**You can as well directly call the custom commands achieving the retrieval of the JIRA project in a simple search:**
+Shall the connectivity be effective and if you open the Get projects report, the list of the JIRA projects available for your JIRA instance appears in the table.
 
 ::
 
@@ -55,4 +50,15 @@ If the command returns the list of your JIRA projects, then the connectivity is 
 
 .. image:: img/config3.png
    :alt: config3.png
+   :align: center
+
+**You can as well simulate the creation of an alert and action the JIRA Service Desk:**
+
+- Enter a search window
+- type ``|makeresults``
+- Click save as new alert
+- Scroll down to alert actions and add the JIRA Service Desk action
+
+.. image:: img/config2.png
+   :alt: config2.png
    :align: center

@@ -33,7 +33,7 @@ When the failure step is reached, for example if there is an issue with the cred
 
 At this point, any failed call recorded in the KVstore is automatically re-attempted by the scheduled alert named: ``JIRA Service Desk - Resilient store Tracker``
 
-An out of box alert named ``JIRA Service Desk - detection of temporary issue creation failure`` can be activated to monitor and track any JIRA failure, **the alert is by default disabled**.
+An out of box alert named ``JIRA Service Desk - detection of temporary issue creation failure`` is provided to monitor and track any JIRA failure, **the alert is by default enabled**.
 
 Add-on logs for the resilient store feature
 -------------------------------------------
@@ -48,7 +48,7 @@ In normal circumstances, which means there have not been recent failed attempts,
 
 If a record exists in the KVstore, the Add-on will re-attempt the creation every 5 minutes during 3 days per record, if it continuously failed durant that period, a key sentence ``permanent failure!`` is logged.
 
-An out of box alert named ``JIRA Service Desk - detection of permanent issue creation failure`` can be activated to monitor and track permanent JIRA failures, **the alert is by default disabled**.
+An out of box alert named ``JIRA Service Desk - detection of permanent issue creation failure`` is provided to monitor and track permanent JIRA failures, **the alert is by default enabled**.
 
 After 7 days in the KVstore, a record is automatically and definitively purged.
 

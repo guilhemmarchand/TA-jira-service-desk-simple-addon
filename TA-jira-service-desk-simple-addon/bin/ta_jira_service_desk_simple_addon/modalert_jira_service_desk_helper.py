@@ -113,6 +113,7 @@ def process_event(helper, *args, **kwargs):
     return 0
 
 
+# This function is required to prevent any failure due to content which we have no control on
 def checkstr(i):
 
     if i is not None:
@@ -127,17 +128,33 @@ def checkstr(i):
         return i
 
 
+# This function is required to reformat proper values in the custom fields
 def reformat_customfields(i):
 
+    import re
+
     if i is not None:
-        i = i.replace("\\\"customfield", "\"customfield")
-        i = i.replace("\\\": \\\"", "\": \"")
-        i = i.replace("\\\",\\n\"", "\",\n\"")
-        i = i.replace("\\\": {\\\"value\"", "\": {\"value\"")
-        i = i.replace("\\\"},\\n\"", "\"},\n\"")
-        i = i.replace("\\\": [ {\\\"value\":", "\": [ {\"value\":")
-        i = i.replace("\\\" }, {\\\"", "\" }, {\"")
-        i = i.replace("\\\" }]", "\" }]")
+        i = re.sub(r'\\"customfield_(\d+)\\": \\"', r'"customfield_\1": "', i)
+        i = re.sub(r'\\"customfield_(\d+)\\": \d', r'"customfield_\1": ', i)
+        i = re.sub(r'\\"customfield_(\d+)\\": {', r'"customfield_\1": {', i)
+        i = re.sub(r'\\"customfield_(\d+)\\": \[', r'"customfield_\1": \[', i)
+        i = re.sub(r'\\",\\n', '",\n', i)
+        i = re.sub(r'\{\\"value\\": \\"', '{"value": "', i)
+        i = re.sub(r'\\\[ {\\"value\\": "', '[ {"value": "', i)
+        i = re.sub(r'\\\[{\\"value\\": "', '[{"value": "', i)
+        i = re.sub(r'\\\[ {"value": "', '[ {"value": "', i)
+        i = re.sub(r'\\\[{"value": "', '[{"value": "', i)
+        i = re.sub(r'\\"}', '"}', i)
+        i = re.sub(r'\\" }', '" }', i)
+        i = re.sub(r'\\" }]', '" }]', i)
+        i = re.sub(r',\\n"customfield', ',\n"customfield', i)
+        i = re.sub(r"\\\"$", "\"", i)
+        i = re.sub(r"\\\"\,$", "\"", i)
+        i = re.sub(r"\\\"\\n$", "\"", i)
+        i = re.sub(r"\\\"\,\\n$", "\"", i)
+        i = re.sub(r"(\d*),$", r"\1", i)
+        i = re.sub(r"(\d*),\\n$", r"\1", i)
+        i = re.sub(r"(\d*)\\n$", r"\1", i)
         return i
 
 

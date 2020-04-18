@@ -126,6 +126,7 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
     import uuid
     import sys
     import time
+    import base64
 
     import splunk.entity
     import splunk.Intersplunk
@@ -140,8 +141,23 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
     splunkd_port = mydict['mgmtHostPort']
     helper.log_debug("splunkd_port={}".format(splunkd_port))
 
-    # Build the jira_url
-    jira_url = 'https://' + jira_url + '/rest/api/2/issue'
+    # Build the jira_url and enforce https
+    if 'https://' not in jira_url:
+        jira_url = 'https://' + jira_url + '/rest/api/2/issue'
+    else:
+        jira_url = jira_url + '/rest/api/2/issue'
+
+    # get proxy configuration
+    proxy_config = helper.get_proxy()
+    proxy_url = proxy_config.get("proxy_url")
+    helper.log_debug("proxy_url={}".format(proxy_url))
+
+    if proxy_url is not None:
+        opt_use_proxy = True
+        helper.log_debug("use_proxy set to True")
+    else:
+        opt_use_proxy = False
+        helper.log_debug("use_proxy set to False")
 
     # Retrieve parameters
     ticket_uuid = helper.get_param("ticket_uuid")
@@ -177,7 +193,11 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
     # log json in debug mode
     helper.log_debug("json data for final rest call:={}".format(ticket_data))
 
+    # Build the header including basic auth
+    authorization = jira_username + ':' + jira_password
+    b64_auth = base64.b64encode(authorization.encode()).decode()
     headers = {
+        'Authorization': 'Basic %s' % b64_auth,
         'Content-Type': 'application/json',
     }
 
@@ -189,8 +209,9 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
 
         helper.log_info('JIRA ticket creation attempting for record with uuid=' + ticket_uuid)
 
-        response = requests.post(jira_url, headers=headers, data=ticket_data, auth=(jira_username, jira_password),
-                             verify=ssl_certificate_validation)
+        response = helper.send_http_request(jira_url, "POST", parameters=None, payload=ticket_data,
+                                            headers=headers, cookies=None, verify=ssl_certificate_validation,
+                                            cert=None, timeout=None, use_proxy=opt_use_proxy)
 
         if response.status_code not in (200, 201, 204):
             helper.log_error(

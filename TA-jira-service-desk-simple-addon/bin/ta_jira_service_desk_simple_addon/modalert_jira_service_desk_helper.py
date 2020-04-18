@@ -166,6 +166,7 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
     import uuid
     import sys
     import time
+    import base64
 
     import splunk.entity
     import splunk.Intersplunk
@@ -185,6 +186,18 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
         jira_url = 'https://' + jira_url + '/rest/api/2/issue'
     else:
         jira_url = jira_url + '/rest/api/2/issue'
+
+    # get proxy configuration
+    proxy_config = helper.get_proxy()
+    proxy_url = proxy_config.get("proxy_url")
+    helper.log_debug("proxy_url={}".format(proxy_url))
+
+    if proxy_url is not None:
+        opt_use_proxy = True
+        helper.log_debug("use_proxy set to True")
+    else:
+        opt_use_proxy = False
+        helper.log_debug("use_proxy set to False")
 
     # Retrieve parameters
     jira_project = helper.get_param("jira_project")
@@ -225,10 +238,14 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
     jira_customfields = reformat_customfields(jira_customfields)
     helper.log_debug("jira_customfields={}".format(jira_customfields))
 
+    # Build the header including basic auth
+    authorization = jira_username + ':' + jira_password
+    b64_auth = base64.b64encode(authorization.encode()).decode()
     headers = {
+        'Authorization': 'Basic %s' % b64_auth,
         'Content-Type': 'application/json',
     }
-    
+
     # Manage custom fields properly
     data = '{\n' + '"fields": {\n' + '"project":\n {\n"key": "' + jira_project + '"' + '\n },\n"summary": "' \
            + jira_summary + '",\n"description": "' + jira_description + '",\n"issuetype": {\n"name": "' \
@@ -272,8 +289,9 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
     # log json in debug mode
     helper.log_debug("json data for final rest call:={}".format(data))
 
-    response = requests.post(jira_url, headers=headers, data=data, auth=(jira_username, jira_password),
-                             verify=ssl_certificate_validation)
+    response = helper.send_http_request(jira_url, "POST", parameters=None, payload=data,
+                                        headers=headers, cookies=None, verify=ssl_certificate_validation,
+                                        cert=None, timeout=None, use_proxy=opt_use_proxy)
 
     if response.status_code not in (200, 201, 204):
         helper.log_error(

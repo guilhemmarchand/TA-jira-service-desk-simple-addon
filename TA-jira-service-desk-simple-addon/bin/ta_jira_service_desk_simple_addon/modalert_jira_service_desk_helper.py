@@ -292,6 +292,7 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
     response = helper.send_http_request(jira_url, "POST", parameters=None, payload=data,
                                         headers=headers, cookies=None, verify=ssl_certificate_validation,
                                         cert=None, timeout=None, use_proxy=opt_use_proxy)
+    helper.log_debug("response status_code:={}".format(response.status_code))
 
     if response.status_code not in (200, 201, 204):
         helper.log_error(

@@ -135,7 +135,7 @@ def reformat_customfields(i):
 
     if i is not None:
         i = re.sub(r'\\"customfield_(\d+)\\": \\"', r'"customfield_\1": "', i)
-        i = re.sub(r'\\"customfield_(\d+)\\": \d', r'"customfield_\1": ', i)
+        i = re.sub(r'\\"customfield_(\d+)\\": (\d)', r'"customfield_\1": \2', i)
         i = re.sub(r'\\"customfield_(\d+)\\": {', r'"customfield_\1": {', i)
         i = re.sub(r'\\"customfield_(\d+)\\": \[', r'"customfield_\1": \[', i)
         i = re.sub(r'\\",\\n', '",\n', i)
@@ -199,7 +199,7 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
         opt_use_proxy = False
         helper.log_debug("use_proxy set to False")
 
-    # Retrieve parameters
+    # Retrieve parameters which are not event related
     jira_project = helper.get_param("jira_project")
     jira_project = checkstr(jira_project)
     helper.log_debug("jira_project={}".format(jira_project))
@@ -212,32 +212,6 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
     jira_priority = checkstr(jira_priority)
     helper.log_debug("jira_priority={}".format(jira_priority))
 
-    jira_priority_dynamic = helper.get_param("jira_priority_dynamic")
-    jira_priority_dynamic = checkstr(jira_priority_dynamic)
-    helper.log_debug("jira_priority_dynamic={}".format(jira_priority_dynamic))
-
-    jira_summary = helper.get_param("jira_summary")
-    jira_summary = checkstr(jira_summary)
-    helper.log_debug("jira_summary={}".format(jira_summary))
-
-    jira_description = helper.get_param("jira_description")
-    jira_description = checkstr(jira_description)
-    helper.log_debug("jira_description={}".format(jira_description))
-
-    jira_assignee = helper.get_param("jira_assignee")
-    jira_assignee = checkstr(jira_assignee)
-    helper.log_debug("jira_assignee={}".format(jira_assignee))
-
-    jira_labels = helper.get_param("jira_labels")
-    jira_labels = checkstr(jira_labels)
-    helper.log_debug("jira_labels={}".format(jira_labels))
-
-    # Retrieve the custom fields
-    jira_customfields = helper.get_param("jira_customfields")
-    jira_customfields = checkstr(jira_customfields)
-    jira_customfields = reformat_customfields(jira_customfields)
-    helper.log_debug("jira_customfields={}".format(jira_customfields))
-
     # Build the header including basic auth
     authorization = jira_username + ':' + jira_password
     b64_auth = base64.b64encode(authorization.encode()).decode()
@@ -246,77 +220,108 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
         'Content-Type': 'application/json',
     }
 
-    # Manage custom fields properly
-    data = '{\n' + '"fields": {\n' + '"project":\n {\n"key": "' + jira_project + '"' + '\n },\n"summary": "' \
-           + jira_summary + '",\n"description": "' + jira_description + '",\n"issuetype": {\n"name": "' \
-           + jira_issue_type + '"\n}'
+    # Loop within events and proceed
+    events = helper.get_events()
+    for event in events:
+        helper.log_debug("event={}".format(event))
 
-    if jira_assignee not in ["", "None", None]:
-        data = data + ',\n "assignee" : {\n' + '"name": "' + jira_assignee + '"\n }'
+        jira_priority_dynamic = helper.get_param("jira_priority_dynamic")
+        jira_priority_dynamic = checkstr(jira_priority_dynamic)
+        helper.log_debug("jira_priority_dynamic={}".format(jira_priority_dynamic))
 
-    # Priority can be dynamically overridden by the text input dynamic priority, if set
-    if jira_priority not in ["", "None", None]:
-        if jira_priority_dynamic is not None:
-            helper.log_debug("jira priority is overridden by jira_priority_dynamic={}".format(jira_priority_dynamic))
-            data = data + ',\n "priority" : {\n' + '"name": "' + jira_priority_dynamic + '"\n }'
-        else:
-            data = data + ',\n "priority" : {\n' + '"name": "' + jira_priority + '"\n }'
+        jira_summary = helper.get_param("jira_summary")
+        jira_summary = checkstr(jira_summary)
+        helper.log_debug("jira_summary={}".format(jira_summary))
 
-    if jira_labels not in ["", "None", None]:
-        jira_labels = jira_labels.split(",")
-        altered = map(lambda x: '\"%s\"' % x, jira_labels)
-        jira_labels = " [ "+",".join(altered) + " ]"
-        data = data + ',\n "labels" :' + jira_labels
+        jira_description = helper.get_param("jira_description")
+        jira_description = checkstr(jira_description)
+        helper.log_debug("jira_description={}".format(jira_description))
 
-    # JIRA custom fields structure
-    if jira_customfields not in ["", "None", None]:
-        data = data + ',\n ' + jira_customfields + '\n'
+        jira_assignee = helper.get_param("jira_assignee")
+        jira_assignee = checkstr(jira_assignee)
+        helper.log_debug("jira_assignee={}".format(jira_assignee))
 
-    # Finally close
-    data = data + '\n}\n}'
+        jira_labels = helper.get_param("jira_labels")
+        jira_labels = checkstr(jira_labels)
+        helper.log_debug("jira_labels={}".format(jira_labels))
 
-    # log raw json in debug mode
-    helper.log_debug("json raw data for final rest call before json.loads:={}".format(data))
+        # Retrieve the custom fields
+        jira_customfields = helper.get_param("jira_customfields")
+        jira_customfields = checkstr(jira_customfields)
+        jira_customfields = reformat_customfields(jira_customfields)
+        helper.log_debug("jira_customfields={}".format(jira_customfields))
 
-    # Properly load json
-    try:
-        data = json.dumps(json.loads(data, strict=False), indent=4)
-    except Exception as e:
-        helper.log_error("json loads failed to accept some of the characters,"
-                         " raw json data before json.loads:={}".format(data))
-        raise e
+        # Manage custom fields properly
+        data = '{\n' + '"fields": {\n' + '"project":\n {\n"key": "' + jira_project + '"' + '\n },\n"summary": "' \
+               + jira_summary + '",\n"description": "' + jira_description + '",\n"issuetype": {\n"name": "' \
+               + jira_issue_type + '"\n}'
 
-    # log json in debug mode
-    helper.log_debug("json data for final rest call:={}".format(data))
+        if jira_assignee not in ["", "None", None]:
+            data = data + ',\n "assignee" : {\n' + '"name": "' + jira_assignee + '"\n }'
 
-    response = helper.send_http_request(jira_url, "POST", parameters=None, payload=data,
-                                        headers=headers, cookies=None, verify=ssl_certificate_validation,
-                                        cert=None, timeout=None, use_proxy=opt_use_proxy)
-    helper.log_debug("response status_code:={}".format(response.status_code))
+        # Priority can be dynamically overridden by the text input dynamic priority, if set
+        if jira_priority not in ["", "None", None]:
+            if jira_priority_dynamic is not None:
+                helper.log_debug("jira priority is overridden by jira_priority_dynamic={}".format(jira_priority_dynamic))
+                data = data + ',\n "priority" : {\n' + '"name": "' + jira_priority_dynamic + '"\n }'
+            else:
+                data = data + ',\n "priority" : {\n' + '"name": "' + jira_priority + '"\n }'
 
-    if response.status_code not in (200, 201, 204):
-        helper.log_error(
-            'JIRA Service Desk ticket creation has failed!. url={}, data={}, HTTP Error={}, '
-            'content={}'.format(jira_url, data, response.status_code, response.text))
+        if jira_labels not in ["", "None", None]:
+            jira_labels = jira_labels.split(",")
+            altered = map(lambda x: '\"%s\"' % x, jira_labels)
+            jira_labels = " [ "+",".join(altered) + " ]"
+            data = data + ',\n "labels" :' + jira_labels
 
-        record_url = 'https://localhost:' + str(splunkd_port) + '/servicesNS/nobody/TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_failures_replay'
-        record_uuid = str(uuid.uuid1())
-        helper.log_error('JIRA Service Desk failed ticket stored for next chance replay purposes in the '
-                         'replay KVstore with uuid: ' + record_uuid)
-        headers = {
-            'Authorization': 'Splunk %s' % session_key,
-            'Content-Type': 'application/json'}
+        # JIRA custom fields structure
+        if jira_customfields not in ["", "None", None]:
+            data = data + ',\n ' + jira_customfields + '\n'
 
-        record = '{"_key": "' + record_uuid + '", "ctime": "' + str(time.time()) \
-                 + '", "status": "temporary_failure", "no_attempts": "1", "data": "' + checkstr(data) + '"}'
-        response = requests.post(record_url, headers=headers, data=record,
-                                 verify=False)
+        # Finally close
+        data = data + '\n}\n}'
+
+        # log raw json in debug mode
+        helper.log_debug("json raw data for final rest call before json.loads:={}".format(data))
+
+        # Properly load json
+        try:
+            data = json.dumps(json.loads(data, strict=False), indent=4)
+        except Exception as e:
+            helper.log_error("json loads failed to accept some of the characters,"
+                             " raw json data before json.loads:={}".format(data))
+            raise e
+
+        # log json in debug mode
+        helper.log_debug("json data for final rest call:={}".format(data))
+
+        response = helper.send_http_request(jira_url, "POST", parameters=None, payload=data,
+                                            headers=headers, cookies=None, verify=ssl_certificate_validation,
+                                            cert=None, timeout=None, use_proxy=opt_use_proxy)
+        helper.log_debug("response status_code:={}".format(response.status_code))
+
         if response.status_code not in (200, 201, 204):
             helper.log_error(
-                'KVstore saving has failed!. url={}, data={}, HTTP Error={}, '
-                'content={}'.format(record_url, record, response.status_code, response.text))
+                'JIRA Service Desk ticket creation has failed!. url={}, data={}, HTTP Error={}, '
+                'content={}'.format(jira_url, data, response.status_code, response.text))
 
-        return 0
-    else:
-        helper.log_info('JIRA Service Desk ticket successfully created. {}, content={}'.format(jira_url, response.text))
-        return response.text
+            record_url = 'https://localhost:' + str(splunkd_port) + '/servicesNS/nobody/TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_failures_replay'
+            record_uuid = str(uuid.uuid1())
+            helper.log_error('JIRA Service Desk failed ticket stored for next chance replay purposes in the '
+                             'replay KVstore with uuid: ' + record_uuid)
+            headers = {
+                'Authorization': 'Splunk %s' % session_key,
+                'Content-Type': 'application/json'}
+
+            record = '{"_key": "' + record_uuid + '", "ctime": "' + str(time.time()) \
+                     + '", "status": "temporary_failure", "no_attempts": "1", "data": "' + checkstr(data) + '"}'
+            response = requests.post(record_url, headers=headers, data=record,
+                                     verify=False)
+            if response.status_code not in (200, 201, 204):
+                helper.log_error(
+                    'KVstore saving has failed!. url={}, data={}, HTTP Error={}, '
+                    'content={}'.format(record_url, record, response.status_code, response.text))
+
+            return 0
+        else:
+            helper.log_info('JIRA Service Desk ticket successfully created. {}, content={}'.format(jira_url, response.text))
+            return response.text

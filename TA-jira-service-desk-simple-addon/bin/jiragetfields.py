@@ -30,7 +30,12 @@ import json
 class GenerateTextCommand(GeneratingCommand):
 
     def jira_url(self, url, endpoint):
-        return 'https://%s/rest/api/latest/%s' % (url, endpoint)
+        # Build the jira_url and enforce https
+        if 'https://' not in url:
+            return 'https://%s/rest/api/latest/%s' % (url, endpoint)
+
+        else:
+            return '%s/rest/api/latest/%s' % (url, endpoint)
 
     def get_jira_info(self, username, password, url, endpoint):
         response = requests.get(
@@ -46,7 +51,7 @@ class GenerateTextCommand(GeneratingCommand):
         confs = self.service.confs[str(conf_file)]
         for stanza in confs:
             if stanza.name == "additional_parameters":
-                for key, value in stanza.content.iteritems():
+                for key, value in stanza.content.items():
                     if key == "jira_username":
                         username = value
                     if key == "jira_url":
@@ -61,12 +66,22 @@ class GenerateTextCommand(GeneratingCommand):
             project_name = project.get('name')
             for issue in self.get_jira_info(username, password, url, 'issuetype'):
                 issue_name = issue.get('name')
-                jira_fields_response = requests.get(
-                    url="https://" + str(url) + "/rest/api/2/issue/createmeta?projectKeys=" + project_name
-                        + "&issuetypeNames=" + issue_name + "&expand=projects.issuetypes.fields",
-                    auth=(username, password),
-                    verify=False
-                )
+
+                if 'https://' not in url:
+                    jira_fields_response = requests.get(
+                        url="https://" + str(url) + "/rest/api/2/issue/createmeta?projectKeys=" + project_name
+                            + "&issuetypeNames=" + issue_name + "&expand=projects.issuetypes.fields",
+                        auth=(username, password),
+                        verify=False
+                    )
+                else:
+                    jira_fields_response = requests.get(
+                        url=str(url) + "/rest/api/2/issue/createmeta?projectKeys=" + project_name
+                            + "&issuetypeNames=" + issue_name + "&expand=projects.issuetypes.fields",
+                        auth=(username, password),
+                        verify=False
+                    )
+
                 data = {'_time': time.time(), 'project': project_name, 'issue': issue_name,
                         '_raw': json.dumps(jira_fields_response.json())}
                 yield data

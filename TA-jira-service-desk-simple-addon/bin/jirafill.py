@@ -32,7 +32,12 @@ class GenerateTextCommand(GeneratingCommand):
     opt = Option(require=True, validate=validators.Integer(0))
 
     def jira_url(self, url, endpoint):
-        return 'https://%s/rest/api/latest/%s' % (url, endpoint)
+        # Build the jira_url and enforce https
+        if 'https://' not in url:
+            return 'https://%s/rest/api/latest/%s' % (url, endpoint)
+
+        else:
+            return '%s/rest/api/latest/%s' % (url, endpoint)
 
     def get_jira_info(self, username, password, url, endpoint):
         response = requests.get(
@@ -48,7 +53,7 @@ class GenerateTextCommand(GeneratingCommand):
         confs = self.service.confs[str(conf_file)]
         for stanza in confs:
             if stanza.name == "additional_parameters":
-                for key, value in stanza.content.iteritems():
+                for key, value in stanza.content.items():
                     if key == "jira_username":
                         username = value
                     if key == "jira_url":

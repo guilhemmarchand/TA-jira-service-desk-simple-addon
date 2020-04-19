@@ -1,5 +1,6 @@
 
 [jira_service_desk]
+python.version = python3
 param.jira_issue_type = <string> Issue type. It's a required parameter.
 param.jira_labels = <string> Labels.
 param.jira_assignee = <string> Jira assignee.
@@ -12,6 +13,7 @@ param.jira_project = <list> Project. It's a required parameter.
 param.jira_customfields = <string> JIRA custom fields structure, optional.
 
 [jira_service_desk_replay]
+python.version = python3
 param.ticket_uuid = <string> UUID value stored in the KVstore.
 param.ticket_data = <string> JSON object stored in the KVstore.
 param.ticket_status = <string> Status stored in the KVstore.

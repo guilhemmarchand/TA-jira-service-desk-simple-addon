@@ -43,6 +43,10 @@ class AlertActionWorkerjira_service_desk(ModularAlertBase):
         if not self.get_param("jira_summary"):
             self.log_error('jira_summary is a mandatory parameter, but its value is None.')
             return False
+
+        if not self.get_param("jira_description"):
+            self.log_error('jira_description is a mandatory parameter, but its value is None.')
+            return False
         return True
 
     def process_event(self, *args, **kwargs):
@@ -52,12 +56,12 @@ class AlertActionWorkerjira_service_desk(ModularAlertBase):
                 return 3
             status = modalert_jira_service_desk_helper.process_event(self, *args, **kwargs)
         except (AttributeError, TypeError) as ae:
-            self.log_error("Error: {}. Please double check spelling and also verify that a compatible version of Splunk_SA_CIM is installed.".format(ae.message))
+            self.log_error("Error: {}. Please double check spelling and also verify that a compatible version of Splunk_SA_CIM is installed.".format(str(ae)))
             return 4
         except Exception as e:
             msg = "Unexpected error: {}."
-            if e.message:
-                self.log_error(msg.format(e.message))
+            if e:
+                self.log_error(msg.format(str(e)))
             else:
                 import traceback
                 self.log_error(msg.format(traceback.format_exc()))

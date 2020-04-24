@@ -24,9 +24,11 @@ import sys
 import splunk
 import time
 import requests
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 import json
 
-@Configuration(distributed=True)
+@Configuration(distributed=False)
 class GenerateTextCommand(GeneratingCommand):
 
     opt = Option(require=True, validate=validators.Integer(0))

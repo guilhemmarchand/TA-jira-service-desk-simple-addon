@@ -24,9 +24,11 @@ import sys
 import splunk
 import time
 import requests
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 import json
 
-@Configuration(distributed=True)
+@Configuration(distributed=False)
 class GenerateTextCommand(GeneratingCommand):
 
     def jira_url(self, url, endpoint):

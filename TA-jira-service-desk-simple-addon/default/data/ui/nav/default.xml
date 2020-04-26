@@ -25,7 +25,6 @@
 		<saved name="JIRA Service Desk - detection of permanent issue creation failure" />
 		<saved name="JIRA Service Desk - Resilient store Tracker" />
 	</collection>
-	<view name="alerts" />
 	<view name="configuration" />
 	<a href="search">Run a search</a>
 </nav>

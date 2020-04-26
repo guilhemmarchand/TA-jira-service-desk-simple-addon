@@ -30,4 +30,6 @@ Version 1.0.3
 Version 1.0.4
 =============
 
-
+- Feature: resilient store improvements, catch all failures and exceptions during issue creation attempts
+- Fix: minor fix in resilient store table
+- Fix: remove redundant alert link in nav bar

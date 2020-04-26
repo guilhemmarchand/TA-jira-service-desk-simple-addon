@@ -176,7 +176,8 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
     session_key = helper.session_key
 
     # Get splunkd port
-    entity = splunk.entity.getEntity('/server', 'settings', namespace='TA-jira-service-desk-simple-addon', sessionKey=session_key, owner='-')
+    entity = splunk.entity.getEntity('/server', 'settings',
+                                     namespace='TA-jira-service-desk-simple-addon', sessionKey=session_key, owner='-')
     mydict = entity
     splunkd_port = mydict['mgmtHostPort']
     helper.log_debug("splunkd_port={}".format(splunkd_port))
@@ -262,7 +263,8 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
         # Priority can be dynamically overridden by the text input dynamic priority, if set
         if jira_priority not in ["", "None", None]:
             if jira_priority_dynamic is not None:
-                helper.log_debug("jira priority is overridden by jira_priority_dynamic={}".format(jira_priority_dynamic))
+                helper.log_debug("jira priority is overridden by "
+                                 "jira_priority_dynamic={}".format(jira_priority_dynamic))
                 data = data + ',\n "priority" : {\n' + '"name": "' + jira_priority_dynamic + '"\n }'
             else:
                 data = data + ',\n "priority" : {\n' + '"name": "' + jira_priority + '"\n }'
@@ -294,17 +296,50 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
         # log json in debug mode
         helper.log_debug("json data for final rest call:={}".format(data))
 
-        response = helper.send_http_request(jira_url, "POST", parameters=None, payload=data,
-                                            headers=headers, cookies=None, verify=ssl_certificate_validation,
-                                            cert=None, timeout=None, use_proxy=opt_use_proxy)
-        helper.log_debug("response status_code:={}".format(response.status_code))
+        # Try http post, catch exceptions and incorrect http return codes
+        try:
+            response = helper.send_http_request(jira_url, "POST", parameters=None, payload=data,
+                                                headers=headers, cookies=None, verify=ssl_certificate_validation,
+                                                cert=None, timeout=None, use_proxy=opt_use_proxy)
+            helper.log_debug("response status_code:={}".format(response.status_code))
 
-        if response.status_code not in (200, 201, 204):
+            # No http exception, but http post was not successful
+            if response.status_code not in (200, 201, 204):
+                helper.log_error(
+                    'JIRA Service Desk ticket creation has failed!. url={}, data={}, HTTP Error={}, '
+                    'content={}'.format(jira_url, data, response.status_code, response.text))
+
+                record_url = 'https://localhost:' + str(splunkd_port) \
+                             + '/servicesNS/nobody/' \
+                               'TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_failures_replay'
+                record_uuid = str(uuid.uuid1())
+                helper.log_error('JIRA Service Desk failed ticket stored for next chance replay purposes in the '
+                                 'replay KVstore with uuid: ' + record_uuid)
+                headers = {
+                    'Authorization': 'Splunk %s' % session_key,
+                    'Content-Type': 'application/json'}
+
+                record = '{"_key": "' + record_uuid + '", "ctime": "' + str(time.time()) \
+                         + '", "status": "temporary_failure", "no_attempts": "1", "data": "' + checkstr(data) + '"}'
+                response = requests.post(record_url, headers=headers, data=record,
+                                         verify=False)
+                if response.status_code not in (200, 201, 204):
+                    helper.log_error(
+                        'KVstore saving has failed!. url={}, data={}, HTTP Error={}, '
+                        'content={}'.format(record_url, record, response.status_code, response.text))
+
+                return 0
+
+        # any exception such as proxy error, dns failure etc. will be catch here
+        except Exception as e:
+            helper.log_error("JIRA Service Desk ticket creation has failed!:{}".format(str(e)))
             helper.log_error(
-                'JIRA Service Desk ticket creation has failed!. url={}, data={}, HTTP Error={}, '
-                'content={}'.format(jira_url, data, response.status_code, response.text))
+                'message content={}'.format(data))
 
-            record_url = 'https://localhost:' + str(splunkd_port) + '/servicesNS/nobody/TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_failures_replay'
+            # Store the failed publication in the replay KVstore
+            record_url = 'https://localhost:' + str(
+                splunkd_port) + '/servicesNS/nobody/' \
+                                'TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_failures_replay'
             record_uuid = str(uuid.uuid1())
             helper.log_error('JIRA Service Desk failed ticket stored for next chance replay purposes in the '
                              'replay KVstore with uuid: ' + record_uuid)
@@ -322,6 +357,8 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
                     'content={}'.format(record_url, record, response.status_code, response.text))
 
             return 0
+
         else:
-            helper.log_info('JIRA Service Desk ticket successfully created. {}, content={}'.format(jira_url, response.text))
+            helper.log_info('JIRA Service Desk ticket successfully created. {},'
+                            ' content={}'.format(jira_url, response.text))
             return response.text

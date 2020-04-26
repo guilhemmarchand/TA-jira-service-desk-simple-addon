@@ -26,3 +26,10 @@ Version 1.0.3
 
 - Fix Issue #2: Avoids error messages on indexers in distributed mode to report error messages on jirafill and jiragetfields custom commands due to enabled distributed mode
 - Fix Issue #2: Avoids error messages reported during execution of jirafill and jiragetfields custom commands related to insecure HTTP calls with urllib3
+
+Version 1.0.4
+=============
+
+- Feature: resilient store improvements, catch all failures and exceptions during issue creation attempts
+- Fix: minor fix in resilient store table
+- Fix: remove redundant alert link in nav bar

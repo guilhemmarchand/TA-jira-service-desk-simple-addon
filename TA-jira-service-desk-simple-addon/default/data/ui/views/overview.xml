@@ -301,7 +301,7 @@ jira_transaction_status="success", "ico_good ico_small|icon-check|JIRA issue suc
                 <search depends="$link2$">
                     <query>(index="_internal" OR index="cim_modactions") (source="*jira_service_desk_replay_modalert.log")
 | rex "\"key\":\"(?&lt;jira_issue&gt;[^\"]*)\","
-| transaction pid startswith="Alert action jira_service_desk started."
+| transaction pid startswith="Alert action jira_service_desk_replay started."
 | eval jira_transaction_status=case(
 match(_raw, "\d{4}-\d{2}-\d{2}\s\d{1,2}:\d{1,2}:\d{1,2}\,\d{1,3}\sERROR"), "failure",
 match(_raw, "JIRA Service Desk ticket successfully created"), "success",

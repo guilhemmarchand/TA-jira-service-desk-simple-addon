@@ -136,7 +136,8 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
     session_key = helper.session_key
 
     # Get splunkd port
-    entity = splunk.entity.getEntity('/server', 'settings', namespace='TA-jira-service-desk-simple-addon', sessionKey=session_key, owner='-')
+    entity = splunk.entity.getEntity('/server', 'settings', namespace='TA-jira-service-desk-simple-addon',
+                                     sessionKey=session_key, owner='-')
     mydict = entity
     splunkd_port = mydict['mgmtHostPort']
     helper.log_debug("splunkd_port={}".format(splunkd_port))
@@ -209,27 +210,88 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
 
         helper.log_info('JIRA ticket creation attempting for record with uuid=' + ticket_uuid)
 
-        response = helper.send_http_request(jira_url, "POST", parameters=None, payload=ticket_data,
-                                            headers=headers, cookies=None, verify=ssl_certificate_validation,
-                                            cert=None, timeout=None, use_proxy=opt_use_proxy)
-        helper.log_debug("response status_code:={}".format(response.status_code))
+        # Try http post, catch exceptions and incorrect http return codes
+        try:
 
-        if response.status_code not in (200, 201, 204):
-            helper.log_error(
-                'JIRA Service Desk ticket creation has failed!. url={}, ticket_data={}, HTTP Error={}, '
-                'content={}'.format(jira_url, ticket_data, response.status_code, response.text))
+            response = helper.send_http_request(jira_url, "POST", parameters=None, payload=ticket_data,
+                                                headers=headers, cookies=None, verify=ssl_certificate_validation,
+                                                cert=None, timeout=None, use_proxy=opt_use_proxy)
+            helper.log_debug("response status_code:={}".format(response.status_code))
+
+            # No http exception, but http post was not successful
+            if response.status_code not in (200, 201, 204):
+                helper.log_error(
+                    'JIRA Service Desk ticket creation has failed!. url={}, ticket_data={}, HTTP Error={}, '
+                    'content={}'.format(jira_url, ticket_data, response.status_code, response.text))
+
+                helper.log_info('Updating KVstore JIRA record with uuid=' + ticket_uuid)
+
+                record_url = 'https://localhost:' + str(
+                    splunkd_port) + '/servicesNS/nobody/' \
+                                    'TA-jira-service-desk-simple-addon/storage/collections/data/' \
+                                    'kv_jira_failures_replay/' + ticket_uuid
+                headers = {
+                    'Authorization': 'Splunk %s' % session_key,
+                    'Content-Type': 'application/json'}
+                ticket_no_attempts = int(ticket_no_attempts) + 1
+
+                # Update the KVstore record with the increment, and the new mtime
+                record = '{"_key": "' + str(ticket_uuid) + '", "ctime": "' + str(ticket_ctime) \
+                         + '", "mtime": "' + str(time.time()) \
+                         + '", "status": "temporary_failure", "no_attempts": "' + str(ticket_no_attempts) \
+                         + '", "data": "' + checkstr(ticket_data) + '"}'
+                response = requests.post(record_url, headers=headers, data=record,
+                                         verify=False)
+                if response.status_code not in (200, 201, 204):
+                    helper.log_error(
+                        'KVstore saving has failed!. url={}, data={}, HTTP Error={}, '
+                        'content={}'.format(record_url, record, response.status_code, response.text))
+                    return response.status_code
+
+            else:
+                # http post was successful
+                ticket_creation_response = response.text
+                helper.log_info('JIRA Service Desk ticket successfully created. {}, '
+                                'content={}'.format(jira_url, ticket_creation_response))
+                helper.log_info("Purging ticket in KVstore with uuid=" + ticket_uuid)
+
+                # The JIRA ticket has been successfully created, and be safety removed from the KVstore
+                record_url = 'https://localhost:' + str(
+                    splunkd_port) + '/servicesNS/nobody/' \
+                                    'TA-jira-service-desk-simple-addon/storage/collections/data/' \
+                                    'kv_jira_failures_replay/' + ticket_uuid
+                headers = {
+                    'Authorization': 'Splunk %s' % session_key,
+                    'Content-Type': 'application/json'}
+
+                response = requests.delete(record_url, headers=headers, verify=False)
+                if response.status_code not in (200, 201, 204):
+                    helper.log_error(
+                        'KVstore delete operation has failed!. url={}, HTTP Error={}, '
+                        'content={}'.format(record_url, response.status_code, response.text))
+                    return response.status_code
+                else:
+                    return ticket_creation_response
+
+        # any exception such as proxy error, dns failure etc. will be catch here
+        except Exception as e:
+
+            helper.log_error('JIRA Service Desk ticket creation has failed! exception:{},'
+                             ' ticket_data:{}'.format(str(e), ticket_data))
 
             helper.log_info('Updating KVstore JIRA record with uuid=' + ticket_uuid)
-
             record_url = 'https://localhost:' + str(
-                splunkd_port) + '/servicesNS/nobody/TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_failures_replay/' + ticket_uuid
+                splunkd_port) + '/servicesNS/nobody/' \
+                                'TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_failures_replay/' \
+                         + ticket_uuid
             headers = {
                 'Authorization': 'Splunk %s' % session_key,
                 'Content-Type': 'application/json'}
             ticket_no_attempts = int(ticket_no_attempts) + 1
 
             # Update the KVstore record with the increment, and the new mtime
-            record = '{"_key": "' + str(ticket_uuid) + '", "ctime": "' + str(ticket_ctime) + '", "mtime": "' + str(time.time()) \
+            record = '{"_key": "' + str(ticket_uuid) + '", "ctime": "' + str(ticket_ctime) + '", "mtime": "' + str(
+                time.time()) \
                      + '", "status": "temporary_failure", "no_attempts": "' + str(ticket_no_attempts) \
                      + '", "data": "' + checkstr(ticket_data) + '"}'
             response = requests.post(record_url, headers=headers, data=record,
@@ -240,41 +302,22 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
                     'content={}'.format(record_url, record, response.status_code, response.text))
                 return response.status_code
 
-        else:
-            ticket_creation_response = response.text
-            helper.log_info('JIRA Service Desk ticket successfully created. {}, content={}'.format(jira_url,
-                                                                                                   ticket_creation_response))
-            helper.log_info("Purging ticket in KVstore with uuid=" + ticket_uuid)
-
-            # The JIRA ticket has been successfully created, and be safety removed from the KVstore
-            record_url = 'https://localhost:' + str(
-                splunkd_port) + '/servicesNS/nobody/TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_failures_replay/' + ticket_uuid
-            headers = {
-                'Authorization': 'Splunk %s' % session_key,
-                'Content-Type': 'application/json'}
-
-            response = requests.delete(record_url, headers=headers, verify=False)
-            if response.status_code not in (200, 201, 204):
-                helper.log_error(
-                    'KVstore delete operation has failed!. url={}, HTTP Error={}, '
-                    'content={}'.format(record_url, response.status_code, response.text))
-                return response.status_code
-            else:
-                return ticket_creation_response
-
     elif (int(ticket_no_attempts) >= int(ticket_max_attempts)) and str(ticket_status) in "temporary_failure":
 
         helper.log_info('KVstore JIRA record with uuid=' + ticket_uuid
                         + " permanent failure!:={}".format(ticket_data))
 
         record_url = 'https://localhost:' + str(
-            splunkd_port) + '/servicesNS/nobody/TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_failures_replay/' + ticket_uuid
+            splunkd_port) + '/servicesNS/nobody/' \
+                            'TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_failures_replay/' \
+                     + ticket_uuid
         headers = {
             'Authorization': 'Splunk %s' % session_key,
             'Content-Type': 'application/json'}
 
         # Update the KVstore record with the increment, and the new mtime
-        record = '{"_key": "' + str(ticket_uuid) + '", "ctime": "' + str(ticket_ctime) + '", "mtime": "' + str(time.time()) \
+        record = '{"_key": "' + str(ticket_uuid) + '", "ctime": "' + str(ticket_ctime) + '", "mtime": "' \
+                 + str(time.time()) \
                  + '", "status": "permanent_failure", "no_attempts": "' + str(ticket_no_attempts) \
                  + '", "data": "' + checkstr(ticket_data) + '"}'
         response = requests.post(record_url, headers=headers, data=record,
@@ -295,7 +338,9 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
 
         # The JIRA ticket has been successfully created, and be safety removed from the KVstore
         record_url = 'https://localhost:' + str(
-            splunkd_port) + '/servicesNS/nobody/TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_failures_replay/' + ticket_uuid
+            splunkd_port) + '/servicesNS/nobody/' \
+                            'TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_failures_replay/' \
+                     + ticket_uuid
         headers = {
             'Authorization': 'Splunk %s' % session_key,
             'Content-Type': 'application/json'}

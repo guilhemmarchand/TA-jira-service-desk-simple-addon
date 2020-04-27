@@ -57,3 +57,11 @@ export = none
 [viewstates]
 access = read : [ * ], write : [ * ]
 export = system
+
+### Resilient store needs to have write permissions to member of the role
+
+[transforms/jira_failures_replay]
+access = read : [ * ], write : [ admin, jira_alert_action ]
+
+[collections/kv_jira_failures_replay]
+access = read : [ * ], write : [ admin, jira_alert_action ]

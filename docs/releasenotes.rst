@@ -33,3 +33,8 @@ Version 1.0.4
 - Feature: resilient store improvements, catch all failures and exceptions during issue creation attempts
 - Fix: minor fix in resilient store table
 - Fix: remove redundant alert link in nav bar
+
+Version 1.0.5
+=============
+
+- Fix: Provide an embedded role jira_alert_action that can be inherited for non admin users to be allowed to fire the action and work with the resilient store feature

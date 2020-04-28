@@ -62,3 +62,28 @@ If the command returns the list of your JIRA projects, then the connectivity is 
 .. image:: img/config2.png
    :alt: config2.png
    :align: center
+
+**Testing access and authentication with curl:**
+
+You can as well very easily achieve a test with curl from the search head:
+
+::
+
+curl -k https://<jira_url>/rest/api/latest/project --user <jira_username>:<jira_password>
+
+Which, if successful, will return in a JSON format the list of projects available in your JIRA instance.
+
+Using the alert action for non admin users
+==========================================
+
+**For non admin users to be able to use the alert action, the following role is provided out of the box:**
+
+- jira_alert_action
+
+This role needs to be inherited for the users, or your users to be member of this role.
+
+**The role provides:**
+
+- capability ``list_storage_passwords``
+- capability ``list_settings``
+- write permission to the resilient KVstore ``kv_jira_failures_replay``

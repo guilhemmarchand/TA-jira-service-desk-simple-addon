@@ -69,7 +69,7 @@ You can as well very easily achieve a test with curl from the search head:
 
 ::
 
-curl -k https://<jira_url>/rest/api/latest/project --user <jira_username>:<jira_password>
+    curl -k https://<jira_url>/rest/api/latest/project --user <jira_username>:<jira_password>
 
 Which, if successful, will return in a JSON format the list of projects available in your JIRA instance.
 

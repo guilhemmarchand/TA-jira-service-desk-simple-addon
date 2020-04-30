@@ -38,3 +38,8 @@ Version 1.0.5
 =============
 
 - Fix: Provide an embedded role jira_alert_action that can be inherited for non admin users to be allowed to fire the action and work with the resilient store feature
+
+Version 1.0.6
+=============
+
+- Change: For Splunk Cloud vetting purposes, explicit Python3 mode in restmap.conf handler

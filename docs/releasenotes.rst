@@ -43,3 +43,8 @@ Version 1.0.6
 =============
 
 - Change: For Splunk Cloud vetting purposes, explicit Python3 mode in restmap.conf handler
+
+Version 1.0.7
+=============
+
+- Fix: Default timed out value during REST calls are too short and might lead to false positive failures and duplicated creation of JIRA issues

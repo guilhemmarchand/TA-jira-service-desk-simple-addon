@@ -155,7 +155,8 @@ def reformat_customfields(i):
         i = re.sub(r"(\d*)\\n$", r"\1", i)
         # generic replacement
         i = re.sub(r'\\\"(\w*)\\\":\s\\\"([^\"]*)\"', r'"\1": "\2"', i)
-
+        i = re.sub(r'\\\"(\w*)\\\":\s(\[{[^\}]*)', r'"\1": \2', i)
+        i = re.sub(r'\\\"(\w*)\\\":\s(\[\s{[^\}]*)', r'"\1": \2', i)
 
         return i
 

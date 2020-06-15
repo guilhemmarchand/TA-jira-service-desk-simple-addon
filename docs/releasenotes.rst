@@ -1,6 +1,11 @@
 Release notes
 #############
 
+Version 1.0.10
+==============
+
+- Fix: Issue #9 - Parsing failure in custom field section with non standard fields in between square brackets
+
 Version 1.0.9
 =============
 

@@ -84,15 +84,13 @@ def process_event(helper, *args, **kwargs):
     jira_password = helper.get_global_setting("jira_password")
     #helper.log_debug("jira_password={}".format(jira_password))
     
-    jira_ssl_certificate_validation = helper.get_global_setting("jira_ssl_certificate_validation")
+    # SSL verification (defaults to true)
+    jira_ssl_certificate_validation = int(helper.get_global_setting("jira_ssl_certificate_validation"))
+    ssl_certificate_validation = True
+    helper.log_debug("jira_ssl_certificate_validation={}".format(ssl_certificate_validation))
     if jira_ssl_certificate_validation == 0:
         ssl_certificate_validation = False
-    elif jira_ssl_certificate_validation == 1:
-        ssl_certificate_validation = True
-    else:
-        ssl_certificate_validation = True
-
-    helper.log_debug("jira_ssl_certificate_validation={}".format(ssl_certificate_validation))
+    helper.log_debug("ssl_certificate_validation={}".format(ssl_certificate_validation))
 
     #call the query URL REST Endpoint and pass the url and API token
     content = query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_validation)  

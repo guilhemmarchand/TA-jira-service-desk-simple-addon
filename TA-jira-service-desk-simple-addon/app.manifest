@@ -1,17 +1,17 @@
 {
-  "schemaVersion": "1.0.0",
+  "schemaVersion": "2.0.0",
   "info": {
     "title": "JIRA Service Desk simple addon",
     "id": {
       "group": null,
       "name": "TA-jira-service-desk-simple-addon",
-      "version": "1.0.8"
+      "version": "1.0.9"
     },
     "author": [
       {
         "name": "Guilhem Marchand",
-        "email": null,
-        "company": null
+        "email": "guilhem.marchand@gmail.com",
+        "company": "Octamis"
       }
     ],
     "releaseDate": null,
@@ -34,20 +34,21 @@
     },
     "releaseNotes": {
       "name": null,
-      "text": null,
-      "uri": null
+      "text": "./README.txt",
+      "uri": "https://ta-jira-service-desk-simple-addon.readthedocs.io/en/latest/releasenotes.html"
     }
   },
-  "dependencies": {
-  },
-  "tasks": [],
-  "inputGroups": {
-  },
-  "incompatibleApps": {
-  },
-  "platformRequirements": {
-    "splunk": {
-      "Enterprise": "*"
-    }
-  }
+  "dependencies": null,
+  "tasks": null,
+  "inputGroups": null,
+  "incompatibleApps": null,
+  "platformRequirements": null,
+  "supportedDeployments": [
+    "_standalone",
+    "_distributed",
+    "_search_head_clustering"
+  ],
+  "targetWorkloads": [
+    "_search_heads"
+  ]
 }

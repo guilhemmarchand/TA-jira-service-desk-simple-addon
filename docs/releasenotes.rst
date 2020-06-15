@@ -1,6 +1,12 @@
 Release notes
 #############
 
+Version 1.0.9
+=============
+
+- Fix: Issue #11 - SSL verification disablement is not honoured properly and remains active even if the checkbox is not checked
+- Change: app.manifest schema upgrade to 2.0.0 to ease Cloud automated deployments
+
 Version 1.0.8
 =============
 

@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # set -x
 
+# for Mac OS X
+export COPYFILE_DISABLE=true
+
 PWD=`pwd`
 app="TA-jira-service-desk-simple-addon"
 version=`grep 'version =' TA-jira-service-desk-simple-addon/default/app.conf | head -1 | awk '{print $3}' | sed 's/\.//g'`

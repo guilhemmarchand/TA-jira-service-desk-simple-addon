@@ -80,7 +80,16 @@
         <div class="controls">
             <input type="text" name="action.jira_service_desk.param.jira_labels" id="jira_service_desk_jira_labels"/>
             <span class="help-block">
-                <br />Comma separated list of labels for the issue. (optional, spaces in labels are not allowed)
+                <br />Comma separated list of labels for the issue. (optional, no space characters after commas if specifying multiple labels)
+            </span>
+        </div>
+    </div>
+    <div class="control-group">
+        <label class="control-label" for="jira_service_desk_jira_components">Components names</label>
+        <div class="controls">
+            <input type="text" name="action.jira_service_desk.param.jira_components" id="jira_service_desk_jira_components"/>
+            <span class="help-block">
+                <br />Comma separated list of component names for the issue. (optional, no space characters after commas if specifying multiple component names)
             </span>
         </div>
     </div>

@@ -1,6 +1,11 @@
 Release notes
 #############
 
+Version 1.0.11
+==============
+
+- Feature: Issue #15 - Adding support for components definition on a per alert basis, components can now be defined by their name in a comma separated format within alerts
+
 Version 1.0.10
 ==============
 

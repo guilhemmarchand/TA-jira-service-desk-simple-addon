@@ -249,6 +249,10 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
         jira_labels = checkstr(jira_labels)
         helper.log_debug("jira_labels={}".format(jira_labels))
 
+        jira_components = helper.get_param("jira_components")
+        jira_components = checkstr(jira_components)
+        helper.log_debug("jira_components={}".format(jira_components))
+
         # Retrieve the custom fields
         jira_customfields = helper.get_param("jira_customfields")
         jira_customfields = checkstr(jira_customfields)
@@ -277,6 +281,12 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
             altered = map(lambda x: '\"%s\"' % x, jira_labels)
             jira_labels = " [ "+",".join(altered) + " ]"
             data = data + ',\n "labels" :' + jira_labels
+
+        if jira_components not in ["", "None", None]:
+            jira_components = jira_components.split(",")
+            altered = map(lambda x: '{\"name\": \"%s\"' % x + '}', jira_components)
+            jira_components = " [ "+", ".join(altered) + " ]"
+            data = data + ',\n "components" :' + jira_components
 
         # JIRA custom fields structure
         if jira_customfields not in ["", "None", None]:

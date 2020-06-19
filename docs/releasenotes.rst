@@ -5,6 +5,10 @@ Version 1.0.11
 ==============
 
 - Feature: Issue #15 - Adding support for components definition on a per alert basis, components can now be defined by their name in a comma separated format within alerts
+- Feature: Upgrade of Jinja2 2.11.2 libraries to address vulnerabilities reported during Splunk Cloud app vetting process
+- Feature: Upgrade of PyYAML 5.3.1 libraries to address vulnerabilities reported during Splunk Cloud app vetting process
+- Feature: Upgrade of httplib2-0.18.1 libraries to address vulnerabilities reported during Splunk Cloud app vetting process
+- Feature: Upgrade of urllib3-1.25.9 libraries to address vulnerabilities reported during Splunk Cloud app vetting process
 
 Version 1.0.10
 ==============

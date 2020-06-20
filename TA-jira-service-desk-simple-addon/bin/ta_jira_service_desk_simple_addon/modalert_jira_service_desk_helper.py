@@ -343,8 +343,8 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
 
         if response.status_code == 200:
             if jira_dedup:
-                helper.log_debug(
-                    'jira_dedup An issue with same md5 hash (' + str(jira_md5sum) + ') was found in the backlog '
+                helper.log_info(
+                    'jira_dedup: An issue with same md5 hash (' + str(jira_md5sum) + ') was found in the backlog '
                     'collection, as jira_dedup is enabled a new comment '
                     'will be added, entry:={}'.format(response.text))
                 jira_backlog_response = response.text
@@ -380,15 +380,15 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
                         data = jira_update_comment
 
             else:
-                helper.log_debug(
-                    'jira_dedup An issue with same md5 hash (' + str(jira_md5sum) + ') was found in the backlog '
+                helper.log_info(
+                    'jira_dedup: An issue with same md5 hash (' + str(jira_md5sum) + ') was found in the backlog '
                     'collection, as jira_dedup is not enabled a new issue '
                     'will be created, entry:={}'.format(response.text))
             jira_dedup_md5_found = True
 
         else:
             helper.log_debug(
-                'jira_dedup The calculated md5 hash for this issue creation request (' + str(jira_md5sum) +
+                'jira_dedup: The calculated md5 hash for this issue creation request (' + str(jira_md5sum) +
                 ') was not found in the backlog collection, a new issue will be created')
             jira_dedup_md5_found = False
 

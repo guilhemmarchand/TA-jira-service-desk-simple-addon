@@ -114,8 +114,8 @@ JIRA components
 
 JIRA components is an **optional** field, which can defined as a comma separated list of values to assign a list of components to the JIRA issue. (by their names)
 
-JIRA dedup
-==========
+JIRA dedup behaviour
+====================
 
 .. image:: img/jira_dedup1.png
    :alt: jira_dedup1.png

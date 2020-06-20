@@ -42,6 +42,35 @@
         <panel>
             <single>
                 <search>
+                    <query>(index="_internal" OR index="cim_modactions") ( (source="*jira_service_desk_modalert.log") OR (source="*jira_service_desk_replay_modalert.log") ) "JIRA Service Desk ticket successfully updated"
+| stats count</query>
+                    <earliest>$timerange.earliest$</earliest>
+                    <latest>$timerange.latest$</latest>
+                    <sampleRatio>1</sampleRatio>
+                </search>
+                <option name="colorBy">value</option>
+                <option name="colorMode">block</option>
+                <option name="drilldown">all</option>
+                <option name="numberPrecision">0</option>
+                <option name="rangeColors">["0x779ecb","0x77dd77"]</option>
+                <option name="rangeValues">[0]</option>
+                <option name="refresh.display">progressbar</option>
+                <option name="showSparkline">1</option>
+                <option name="showTrendIndicator">1</option>
+                <option name="trellis.enabled">0</option>
+                <option name="trellis.scales.shared">1</option>
+                <option name="trellis.size">medium</option>
+                <option name="trendColorInterpretation">standard</option>
+                <option name="trendDisplayMode">absolute</option>
+                <option name="underLabel">JIRA SUCCESSFULLY UPDATED</option>
+                <option name="unitPosition">after</option>
+                <option name="useColors">1</option>
+                <option name="useThousandSeparators">1</option>
+            </single>
+        </panel>
+        <panel>
+            <single>
+                <search>
                     <query>(index="_internal" OR index="cim_modactions") (source="*jira_service_desk_modalert.log") "JIRA Service Desk ticket creation has failed"
 | stats count</query>
                     <earliest>$timerange.earliest$</earliest>
@@ -216,6 +245,10 @@
                         As such, a JIRA issue that initially failed to be created is <b>automatically retried during 3 days, and definitively purged after 7 days</b>
                     </li>
 
+                    <li>
+                        Each JIRA issue created is recorded in the <a target="_blank" href="report?s=%2FservicesNS%2Fnobody%2FTA-jira-service-desk-simple-addon%2Fsaved%2Fsearches%2FJIRA%2520Service%2520Desk%2520-%2520Issues%2520backlog%2520collection"> backlog KVstore collection </a>and associated with a unique MD5 hash, if the dedup option is enabled (per alert) and the same content is submitted again, a new comment will be added to the issue instead of a brand new issue created.
+                    </li>
+
                 </lu>
 
             </html>
@@ -226,10 +259,11 @@
         <panel>
             <chart>
                 <search>
-                    <query>(index="_internal" OR index="cim_modactions") ( (source="*jira_service_desk_modalert.log") OR (source="*jira_service_desk_replay_modalert.log") ) "JIRA Service Desk ticket successfully created" OR "JIRA Service Desk ticket creation has failed"
+                    <query>(index="_internal" OR index="cim_modactions") ( (source="*jira_service_desk_modalert.log") OR (source="*jira_service_desk_replay_modalert.log") ) "JIRA Service Desk ticket successfully created" OR "JIRA Service Desk ticket successfully updated" OR "JIRA Service Desk ticket creation has failed"
 | rex "\"key\":\"(?&lt;jira_issue&gt;[^\"]*)\","
 | eval jira_simple_status=case(
 match(_raw, "JIRA Service Desk ticket successfully created"), "success",
+match(_raw, "JIRA Service Desk ticket successfully updated"), "success_update",
 match(_raw, "JIRA Service Desk ticket creation has failed"), "temporary_failure")
 | timechart minspan=5m bins=1000 count by jira_simple_status
 | append [ search (index="_internal" OR index="cim_modactions") (source="*jira_service_desk_replay_modalert.log") "permanent failure!"
@@ -244,7 +278,7 @@ match(_raw, "JIRA Service Desk ticket creation has failed"), "temporary_failure"
                 <option name="refresh.display">progressbar</option>
                 <option name="charting.chart.stackMode">stacked</option>
                 <option name="height">200</option>
-                <option name="charting.fieldColors">{"success": 0x53a051, "temporary_failure": 0xf1813f, "permanent_failure": 0xdc4e41}</option>
+                <option name="charting.fieldColors">{"success": 0x53a051, "success_update": 0x77dd77, "temporary_failure": 0xf1813f, "permanent_failure": 0xdc4e41}</option>
             </chart>
         </panel>
     </row>
@@ -258,6 +292,7 @@ match(_raw, "JIRA Service Desk ticket creation has failed"), "temporary_failure"
                 <suffix>"</suffix>
                 <choice value="*">ANY</choice>
                 <choice value="success">success</choice>
+                <choice value="success_update">success_update</choice>
                 <choice value="failure">failure</choice>
                 <choice value="info">info</choice>
             </input>
@@ -285,12 +320,14 @@ match(_raw, "JIRA Service Desk ticket creation has failed"), "temporary_failure"
 | eval jira_transaction_status=case(
 match(_raw, "\d{4}-\d{2}-\d{2}\s\d{1,2}:\d{1,2}:\d{1,2}\,\d{1,3}\sERROR"), "failure",
 match(_raw, "JIRA Service Desk ticket successfully created"), "success",
+match(_raw, "JIRA Service Desk ticket successfully updated"), "success_update",
 match(_raw, ".*"), "info")
 | stats first(jira_transaction_status) as jira_transaction_status, first(app) as app, first(action_mode) as action_mode, values(sid) as sid, first(search_name) as search_name, first(user) as user, latest(_raw) as _raw by _time | sort - _time
 | eval icon="icon|" + case(
 jira_transaction_status="info", "ico_unknown ico_small|icon-info|JIRA workflow information",
 jira_transaction_status="failure", "ico_error ico_small|icon-close|JIRA issue creation has failed or an error was encountered",
-jira_transaction_status="success", "ico_good ico_small|icon-check|JIRA issue successfully created")
+jira_transaction_status="success", "ico_good ico_small|icon-check|JIRA issue successfully created",
+jira_transaction_status="success_update", "ico_good ico_small|icon-check|JIRA issue successfully updated")
 | search $status$
 | fields _time icon app sid search_name user _raw | rename icon as status</query>
                     <earliest>$timerange.earliest$</earliest>

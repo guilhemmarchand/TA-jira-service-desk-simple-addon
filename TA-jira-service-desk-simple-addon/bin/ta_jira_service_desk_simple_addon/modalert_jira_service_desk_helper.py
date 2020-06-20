@@ -170,6 +170,7 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
     import sys
     import time
     import base64
+    import hashlib
 
     import splunk.entity
     import splunk.Intersplunk
@@ -216,10 +217,14 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
     jira_priority = checkstr(jira_priority)
     helper.log_debug("jira_priority={}".format(jira_priority))
 
+    jira_dedup = helper.get_param("jira_dedup")
+    jira_dedup = checkstr(jira_dedup)
+    helper.log_debug("jira_dedup={}".format(jira_dedup))
+
     # Build the header including basic auth
     authorization = jira_username + ':' + jira_password
     b64_auth = base64.b64encode(authorization.encode()).decode()
-    headers = {
+    jira_headers = {
         'Authorization': 'Basic %s' % b64_auth,
         'Content-Type': 'application/json',
     }
@@ -309,10 +314,88 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
         # log json in debug mode
         helper.log_debug("json data for final rest call:={}".format(data))
 
+        # Generate an md5 unique hash for this issue
+        jira_md5sum = hashlib.md5(data.encode())
+        jira_md5sum = jira_md5sum.hexdigest()
+        helper.log_debug("jira_md5sum:={}".format(jira_md5sum))
+
+        # Manage jira deduplication
+        if jira_dedup is None:
+            jira_dedup = "disabled"
+        helper.log_debug("jira_dedup:={}".format(jira_dedup))
+
+        # Initiate default behaviour
+        jira_dedup_md5_found = False
+        jira_dedup_comment_issue = False
+
+        # Verify the collection, if the collection returns a result for this md5 as the _key, this issue
+        # is a duplicate (http 200)
+        record_url = 'https://localhost:' + str(splunkd_port) \
+                     + '/servicesNS/nobody/' \
+                       'TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_issues_backlog/' \
+                     + str(jira_md5sum)
+        headers = {
+            'Authorization': 'Splunk %s' % session_key,
+            'Content-Type': 'application/json'}
+
+        response = requests.get(record_url, headers=headers, verify=False)
+        helper.log_debug("response status_code:={}".format(response.status_code))
+
+        if response.status_code == 200:
+            if jira_dedup:
+                helper.log_debug(
+                    'jira_dedup An issue with same md5 hash (' + str(jira_md5sum) + ') was found in the backlog '
+                    'collection, as jira_dedup is enabled a new comment '
+                    'will be added, entry:={}'.format(response.text))
+                jira_backlog_response = response.text
+                jira_backlog_response_json = json.loads(jira_backlog_response)
+                helper.log_debug("jira_backlog_response_json:={}".format(jira_backlog_response_json))
+
+                jira_backlog_id = jira_backlog_response_json['jira_id']
+                jira_backlog_key = jira_backlog_response_json['jira_key']
+                jira_backlog_kvkey = jira_backlog_response_json['_key']
+                jira_backlog_self = jira_backlog_response_json['jira_self']
+                jira_backlog_md5 = jira_backlog_response_json['jira_md5']
+                jira_backlog_ctime = jira_backlog_response_json['ctime']
+
+                helper.log_debug("jira_backlog_key:={}".format(jira_backlog_key))
+
+                if jira_dedup in ("enabled"):
+                    # generate a new jira_url, and the comment
+                    jira_dedup_comment_issue = True
+                    jira_url = jira_url + "/" + str(jira_backlog_key) + "/comment"
+                    helper.log_debug("jira_url:={}".format(jira_url))
+
+                    # Handle the JIRA comment to be added, if a field named jira_update_comment is part of the result,
+                    # its content will used for the comment content.
+                    jira_update_comment = "null"
+                    for key, value in event.items():
+                        if key in "jira_update_comment":
+                            jira_update_comment = '{"body": "' + checkstr(value) + '"}'
+                    helper.log_debug("jira_update_comment:={}".format(jira_update_comment))
+
+                    if jira_update_comment in "null":
+                        data = '{"body": "New alert triggered: ' + jira_summary + '"}'
+                    else:
+                        data = jira_update_comment
+
+            else:
+                helper.log_debug(
+                    'jira_dedup An issue with same md5 hash (' + str(jira_md5sum) + ') was found in the backlog '
+                    'collection, as jira_dedup is not enabled a new issue '
+                    'will be created, entry:={}'.format(response.text))
+            jira_dedup_md5_found = True
+
+        else:
+            helper.log_debug(
+                'jira_dedup The calculated md5 hash for this issue creation request (' + str(jira_md5sum) +
+                ') was not found in the backlog collection, a new issue will be created')
+            jira_dedup_md5_found = False
+
         # Try http post, catch exceptions and incorrect http return codes
         try:
             response = helper.send_http_request(jira_url, "POST", parameters=None, payload=data,
-                                                headers=headers, cookies=None, verify=ssl_certificate_validation,
+                                                headers=jira_headers, cookies=None, verify=ssl_certificate_validation,
                                                 cert=None, timeout=120, use_proxy=opt_use_proxy)
             helper.log_debug("response status_code:={}".format(response.status_code))
 
@@ -322,9 +405,42 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
                     'JIRA Service Desk ticket creation has failed!. url={}, data={}, HTTP Error={}, '
                     'content={}'.format(jira_url, data, response.status_code, response.text))
 
-                record_url = 'https://localhost:' + str(splunkd_port) \
-                             + '/servicesNS/nobody/' \
-                               'TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_failures_replay'
+                # For issue creation only
+                if not jira_dedup_comment_issue:
+                    record_url = 'https://localhost:' + str(splunkd_port) \
+                                 + '/servicesNS/nobody/' \
+                                   'TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_failures_replay'
+                    record_uuid = str(uuid.uuid1())
+                    helper.log_error('JIRA Service Desk failed ticket stored for next chance replay purposes in the '
+                                     'replay KVstore with uuid: ' + record_uuid)
+                    headers = {
+                        'Authorization': 'Splunk %s' % session_key,
+                        'Content-Type': 'application/json'}
+
+                    record = '{"_key": "' + record_uuid + '", "ctime": "' + str(time.time()) \
+                             + '", "status": "temporary_failure", "no_attempts": "1", "data": "' + checkstr(data) + '"}'
+                    response = requests.post(record_url, headers=headers, data=record,
+                                             verify=False)
+                    if response.status_code not in (200, 201, 204):
+                        helper.log_error(
+                            'KVstore saving has failed!. url={}, data={}, HTTP Error={}, '
+                            'content={}'.format(record_url, record, response.status_code, response.text))
+
+                return 0
+
+        # any exception such as proxy error, dns failure etc. will be catch here
+        except Exception as e:
+            helper.log_error("JIRA Service Desk ticket creation has failed!:{}".format(str(e)))
+            helper.log_error(
+                'message content={}'.format(data))
+
+            # For issue creation only
+            if not jira_dedup_comment_issue:
+
+                # Store the failed publication in the replay KVstore
+                record_url = 'https://localhost:' + str(
+                    splunkd_port) + '/servicesNS/nobody/' \
+                                    'TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_failures_replay'
                 record_uuid = str(uuid.uuid1())
                 helper.log_error('JIRA Service Desk failed ticket stored for next chance replay purposes in the '
                                  'replay KVstore with uuid: ' + record_uuid)
@@ -341,37 +457,80 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
                         'KVstore saving has failed!. url={}, data={}, HTTP Error={}, '
                         'content={}'.format(record_url, record, response.status_code, response.text))
 
-                return 0
-
-        # any exception such as proxy error, dns failure etc. will be catch here
-        except Exception as e:
-            helper.log_error("JIRA Service Desk ticket creation has failed!:{}".format(str(e)))
-            helper.log_error(
-                'message content={}'.format(data))
-
-            # Store the failed publication in the replay KVstore
-            record_url = 'https://localhost:' + str(
-                splunkd_port) + '/servicesNS/nobody/' \
-                                'TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_failures_replay'
-            record_uuid = str(uuid.uuid1())
-            helper.log_error('JIRA Service Desk failed ticket stored for next chance replay purposes in the '
-                             'replay KVstore with uuid: ' + record_uuid)
-            headers = {
-                'Authorization': 'Splunk %s' % session_key,
-                'Content-Type': 'application/json'}
-
-            record = '{"_key": "' + record_uuid + '", "ctime": "' + str(time.time()) \
-                     + '", "status": "temporary_failure", "no_attempts": "1", "data": "' + checkstr(data) + '"}'
-            response = requests.post(record_url, headers=headers, data=record,
-                                     verify=False)
-            if response.status_code not in (200, 201, 204):
-                helper.log_error(
-                    'KVstore saving has failed!. url={}, data={}, HTTP Error={}, '
-                    'content={}'.format(record_url, record, response.status_code, response.text))
-
             return 0
 
         else:
-            helper.log_info('JIRA Service Desk ticket successfully created. {},'
-                            ' content={}'.format(jira_url, response.text))
-            return response.text
+            if jira_dedup_comment_issue:
+                helper.log_info('JIRA Service Desk ticket successfully updated. {},'
+                                ' content={}'.format(jira_url, response.text))
+                jira_creation_response = response.text
+
+                # Update the backlog collection entry
+                record_url = 'https://localhost:' + str(splunkd_port) \
+                             + '/servicesNS/nobody/' \
+                               'TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_issues_backlog/' \
+                             + jira_backlog_kvkey
+                headers = {
+                    'Authorization': 'Splunk %s' % session_key,
+                    'Content-Type': 'application/json'}
+
+                record = '{"jira_md5": "' + jira_backlog_md5 + '", "ctime": "' + jira_backlog_ctime + '", "mtime": "' \
+                         + str(time.time()) + '", "status": "updated", "jira_id": "' \
+                         + jira_backlog_id + '", "jira_key": "' \
+                         + jira_backlog_key + '", "jira_self": "' + jira_backlog_self + '"}'
+                helper.log_debug('record={}'.format(record))
+
+                response = requests.post(record_url, headers=headers, data=record,
+                                         verify=False)
+                if response.status_code not in (200, 201, 204):
+                    helper.log_error(
+                        'Backlog KVstore saving has failed!. url={}, data={}, HTTP Error={}, '
+                        'content={}'.format(record_url, record, response.status_code, response.text))
+                else:
+                    helper.log_debug('JIRA issue record in the backlog collection was successfully updated. '
+                                    'content={}'.format(response.text))
+
+            else:
+                helper.log_info('JIRA Service Desk ticket successfully created. {},'
+                                ' content={}'.format(jira_url, response.text))
+                jira_creation_response = response.text
+
+                # Store the md5 hash of the JIRA issue in the backlog KVstore with the key values returned by JIRA
+                jira_creation_response_json = json.loads(jira_creation_response)
+                jira_created_id = jira_creation_response_json['id']
+                jira_created_key = jira_creation_response_json['key']
+                jira_created_self = jira_creation_response_json['self']
+                helper.log_debug("jira_creation_response_json:={}".format(jira_creation_response_json))
+
+                record_url = 'https://localhost:' + str(splunkd_port) \
+                             + '/servicesNS/nobody/' \
+                               'TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_issues_backlog'
+                headers = {
+                    'Authorization': 'Splunk %s' % session_key,
+                    'Content-Type': 'application/json'}
+
+                if jira_dedup_md5_found:
+                    record = '{"jira_md5": "' + jira_md5sum + '", "ctime": "' + str(time.time()) + '", "mtime": "' \
+                             + str(time.time()) + '", "status": "created", "jira_id": "' \
+                             + jira_created_id + '", "jira_key": "' \
+                             + jira_created_key + '", "jira_self": "' + jira_created_self + '"}'
+                    helper.log_debug('record={}'.format(record))
+                else:
+                    record = '{"_key": "' + jira_md5sum + '", "jira_md5": "' + jira_md5sum + '", "ctime": "' \
+                             + str(time.time()) + '", "mtime": "' + str(time.time()) \
+                             + '", "status": "created", "jira_id": "' + jira_created_id \
+                             + '", "jira_key": "' + jira_created_key + '", "jira_self": "' + jira_created_self + '"}'
+                    helper.log_debug('record={}'.format(record))
+
+                response = requests.post(record_url, headers=headers, data=record,
+                                         verify=False)
+                if response.status_code not in (200, 201, 204):
+                    helper.log_error(
+                        'Backlog KVstore saving has failed!. url={}, data={}, HTTP Error={}, '
+                        'content={}'.format(record_url, record, response.status_code, response.text))
+                else:
+                    helper.log_debug('JIRA issue successfully added to the backlog collection. '
+                                    'content={}'.format(response.text))
+
+            # Return the JIRA response as final word
+            return jira_creation_response

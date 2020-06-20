@@ -94,6 +94,24 @@
         </div>
     </div>
 
+    <div class="control-group">
+        <label class="control-label" for="jira_service_desk_jira_dedup">JIRA dedup behaviour: <span class="required">*</span> </label>
+        <div class="controls">
+    <select name="action.jira_service_desk.param.jira_dedup" id="jira_service_desk_jira_dedup">
+            <option value="disabled">Disabled</option>
+            <option value="enabled">Enabled</option>
+    </select>
+                    <span class="help-block">
+                         <br />When a new JIRA issue is created, the issue key reference and it's unique md5 hash are stored in a KVstore.<br />
+                         If the jira dedup option is enabled and shall the same issue creation be requested again, a new comment will be added to the existing issue rather than a new issue created.<br />
+                         <br />
+                         The md5 hash calculation guarantees the issue unique identification and is performed against the entire issue content.
+                         <br /><br />
+                         To define the content of the comment (defaults to: New alert triggered: &lt;issue summary&gt;), generate a field named "jira_update_comment" amd this will be used as the comment automatically.
+                    </span>
+        </div>
+    </div>
+
     <div>
         <br />
         <h4>JIRA custom field: (optional)</h4>

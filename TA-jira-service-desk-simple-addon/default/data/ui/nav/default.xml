@@ -25,6 +25,10 @@
 		<saved name="JIRA Service Desk - detection of permanent issue creation failure" />
 		<saved name="JIRA Service Desk - Resilient store Tracker" />
 	</collection>
+	<collection label="KVstore collections">
+		<saved name="JIRA Service Desk - Replay collection" />
+		<saved name="JIRA Service Desk - Issues backlog collection" />
+	</collection>
 	<view name="configuration" />
 	<a href="search">Run a search</a>
 </nav>

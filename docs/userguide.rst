@@ -105,6 +105,60 @@ JIRA labels
 
 JIRA labels is an **optional** field, which can defined as a comma separated list of values to assign a list of labels to the JIRA issue.
 
+JIRA components
+===============
+
+.. image:: img/components.png
+   :alt: components.png
+   :align: center
+
+JIRA components is an **optional** field, which can defined as a comma separated list of values to assign a list of components to the JIRA issue. (by their names)
+
+JIRA dedup behaviour
+====================
+
+.. image:: img/jira_dedup1.png
+   :alt: jira_dedup1.png
+   :align: center
+
+**The JIRA deduplication option is a per alert option which is disabled by default.**
+
+**Once the option is enabled for an alert, the following workflow applies:**
+
+- When an alert triggers with the JIRA issue creation action, the Python backend verifies the md5 hash of the full issue content to be created
+- This md5 hash is compared with records stored in the backlog collection
+- Shall the md5 hash be matching, the JIRA issue key reference is extracted from backlog KVstore
+- As the JIRA dedup option is enabled, the Python backend will add a new comment to this JIRA issue, instead of creating a brand new issue with the entire same content
+- The content os the comment can be modified (defaults to: New alert triggered: <issue summary>) by defining a field named "jira_update_comment" as port of the search results
+- If the field jira_update_comment exists, its content will automatically be added as the comment
+
+**The Overview dashboard exposes tickets that have been updated due to deduplication as "success_update" rather than "success" for a standard creation:**
+
+.. image:: img/jira_dedup2.png
+   :alt: jira_dedup2.png
+   :align: center
+
+**When a ticket is detected as a duplication creation request due to md5 matching, the backend logs events that describe its activity:**
+
+::
+
+    JIRA Service Desk ticket successfully updated
+
+The JIRA returned information are logged as well and contain the ticket reference key, id, and more.
+
+**Open the report "JIRA Service Desk - Issues backlog collection" to access the backlog collection:**
+
+- **key** is the internal uuid of the KVstore, as well the key will be equal to the md5 hash of the first occurrence of JIRA issue created (next occurrences will have a key uuid generated automatically with no link with the md5 of the issue)
+- **ctime** is the milliseconds epochtime that corresponds to the initial creation of the ticket, this value not change once the record is inserted
+- **mtime** is the milliseconds epochtime of the last modification of the record, if a comment is added to this ticket, this values corresponds to the time of that action
+- **jira_md5** is the actual md5 hash for the entire JIRA issue, when the dedup option is activated for an alert, this will always be equal to the key id of the record in the KVstore
+- **status** reflects the status of the issue as it is known from the add-on perspective, created means the issue was created, updated means at least one comment was made to this ticket due to dedup matching
+- **jira_id / jira_key / jira_self** are JIRA information related to this ticket
+
+.. image:: img/jira_dedup3.png
+   :alt: jira_dedup3.png
+   :align: center
+
 JIRA custom fields
 ==================
 

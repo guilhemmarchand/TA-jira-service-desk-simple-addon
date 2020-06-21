@@ -10,7 +10,9 @@ param._cam = <json> Active response parameters.
 param.jira_priority = <string> Priority. It's a required parameter.
 param.jira_priority_dynamic = <string> Priority override from results, optional.
 param.jira_project = <list> Project. It's a required parameter.
+param.jira_components = <string> JIRA components fields structure, optional.
 param.jira_customfields = <string> JIRA custom fields structure, optional.
+param.jira_dedup = <string> JIRA deduplication behaviour, optional.
 
 [jira_service_desk_replay]
 python.version = python3

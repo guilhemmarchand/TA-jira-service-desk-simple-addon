@@ -159,6 +159,35 @@ The JIRA returned information are logged as well and contain the ticket referenc
    :alt: jira_dedup3.png
    :align: center
 
+JIRA attachment
+===============
+
+.. image:: img/attachment1.png
+   :alt: attachment1.png
+   :align: center
+
+**On a per alter basis, the results from the Splunk alert that triggered can automatically be attached to the JIRA issue.**
+
+**Features and limitations:**
+
+- The attachment feature is disabled by default, and needs to be enabled on a per alert basis
+- The format of the results can be attached in CSV format, or JSON format
+- JIRA file preview only supports the CSV format at the time of this writing
+- The feature is not currently available if an HTTP proxy is used (a warning message will be emitted in logs but the action will have not effects)
+- The feature is not compatible with the resilient store, if the JIRA issue initially fails due to a temporary failure, the ticket will be created by the resilient tracker when possible but without the original attachment
+
+*When the attachment option is enabled, the following message will be logged if the attachment was successfully added to the JIRA issue, in addition with details of the ticket returned by JIRA:*
+
+``JIRA Service Desk ticket attachment file uploaded successfully``
+
+**File attachment in JIRA:**
+
+*Note: the file name is dynamically generated, prefixed with "splunk_alert_results_" and suffixed by the relevant file extension.*
+
+.. image:: img/attachment2.png
+   :alt: attachment2.png
+   :align: center
+
 JIRA custom fields
 ==================
 

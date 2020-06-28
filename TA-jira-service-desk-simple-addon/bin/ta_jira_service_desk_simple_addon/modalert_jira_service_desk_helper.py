@@ -614,8 +614,6 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
                     import tempfile
                     import csv
 
-                    data_csv ={}
-
                     results_csv = tempfile.NamedTemporaryFile(mode='w+t', prefix="splunk_alert_results_",
                                                               suffix='.csv')
                     results_json = tempfile.NamedTemporaryFile(mode='w+t', prefix="splunk_alert_results_",

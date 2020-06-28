@@ -1,6 +1,12 @@
 Release notes
 #############
 
+Version 1.0.12
+==============
+
+- Feature: Issue #18 - New option on a per alert basis allows automatically attaching Splunk alert results to the JIRA issue in CSV or JSON format
+- Feature: Issue #18 - Add by default in the description field the result link token call
+
 Version 1.0.11
 ==============
 

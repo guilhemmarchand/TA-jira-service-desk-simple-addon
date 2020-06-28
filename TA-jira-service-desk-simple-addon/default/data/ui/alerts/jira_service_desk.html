@@ -112,6 +112,35 @@
         </div>
     </div>
 
+    <div class="control-group">
+        <label class="control-label" for="jira_service_desk_jira_attachment">Results attachment: <span class="required">*</span> </label>
+        <div class="controls">
+    <select name="action.jira_service_desk.param.jira_attachment" id="jira_service_desk_jira_attachment">
+            <option value="disabled">Disabled</option>
+            <option value="enabled_csv">Enabled (CSV format)</option>
+            <option value="enabled_json">Enabled (JSON format)</option>
+    </select>
+                    <span class="help-block">
+                         <br />Enable this option to automatically attach the Splunk results as an attachment to the JIRA issue.<br />
+                         <br />
+                         Attachments can be added in CSV or JSON format, however JIRA attachment preview only supports csv format.<br />
+                         <br />
+                         Finally, the attachment action cannot be replayed by the resilient store, shall the JIRA creation temporary fail, the attachment will not be added if the issue creation had to be replayed due to a temporary issue.
+                         <br />
+                    </span>
+        </div>
+    </div>
+
+    <div style="display: none;" class="control-group">
+        <label class="control-label" for="jira_service_desk_jira_attachment_token">Attachment token</label>
+        <div class="controls">
+            <input type="text" name="action.jira_service_desk.param.jira_attachment_token" id="jira_service_desk_jira_attachment_token"/>
+            <span class="help-block">
+                <br />$results_file$
+            </span>
+        </div>
+    </div>
+
     <div>
         <br />
         <h4>JIRA custom field: (optional)</h4>

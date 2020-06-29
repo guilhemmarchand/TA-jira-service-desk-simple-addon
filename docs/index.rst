@@ -13,6 +13,8 @@ Welcome to the Splunk Add-on for JIRA Atlassian Service Desk application documen
 - Dynamic assignment of priority (optional)
 - Dynamic and/or static assignment of summary, description, assignee and labels
 - Custom fields full capabilities via the embedded custom field structure in alerts (optional)
+- Deduplication feature workflow, allows detecting a duplication issue creation request, and adding new comments automatically instead of creating duplicated issues
+- Attaching Splunk alert results to the JIRA issue in CSV or JSON format
 - Resilient store JIRA issue creation, shall a JIRA issue fails to be created, the resilient workflow handles automatic retries with a resilient policy
 - Monitoring of JIRA issue workflow via the embedded Overview dashboard and out of the box alerts
 

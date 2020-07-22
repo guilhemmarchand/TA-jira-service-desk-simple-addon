@@ -182,7 +182,7 @@
                         },
                         {
                             "field": "jira_password",
-                            "label": "JIRA token password",
+                            "label": "JIRA password",
                             "type": "text",
                             "help": "Enter the password token associated with this account",
                             "required": true,

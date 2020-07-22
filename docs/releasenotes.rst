@@ -4,6 +4,9 @@ Release notes
 Version 1.0.13
 ==============
 
+- fix: remote the automatic addition of the result link in the description field as it systematically creates a different JIRA content, which creates confusion with the dedup JIRA option
+- fix: change in configuration app the sentence "JIRA token password" to "JIRA password" to avoid confusion between basic authentication and OAuth2 which isn't used by the Add-on
+- fix: in some custom configuration, the custom command jiragetfields would not return the expected results, the type of issue is removed from the rest call to retrieve all fields information on a per project basis instead
 
 Version 1.0.12
 ==============

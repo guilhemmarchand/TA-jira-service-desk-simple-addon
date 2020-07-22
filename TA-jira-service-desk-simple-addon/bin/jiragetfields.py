@@ -66,26 +66,24 @@ class GenerateTextCommand(GeneratingCommand):
 
         for project in self.get_jira_info(username, password, url, 'project'):
             project_name = project.get('name')
-            for issue in self.get_jira_info(username, password, url, 'issuetype'):
-                issue_name = issue.get('name')
+            
+            if 'https://' not in url:
+                jira_fields_response = requests.get(
+                    url="https://" + str(url) + "/rest/api/2/issue/createmeta?projectKeys=" + project_name
+                        + "&expand=projects.issuetypes.fields",
+                    auth=(username, password),
+                    verify=False
+                )
+            else:
+                jira_fields_response = requests.get(
+                    url=str(url) + "/rest/api/2/issue/createmeta?projectKeys=" + project_name
+                        + "&expand=projects.issuetypes.fields",
+                    auth=(username, password),
+                    verify=False
+                )
 
-                if 'https://' not in url:
-                    jira_fields_response = requests.get(
-                        url="https://" + str(url) + "/rest/api/2/issue/createmeta?projectKeys=" + project_name
-                            + "&issuetypeNames=" + issue_name + "&expand=projects.issuetypes.fields",
-                        auth=(username, password),
-                        verify=False
-                    )
-                else:
-                    jira_fields_response = requests.get(
-                        url=str(url) + "/rest/api/2/issue/createmeta?projectKeys=" + project_name
-                            + "&issuetypeNames=" + issue_name + "&expand=projects.issuetypes.fields",
-                        auth=(username, password),
-                        verify=False
-                    )
-
-                data = {'_time': time.time(), 'project': project_name, 'issue': issue_name,
-                        '_raw': json.dumps(jira_fields_response.json())}
-                yield data
+            data = {'_time': time.time(), 'project': project_name,
+                    '_raw': json.dumps(jira_fields_response.json())}
+            yield data
 
 dispatch(GenerateTextCommand, sys.argv, sys.stdin, sys.stdout, __name__)

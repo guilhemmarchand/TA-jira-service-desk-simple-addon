@@ -17,3 +17,12 @@ Web Browser compatibility
 The application can be used with any of the supported Web Browser by Splunk:
 
 https://docs.splunk.com/Documentation/Splunk/latest/Installation/Systemrequirements
+
+JIRA compatibility
+##################
+
+The Add-on is compatible with:
+
+- JIRA Server
+- JIRA Cloud
+- JIRA Data center

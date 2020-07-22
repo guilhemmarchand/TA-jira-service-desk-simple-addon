@@ -1,6 +1,22 @@
 Trouble shooting
 ################
 
+Connectivity to JIRA issues
+===========================
+
+If the connectivity to JIRA is not valid for some reasons (bad credentials, network connecttivity, etc), this will result in different Python error messages when attempting to load any of the report, load the alert action page or execute an alert action.
+
+In such as case, the easiest way is to validate the connectivity by achieving a rest cal using the curl command in CLI, ideally in any of the search head supposed to be using the alert action. (note: this step is valid for Linux only)
+
+::
+
+    curl -k https://<jira_url>/rest/api/latest/project --user <jira_username>:<jira_password>
+
+For more information, follow these links:
+
+- https://developer.atlassian.com/server/jira/platform/basic-authentication
+- https://developer.atlassian.com/cloud/jira/service-desk/basic-auth-for-rest-apis
+
 Overview dashboard and Add-on logs
 ==================================
 

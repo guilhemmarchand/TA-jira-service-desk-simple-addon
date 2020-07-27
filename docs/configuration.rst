@@ -12,9 +12,10 @@ Configure your JIRA instance
 
 **Enter the configuration page in the UI to setup the JIRA instance URL and credentials to be used.**
 
-The Splunk Add-on for JIRA service desk uses basic authentication as described here:
+The Splunk Add-on for JIRA service desk implements basic authentication as described here:
 
 - https://developer.atlassian.com/server/jira/platform/basic-authentication
+- https://developer.atlassian.com/cloud/jira/service-desk/basic-auth-for-rest-apis
 
 **The JIRA instance configuration requires:**
 

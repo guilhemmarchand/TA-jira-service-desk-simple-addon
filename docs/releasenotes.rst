@@ -1,7 +1,7 @@
 Release notes
 #############
 
-Version 1.0.13
+Version 1.0.14
 ==============
 
 - fix: remove the automatic addition of the result link in the description field as it systematically creates a different JIRA content, which creates confusion with the dedup JIRA option

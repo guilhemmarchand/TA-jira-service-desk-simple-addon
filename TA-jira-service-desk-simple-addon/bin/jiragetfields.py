@@ -32,10 +32,9 @@ import json
 class GenerateTextCommand(GeneratingCommand):
 
     def jira_url(self, url, endpoint):
-        # Build the jira_url and enforce https
-        if 'https://' not in url:
+        # For Splunk Cloud vetting, the URL must start with https://
+        if not url.startswith("https://"):
             return 'https://%s/rest/api/latest/%s' % (url, endpoint)
-
         else:
             return '%s/rest/api/latest/%s' % (url, endpoint)
 

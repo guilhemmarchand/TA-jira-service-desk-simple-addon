@@ -186,8 +186,8 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
     splunkd_port = mydict['mgmtHostPort']
     helper.log_debug("splunkd_port={}".format(splunkd_port))
 
-    # Build the jira_url and enforce https
-    if 'https://' not in jira_url:
+    # For Splunk Cloud vetting, the URL must start with https://
+    if not jira_url.startswith("https://"):
         jira_url = 'https://' + jira_url + '/rest/api/2/issue'
     else:
         jira_url = jira_url + '/rest/api/2/issue'
@@ -315,6 +315,11 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
         # log raw json in debug mode
         helper.log_debug("json raw data for final rest call before json.loads:={}".format(data))
 
+        # Generate an md5 unique hash for this issue
+        jira_md5sum = hashlib.md5(data.encode())
+        jira_md5sum = jira_md5sum.hexdigest()
+        helper.log_debug("jira_md5sum:={}".format(jira_md5sum))
+
         # Properly load json
         try:
             data = json.dumps(json.loads(data, strict=False), indent=4)
@@ -325,11 +330,6 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
 
         # log json in debug mode
         helper.log_debug("json data for final rest call:={}".format(data))
-
-        # Generate an md5 unique hash for this issue
-        jira_md5sum = hashlib.md5(data.encode())
-        jira_md5sum = jira_md5sum.hexdigest()
-        helper.log_debug("jira_md5sum:={}".format(jira_md5sum))
 
         # Manage jira deduplication
         if jira_dedup is None:

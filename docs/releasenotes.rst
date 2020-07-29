@@ -4,8 +4,6 @@ Release notes
 Version 1.0.15
 ==============
 
-Splunk 8.x and later only, for any prior version of Splunk see releases prior to the version 1.0.15 of the Add-on
-
 - fix: Splunk Cloud vetting refused due to https protocol verification checking if the URI contains https rather than starts with https
 - fix: JIRA dedup feature might under some systems be generating a different hash for the same issue due to a different order of the json data after json load operation in Python, perform the md5 calculation before calling json load
 

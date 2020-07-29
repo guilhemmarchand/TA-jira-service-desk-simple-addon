@@ -140,8 +140,8 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
     splunkd_port = mydict['mgmtHostPort']
     helper.log_debug("splunkd_port={}".format(splunkd_port))
 
-    # Build the jira_url and enforce https
-    if 'https://' not in jira_url:
+    # For Splunk Cloud vetting, the URL must start with https://
+    if not jira_url.startswith("https://"):
         jira_url = 'https://' + jira_url + '/rest/api/2/issue'
     else:
         jira_url = jira_url + '/rest/api/2/issue'

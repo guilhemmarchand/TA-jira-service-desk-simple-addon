@@ -66,7 +66,7 @@ class GenerateTextCommand(GeneratingCommand):
         for project in self.get_jira_info(username, password, url, 'project'):
             project_name = project.get('name')
             
-            if 'https://' not in url:
+            if not url.startswith("https://"):
                 jira_fields_response = requests.get(
                     url="https://" + str(url) + "/rest/api/2/issue/createmeta?projectKeys=" + project_name
                         + "&expand=projects.issuetypes.fields",

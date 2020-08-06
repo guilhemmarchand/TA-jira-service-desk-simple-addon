@@ -1,6 +1,13 @@
 Release notes
 #############
 
+Version 1.0.16
+==============
+
+Splunk 8.x and later only, for any prior version of Splunk see releases prior to the version 1.0.15 of the Add-on
+
+- fix: Splunk Cloud vetting refused to a remaining https protocol check in jiragetfields.py, checking if the URI contains https rather than starts with https
+
 Version 1.0.15
 ==============
 

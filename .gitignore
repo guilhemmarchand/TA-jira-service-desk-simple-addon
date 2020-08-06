@@ -31,5 +31,8 @@ backups
 # Mac OS X cached files
 .DS_Store
 
-# VScode
+# Visual Basic Code
 .vscode
+
+# appinspect reports
+appinspect_report*.html

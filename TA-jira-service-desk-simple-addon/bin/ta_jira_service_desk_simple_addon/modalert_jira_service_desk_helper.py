@@ -160,6 +160,15 @@ def reformat_customfields(i):
 
         return i
 
+# This function can optionnally be used to only remove the espaced double quotes and leave the custom fields with no parsing at all
+def reformat_customfields_minimal(i):
+
+    import re
+
+    if i is not None:
+        i = re.sub(r'\\"', '"', i)
+
+        return i
 
 def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_validation):
 
@@ -233,6 +242,14 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
     jira_attachment_token = checkstr(jira_attachment_token)
     helper.log_debug("jira_attachment_token={}".format(jira_attachment_token))
 
+    jira_customfields_parsing = helper.get_param("jira_customfields_parsing")
+    jira_customfields_parsing = checkstr(jira_customfields_parsing)
+    helper.log_debug("jira_customfields_parsing={}".format(jira_customfields_parsing))
+
+    if jira_customfields_parsing is None:
+        jira_customfields_parsing = "enabled"
+    helper.log_debug("jira_customfields_parsing:={}".format(jira_customfields_parsing))
+
     # Build the header including basic auth
     authorization = jira_username + ':' + jira_password
     b64_auth = base64.b64encode(authorization.encode()).decode()
@@ -273,7 +290,13 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
         # Retrieve the custom fields
         jira_customfields = helper.get_param("jira_customfields")
         jira_customfields = checkstr(jira_customfields)
-        jira_customfields = reformat_customfields(jira_customfields)
+        # custom fields parsing is function of the alert configuration and can be disabled on demand
+        if jira_customfields_parsing not in ("disabled"):
+            helper.log_debug("jira_customfields_parsing={}".format(jira_customfields_parsing))
+            jira_customfields = reformat_customfields(jira_customfields)
+        else:
+            helper.log_debug("jira_customfields_parsing={}".format(jira_customfields_parsing))
+            jira_customfields = reformat_customfields_minimal(jira_customfields)
         helper.log_debug("jira_customfields={}".format(jira_customfields))
 
         # Manage custom fields properly

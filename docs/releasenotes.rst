@@ -1,6 +1,11 @@
 Release notes
 #############
 
+Version 1.0.17
+==============
+
+- feature: Enable / Disable custom fields structure parsing new alert option, disabling the custom fields parsing can be useful when the backend fails to parse properly a custom fields structure that is not expected
+
 Version 1.0.16
 ==============
 

@@ -1,6 +1,11 @@
 Release notes
 #############
 
+Version 1.0.18
+==============
+
+- Fix: ensure aob configuration replicates in shc environment
+
 Version 1.0.17
 ==============
 

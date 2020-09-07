@@ -19,6 +19,10 @@ Dependencies
 
 There are currently no dependencies for the application.
 
+However, if you deploy the Splunk_SA_CIM package, make sure you have declared the ``cim_modactions`` index as the Add-on logs would automatically be directed to this index is the SA CIM application is installed on the search heads.
+
+If the Splunk_SA_CIM is not installed, the Add-on logs will be generated in the ``_internal`` index. (This is a normal behaviour for Add-on developped with the Splunk Add-on builder that provide adaptive response capabilities)
+
 Initial deployment
 ==================
 

@@ -48,7 +48,6 @@ def process_event(helper, *args, **kwargs):
     jira_assignee = helper.get_param("jira_assignee")
     helper.log_info("jira_assignee={}".format(jira_assignee))
 
-
     # The following example adds two sample events ("hello", "world")
     # and writes them to Splunk
     # NOTE: Call helper.writeevents() only once after all events
@@ -77,7 +76,7 @@ def process_event(helper, *args, **kwargs):
     # Retrieve JIRA connnection parameters and settings
     jira_url = helper.get_global_setting("jira_url")
     helper.log_debug("jira_url={}".format(jira_url))
-    
+
     jira_username = helper.get_global_setting("jira_username")
     helper.log_debug("jira_username={}".format(jira_username))
 
@@ -93,11 +92,11 @@ def process_event(helper, *args, **kwargs):
     helper.log_debug("ssl_certificate_validation={}".format(ssl_certificate_validation))
 
     #call the query URL REST Endpoint and pass the url and API token
-    content = query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_validation)  
+    content = query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_validation)
 
     #write the response returned by Virus Total API to splunk index
     #helper.addevent(content, sourcetype="VirusTotal")
-    #helper.writeevents(index="main", host="localhost", source="VirusTotal")    
+    #helper.writeevents(index="main", host="localhost", source="VirusTotal")
 
     # Retrieve parameters
     jira_project = helper.get_param("jira_project")
@@ -229,6 +228,10 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
     jira_dedup = helper.get_param("jira_dedup")
     jira_dedup = checkstr(jira_dedup)
     helper.log_debug("jira_dedup={}".format(jira_dedup))
+
+    jira_dedup_ignore_status_category = helper.get_param("jira_dedup_ignore_status_category")
+    jira_dedup_ignore_status_category = checkstr(jira_dedup_ignore_status_category)
+    helper.log_debug("jira_dedup_ignore_status_category={}".format(jira_dedup_ignore_status_category))
 
     jira_attachment = helper.get_param("jira_attachment")
     jira_attachment = checkstr(jira_attachment)
@@ -395,7 +398,16 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
 
                 helper.log_debug("jira_backlog_key:={}".format(jira_backlog_key))
 
-                if jira_dedup in ("enabled"):
+                jira_is_completed = False
+                jira_completed_url = requests.get(jira_url + "/" + str(jira_backlog_key), headers=jira_headers, verify=False).text
+                jira_response = json.loads(jira_completed_url)
+                helper.log_debug("jira_response:={}".format(jira_response))
+
+                if jira_response['fields']['status']['statusCategory']['name'] == jira_dedup_ignore_status_category:
+                    helper.log_info('This issue is completed, so a new issue will be created')
+                    jira_is_completed = True
+
+                if jira_dedup in ("enabled") and jira_is_completed == False:
                     # generate a new jira_url, and the comment
                     jira_dedup_comment_issue = True
                     jira_url = jira_url + "/" + str(jira_backlog_key) + "/comment"
@@ -544,6 +556,10 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
                     'Authorization': 'Splunk %s' % session_key,
                     'Content-Type': 'application/json'}
 
+                if jira_is_completed:
+                    response = requests.delete(record_url + '/' + jira_md5sum, headers=headers, verify=False)
+                    jira_dedup_md5_found = False
+
                 if jira_dedup_md5_found:
                     record = '{"jira_md5": "' + jira_md5sum + '", "ctime": "' + str(time.time()) + '", "mtime": "' \
                              + str(time.time()) + '", "status": "created", "jira_id": "' \
@@ -557,8 +573,7 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
                              + '", "jira_key": "' + jira_created_key + '", "jira_self": "' + jira_created_self + '"}'
                     helper.log_debug('record={}'.format(record))
 
-                response = requests.post(record_url, headers=headers, data=record,
-                                         verify=False)
+                response = requests.post(record_url, headers=headers, data=record, verify=False)
                 if response.status_code not in (200, 201, 204):
                     helper.log_error(
                         'Backlog KVstore saving has failed!. url={}, data={}, HTTP Error={}, '

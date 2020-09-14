@@ -379,12 +379,10 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
         response = requests.get(record_url, headers=headers, verify=False)
         helper.log_debug("response status_code:={}".format(response.status_code))
 
+        jira_is_completed = False
+
         if response.status_code == 200:
             if jira_dedup:
-                helper.log_info(
-                    'jira_dedup: An issue with same md5 hash (' + str(jira_md5sum) + ') was found in the backlog '
-                    'collection, as jira_dedup is enabled a new comment '
-                    'will be added, entry:={}'.format(response.text))
                 jira_backlog_response = response.text
                 jira_backlog_response_json = json.loads(jira_backlog_response)
                 helper.log_debug("jira_backlog_response_json:={}".format(jira_backlog_response_json))
@@ -398,16 +396,25 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
 
                 helper.log_debug("jira_backlog_key:={}".format(jira_backlog_key))
 
-                jira_is_completed = False
                 jira_completed_url = requests.get(jira_url + "/" + str(jira_backlog_key), headers=jira_headers, verify=False).text
                 jira_response = json.loads(jira_completed_url)
                 helper.log_debug("jira_response:={}".format(jira_response))
 
-                if jira_response['fields']['status']['statusCategory']['name'] == jira_dedup_ignore_status_category:
-                    helper.log_info('This issue is completed, so a new issue will be created')
+                jira_status_category = jira_response['fields']['status']['statusCategory']['name']
+
+                if jira_status_category == jira_dedup_ignore_status_category:
+                    helper.log_info(
+                        'jira_dedup: An issue with same md5 hash (' + str(jira_md5sum) + ') was found in the backlog '
+                        'collection, as jira_dedup is enabled  but this issue status is ' + jira_status_category + ', '
+                        'which is set to be ignored, so a new issue will be created, entry:={}'.format(response.text))
                     jira_is_completed = True
 
-                if jira_dedup in ("enabled") and jira_is_completed == False:
+                if jira_dedup in ("enabled") and not jira_is_completed:
+                    helper.log_info(
+                        'jira_dedup: An issue with same md5 hash (' + str(jira_md5sum) + ') was found in the backlog '
+                        'collection, as jira_dedup is enabled a new comment '
+                        'will be added, entry:={}'.format(response.text))
+
                     # generate a new jira_url, and the comment
                     jira_dedup_comment_issue = True
                     jira_url = jira_url + "/" + str(jira_backlog_key) + "/comment"

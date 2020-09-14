@@ -124,6 +124,20 @@
     </div>
 
     <div class="control-group">
+        <label class="control-label" for="jira_service_desk_jira_dedup_content">JIRA dedup content  </label>
+        <div class="controls">
+            <textarea name="action.jira_service_desk.param.jira_dedup_content" id="jira_service_desk_jira_dedup_content" style="height: 60px;"></textarea>
+            <span class="help-block">
+                <br />The default behavior is to use the full issue content to calculate the md5, by defining its content here you can limit its scope.
+                <br />If this field is unset, the entire issue data is used for the deduping purposes.
+                <br />
+                <br />Example:
+                <br />Splunk Alert: $name$, action=$result.action$, user=$result.user$, message=$result.message$
+            </span>
+        </div>
+    </div>
+
+    <div class="control-group">
         <label class="control-label" for="jira_service_desk_jira_attachment">Results attachment: <span class="required">*</span> </label>
         <div class="controls">
     <select name="action.jira_service_desk.param.jira_attachment" id="jira_service_desk_jira_attachment">

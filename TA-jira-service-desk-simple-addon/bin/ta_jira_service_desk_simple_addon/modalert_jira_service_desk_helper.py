@@ -237,6 +237,17 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
     # needs to be converted to an array for later processing
     jira_dedup_exclude_statuses = jira_dedup_exclude_statuses.split(",")
 
+    jira_dedup_content = helper.get_param("jira_dedup_content")
+    if jira_dedup_content is None:
+        jira_dedup_full_mode = True
+        helper.log_debug("jira_dedup: jira_dedup_full_mode is set to True, the full issue data will be used"
+                        " for the md5 calculation.")
+    else:
+        jira_dedup_full_mode = False
+        helper.log_debug("jira_dedup: jira_dedup_full_mode is set to False, the md5 calculation scope will be restricted"
+                         " to the content of the jira_dedup_content.")
+        helper.log_debug("jira_dedup_content={}".format(jira_dedup_content))
+
     jira_attachment = helper.get_param("jira_attachment")
     jira_attachment = checkstr(jira_attachment)
     helper.log_debug("jira_attachment={}".format(jira_attachment))
@@ -346,7 +357,12 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
         helper.log_debug("json raw data for final rest call before json.loads:={}".format(data))
 
         # Generate an md5 unique hash for this issue
-        jira_md5sum = hashlib.md5(data.encode())
+        # If jira_dedup_full_mode is set to True, the entire json data is used
+        # Otherwise, jira_dedup_content was detected as filled and its content is used to perform the md5 calculation
+        if jira_dedup_full_mode:
+            jira_md5sum = hashlib.md5(data.encode())
+        else:
+            jira_md5sum = hashlib.md5(jira_dedup_content.encode())
         jira_md5sum = jira_md5sum.hexdigest()
         helper.log_debug("jira_md5sum:={}".format(jira_md5sum))
 
@@ -361,7 +377,7 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
         # log json in debug mode
         helper.log_debug("json data for final rest call:={}".format(data))
 
-        # Manage jira deduplication
+        # Manage jira deduplication enablement
         if jira_dedup is None:
             jira_dedup = "disabled"
         helper.log_debug("jira_dedup:={}".format(jira_dedup))
@@ -405,7 +421,8 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
                 # Attempt to get the current status of the issue
                 # Define status url on top of jira_url
 
-                # Define first the status to unknown, if the status is Closed a new issue will be created if dedup is enabled
+                # Define first the status to unknown, if the status is Closed a new issue will be created
+                # if dedup is enabled
                 jira_issue_status = 'Unknown'
                 jira_url_status = jira_url + '/' + jira_backlog_key + '?fields=status'
                 helper.log_debug("jira_url_status:={}".format(jira_url_status))
@@ -413,7 +430,8 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
                 # Try http get, catch exceptions and incorrect http return codes
                 try:
                     response = helper.send_http_request(jira_url_status, "GET", parameters=None, payload=data,
-                                                        headers=jira_headers, cookies=None, verify=ssl_certificate_validation,
+                                                        headers=jira_headers, cookies=None,
+                                                        verify=ssl_certificate_validation,
                                                         cert=None, timeout=120, use_proxy=opt_use_proxy)
                     helper.log_debug("response status_code:={}".format(response.status_code))
 
@@ -442,7 +460,8 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
                     
                     # Log a message
                     helper.log_info(
-                    'jira_dedup: The issue with key ' + str(jira_backlog_key) + ' was set to status ' + jira_issue_status + ' in JIRA, '
+                    'jira_dedup: The issue with key ' + str(jira_backlog_key) + ' was set to status '
+                    + jira_issue_status + ' in JIRA, '
                     'therefore, a new comment will be added to this issue.')
                     
                     # generate a new jira_url, and the comment
@@ -466,9 +485,11 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
                 # dedup is enabled but the issue was resolved, closed or cancelled
                 elif jira_dedup in ("enabled") and jira_issue_status in jira_dedup_exclude_statuses:
                     helper.log_info(
-                    'jira_dedup: The issue with key ' + str(jira_backlog_key) + ' has the same MD5 hash: ' + jira_backlog_md5 
+                    'jira_dedup: The issue with key ' + str(jira_backlog_key) + ' has the same MD5 hash: '
+                    + jira_backlog_md5
                     + ' and its status was set to ' + jira_issue_status + ' in JIRA, '
-                    'a new comment will not be added to an issue in this status, therefore a new issue will be created.')
+                    'a new comment will not be added to an issue in this status, therefore a new issue '
+                                                                          'will be created.')
 
             else:
                 helper.log_info(

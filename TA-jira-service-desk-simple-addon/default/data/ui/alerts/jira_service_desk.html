@@ -113,6 +113,17 @@
     </div>
 
     <div class="control-group">
+        <label class="control-label" for="jira_service_desk_jira_dedup_exclude_statuses">JIRA dedup excluded statuses </label>
+        <div class="controls">
+            <input type="text" name="action.jira_service_desk.param.jira_dedup_exclude_statuses" id="jira_service_desk_jira_dedup_exclude_statuses"/>
+            <span class="help-block">
+                <br />Comma separated list of Jira statuses that will not be considered for updates, if dedup is enabled and the target issue
+                <br />is in one of these statuses, a new issue will be created instead.
+            </span>
+        </div>
+    </div>
+
+    <div class="control-group">
         <label class="control-label" for="jira_service_desk_jira_attachment">Results attachment: <span class="required">*</span> </label>
         <div class="controls">
     <select name="action.jira_service_desk.param.jira_attachment" id="jira_service_desk_jira_attachment">

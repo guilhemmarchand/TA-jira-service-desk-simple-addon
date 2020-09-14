@@ -399,6 +399,8 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
         response = requests.get(record_url, headers=headers, verify=False)
         helper.log_debug("response status_code:={}".format(response.status_code))
 
+        jira_is_completed = False
+
         if response.status_code == 200:
             if jira_dedup:
                 helper.log_info(
@@ -490,6 +492,24 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
                     + ' and its status was set to ' + jira_issue_status + ' in JIRA, '
                     'a new comment will not be added to an issue in this status, therefore a new issue '
                                                                           'will be created.')
+
+                    # Remove this issue from the backlog collection
+                    record_url = 'https://localhost:' + str(splunkd_port) \
+                                + '/servicesNS/nobody/' \
+                                'TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_issues_backlog'
+                    headers = {
+                        'Authorization': 'Splunk %s' % session_key,
+                        'Content-Type': 'application/json'}
+
+                    response = requests.delete(record_url + '/' + jira_md5sum, headers=headers, verify=False)
+
+                    if response.status_code not in (200, 201, 204):
+                        helper.log_error(
+                            'KVstore saving has failed!. url={}, data={}, HTTP Error={}, '
+                            'content={}'.format(record_url, record, response.status_code, response.text))
+
+                    jira_dedup_md5_found = False
+                    jira_is_completed = True
 
             else:
                 helper.log_info(

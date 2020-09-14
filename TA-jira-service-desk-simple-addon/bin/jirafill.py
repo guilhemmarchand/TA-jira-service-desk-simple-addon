@@ -81,4 +81,9 @@ class GenerateTextCommand(GeneratingCommand):
                 usercreds = {'_time': time.time(), 'priorities':priority.get('name')}
                 yield usercreds
 
+        if self.opt == 4:
+            for status in self.get_jira_info(username, password, url, 'status'):
+                result = {'_time': time.time(), 'status':status.get('name'), 'statusCategory':status.get('statusCategory').get('name')}
+                yield result
+
 dispatch(GenerateTextCommand, sys.argv, sys.stdin, sys.stdout, __name__)

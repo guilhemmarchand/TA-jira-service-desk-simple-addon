@@ -11,7 +11,8 @@
 		<saved name="JIRA Service Desk - Get projects" />
 		<saved name="JIRA Service Desk - Get issue types" />
 		<saved name="JIRA Service Desk - Get issue priorities" />
-		<saved name="JIRA Service Desk - Get fields description" />
+		<saved name="JIRA Service Desk - Get fields description per project" />
+		<saved name="JIRA Service Desk - Get fields description for all projects" />		
 	</collection>
 	<collection label="Logging reports">
 		<saved name="JIRA Service Desk - modular action logs" />

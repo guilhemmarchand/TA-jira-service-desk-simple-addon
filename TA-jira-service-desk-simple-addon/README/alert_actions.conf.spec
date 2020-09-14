@@ -14,6 +14,7 @@ param.jira_components = <string> JIRA components fields structure, optional.
 param.jira_customfields = <string> JIRA custom fields structure, optional.
 param.jira_customfields_parsing = <boolean> enable or disable parsing of the custom fields, optional.
 param.jira_dedup = <string> JIRA deduplication behaviour, optional.
+param.jira_dedup_ignore_status_category <string> Ignore issues with this status category when deduplicating, optional.
 param.jira_attachment = <string> Attach Splunk results to the JIRA issue, optional.
 param.jira_attachment_token = <string> Attach Splunk results to the JIRA issue (token), optional.
 

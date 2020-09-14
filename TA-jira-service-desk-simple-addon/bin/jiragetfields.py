@@ -31,6 +31,8 @@ import json
 @Configuration(distributed=False)
 class GenerateTextCommand(GeneratingCommand):
 
+    opt = Option(require=True, validate=validators.Integer(0))
+
     def jira_url(self, url, endpoint):
         # For Splunk Cloud vetting, the URL must start with https://
         if not url.startswith("https://"):
@@ -63,26 +65,46 @@ class GenerateTextCommand(GeneratingCommand):
                 password = json.loads(credential.content.get('clear_password')).get('jira_password')
                 break
 
-        for project in self.get_jira_info(username, password, url, 'project'):
-            project_name = project.get('name')
-            
-            if not url.startswith("https://"):
-                jira_fields_response = requests.get(
-                    url="https://" + str(url) + "/rest/api/2/issue/createmeta?projectKeys=" + project_name
-                        + "&expand=projects.issuetypes.fields",
-                    auth=(username, password),
-                    verify=False
-                )
-            else:
-                jira_fields_response = requests.get(
-                    url=str(url) + "/rest/api/2/issue/createmeta?projectKeys=" + project_name
-                        + "&expand=projects.issuetypes.fields",
-                    auth=(username, password),
-                    verify=False
-                )
+        if self.opt == 1:
 
-            data = {'_time': time.time(), 'project': project_name,
-                    '_raw': json.dumps(jira_fields_response.json())}
-            yield data
+            for project in self.get_jira_info(username, password, url, 'project'):
+                project_name = project.get('name')
+                
+                if not url.startswith("https://"):
+                    jira_fields_response = requests.get(
+                        url="https://" + str(url) + "/rest/api/2/issue/createmeta?projectKeys=" + project_name
+                            + "&expand=projects.issuetypes.fields",
+                        auth=(username, password),
+                        verify=False
+                    )
+                else:
+                    jira_fields_response = requests.get(
+                        url=str(url) + "/rest/api/2/issue/createmeta?projectKeys=" + project_name
+                            + "&expand=projects.issuetypes.fields",
+                        auth=(username, password),
+                        verify=False
+                    )
+
+                data = {'_time': time.time(), 'project': project_name,
+                        '_raw': json.dumps(jira_fields_response.json())}
+                yield data
+
+        elif self.opt == 2:
+
+                if not url.startswith("https://"):
+                    jira_fields_response = requests.get(
+                        url="https://" + str(url) + "/rest/api/2/issue/createmeta?expand=projects.issuetypes.fields",
+                        auth=(username, password),
+                        verify=False
+                    )
+                else:
+                    jira_fields_response = requests.get(
+                        url=str(url) + "/rest/api/2/issue/createmeta?expand=projects.issuetypes.fields",
+                        auth=(username, password),
+                        verify=False
+                    )
+
+                data = {'_time': time.time(), '_raw': json.dumps(jira_fields_response.json())}
+                yield data
 
 dispatch(GenerateTextCommand, sys.argv, sys.stdin, sys.stdout, __name__)

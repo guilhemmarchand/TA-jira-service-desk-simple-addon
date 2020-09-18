@@ -33,7 +33,7 @@
         </div>
     </div>
     <div class="control-group">
-        <label class="control-label" for="jira_service_desk_jira_priority">Priority <span class="required">*</span> </label>
+        <label class="control-label" for="jira_service_desk_jira_priority">Priority </label>
         <div class="controls">
             <splunk-search-dropdown name="action.jira_service_desk.param.jira_priority" id="jira_service_desk_jira_priority"
                                     search="| jirafill opt=3 | stats count by priorities | dedup priorities | sort priorities | fields priorities"

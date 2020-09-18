@@ -7,6 +7,7 @@ Version 1.0.19
 - Feature: Issue #33 - Exclude closed statuses from the JIRA dedup behavior, to prevent deduplicating closed issues, which list can be customised if required (defaults to Closed,Completed,Canceled)
 - Feature: Issue #34 - Provides granular control against the content to be taken into account for dedup behavior and the md5 calculation used to identify duplicated tickets
 - Feature: Jira get field report split into two reports, one for all projects, one report providing results per project
+- Feature: Deduplication feature is now enabled by default when creating a new alert action
 
 Version 1.0.18
 ==============

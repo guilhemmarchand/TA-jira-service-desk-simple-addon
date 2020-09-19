@@ -327,7 +327,7 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
 
         # Priority can be dynamically overridden by the text input dynamic priority, if set
         if jira_priority not in ["", "None", None]:
-            if jira_priority_dynamic is not None:
+            if jira_priority_dynamic not in ["", "None", None]:
                 helper.log_debug("jira priority is overridden by "
                                  "jira_priority_dynamic={}".format(jira_priority_dynamic))
                 data = data + ',\n "priority" : {\n' + '"name": "' + jira_priority_dynamic + '"\n }'

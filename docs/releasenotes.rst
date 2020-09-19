@@ -12,6 +12,7 @@ Version 1.0.19
 - Fix: default.meta does not define permissions for the builtin jira_admin role for the JIRA issue backlog collection used for the dedup feature
 - Change: Issue #42 - Removing Priority as a Required Input #42
 - Change: Improved rendering of options and clearness for required inputs in the alert definition
+- Change: Issue #16 - Deprecation of jiragetfields custom command, which is replaced with calls to the new REST wrapper jirarest
 
 Version 1.0.18
 ==============

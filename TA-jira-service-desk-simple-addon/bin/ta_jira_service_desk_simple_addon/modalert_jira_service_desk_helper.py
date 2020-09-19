@@ -231,14 +231,14 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
     helper.log_debug("jira_dedup={}".format(jira_dedup))
 
     jira_dedup_exclude_statuses = helper.get_param("jira_dedup_exclude_statuses")
-    if jira_dedup_exclude_statuses is None:
-        jira_dedup_exclude_statuses = "Closed,Completed,Canceled"
+    if jira_dedup_exclude_statuses in ["", "None", None]:
+        jira_dedup_exclude_statuses = "Done"
     helper.log_debug("jira_dedup_exclude_statuses={}".format(jira_dedup_exclude_statuses))
     # needs to be converted to an array for later processing
     jira_dedup_exclude_statuses = jira_dedup_exclude_statuses.split(",")
 
     jira_dedup_content = helper.get_param("jira_dedup_content")
-    if jira_dedup_content is None:
+    if jira_dedup_content in ["", "None", None]:
         jira_dedup_full_mode = True
         helper.log_debug("jira_dedup: jira_dedup_full_mode is set to True, the full issue data will be used"
                         " for the md5 calculation.")
@@ -252,7 +252,7 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
     jira_attachment = checkstr(jira_attachment)
     helper.log_debug("jira_attachment={}".format(jira_attachment))
 
-    if jira_attachment is None:
+    if jira_attachment in ["", "None", None]:
         jira_attachment = "disabled"
     helper.log_debug("jira_attachment:={}".format(jira_attachment))
 
@@ -264,7 +264,7 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
     jira_customfields_parsing = checkstr(jira_customfields_parsing)
     helper.log_debug("jira_customfields_parsing={}".format(jira_customfields_parsing))
 
-    if jira_customfields_parsing is None:
+    if jira_customfields_parsing in ["", "None", None]:
         jira_customfields_parsing = "enabled"
     helper.log_debug("jira_customfields_parsing:={}".format(jira_customfields_parsing))
 
@@ -378,8 +378,8 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
         helper.log_debug("json data for final rest call:={}".format(data))
 
         # Manage jira deduplication enablement
-        if jira_dedup is None:
-            jira_dedup = "disabled"
+        if jira_dedup in ["", "None", None]:
+            jira_dedup = False
         helper.log_debug("jira_dedup:={}".format(jira_dedup))
 
         # Initiate default behaviour

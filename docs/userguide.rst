@@ -252,3 +252,73 @@ How to retrieve the IDs of the custom fields configured ?
 .. image:: img/userguide_getfields2.png
    :alt: userguide_getfields2.png
    :align: center
+
+JIRA REST API get wrapper
+=========================
+
+**A custom command is provided as a generic API wrapper which can be used to get information from JIRA by calling any REST endpoint availale:**
+
+::
+
+   | jirarest target="<endpoint>"
+
+**Open the REST API dashboard to get examples of usage:**
+
+.. image:: img/jirarest_001.png
+   :alt: jirarest_001.png
+   :align: center
+
+**The following report is provided to retrieve issues statistics per project and per status categories:**
+
+::
+
+   JIRA Service Desk - Issues statistics report per project
+
+.. image:: img/jirarest_002.png
+   :alt: jirarest_002.png
+   :align: center
+
+Indexing JIRA statistics for reporting purposes
+-----------------------------------------------
+
+**If you wish to index the JIRA statistic report result in Splunk for reporting purposes over time, you can very easily clone this report or modify it to call the collect command, or the mctollect command:**
+
+Indexing the results to a summary report
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You can use the ``collect`` command to automatically index the report results in a summary index of your choice, schedule this report and add a call to collect, example:
+
+::
+
+   | collect index=summary source="JIRA - issues stats per project"
+
+.. image:: img/jirarest_003.png
+   :alt: jirarest_003.png
+   :align: center
+
+Indexing the results to a metric index
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Another option is to use the mcollect command to automatically index these statistics as native metrics in a metric index of your choice, the following example assumes a metric index named "jira_metrics" was created, the report scheduled and the following mcollect command is added:
+
+::
+
+   | eval type="jira_" | mcollect split=t prefix_field=type index=jira_metrics project
+
+Each statistic is stored as a metric_name with a prefix "jira\_", while the project is stored as a dimension, you can use the mcatalog and mstats commands to use the metrics, or use the Analytics view in Splunk:
+
+*mcatalog example:*
+
+::
+
+   | mcatalog values(metric_name) values(_dims) where index=jira_metrics metric_name=jira_*
+
+*mstats example:*
+
+::
+
+   | mstats latest(jira_pct_total_done) as pct_total_done, latest(jira_pct_total_in_progress) as pct_total_in_progress, latest(jira_pct_total_to_do) as pct_total_to_do where index=jira_metrics by project span=5m
+
+.. image:: img/jirarest_004.png
+   :alt: jirarest_004.png
+   :align: center

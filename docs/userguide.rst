@@ -161,7 +161,7 @@ The JIRA returned information are logged as well and contain the ticket referenc
 
 **Additional options for the dedup feature:**
 
-- **JIRA dedup excluded statuses** lists all the JIRA statuses to be excluded, if the target issue status is in this list, a new ticket will be created rather a comment to be added
+- **JIRA dedup excluded status categories** lists all the JIRA status categories to be excluded, if the status category of the duplicated issue is in this list, a new ticket will be created instead of a comment added to resolved or closed ticket
 - **JIRA dedup content** by default the entire JIRA issue is used for the md5 calculation which is used to identity a duplicate, this options allows granular control over the behavior
 
 JIRA attachment

@@ -36,10 +36,6 @@ class AlertActionWorkerjira_service_desk(ModularAlertBase):
             self.log_error('jira_issue_type is a mandatory parameter, but its value is None.')
             return False
 
-        if not self.get_param("jira_priority"):
-            self.log_error('jira_priority is a mandatory parameter, but its value is None.')
-            return False
-
         if not self.get_param("jira_summary"):
             self.log_error('jira_summary is a mandatory parameter, but its value is None.')
             return False

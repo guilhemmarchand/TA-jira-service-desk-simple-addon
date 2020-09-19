@@ -327,7 +327,7 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
 
         # Priority can be dynamically overridden by the text input dynamic priority, if set
         if jira_priority not in ["", "None", None]:
-            if jira_priority_dynamic is not None:
+            if jira_priority_dynamic not in ["", "None", None]:
                 helper.log_debug("jira priority is overridden by "
                                  "jira_priority_dynamic={}".format(jira_priority_dynamic))
                 data = data + ',\n "priority" : {\n' + '"name": "' + jira_priority_dynamic + '"\n }'
@@ -399,14 +399,12 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
         response = requests.get(record_url, headers=headers, verify=False)
         helper.log_debug("response status_code:={}".format(response.status_code))
 
-        jira_is_completed = False
-
         if response.status_code == 200:
             if jira_dedup:
                 helper.log_info(
                     'jira_dedup: An issue with same md5 hash (' + str(jira_md5sum) + ') was found in the backlog '
                     'collection, as jira_dedup is enabled a new comment '
-                    'will be added unless the issue status is set to Closed, entry:={}'.format(response.text))
+                    'will be added if the issue is active. (status is not resolved or any other done status), entry:={}'.format(response.text))
                 jira_backlog_response = response.text
                 jira_backlog_response_json = json.loads(jira_backlog_response)
                 helper.log_debug("jira_backlog_response_json:={}".format(jira_backlog_response_json))
@@ -426,7 +424,8 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
                 # Define first the status to unknown, if the status is Closed a new issue will be created
                 # if dedup is enabled
                 jira_issue_status = 'Unknown'
-                jira_url_status = jira_url + '/' + jira_backlog_key + '?fields=status'
+                jira_issue_status_category = 'Unknown'
+                jira_url_status = jira_url + '/' + str(jira_backlog_key)
                 helper.log_debug("jira_url_status:={}".format(jira_url_status))
 
                 # Try http get, catch exceptions and incorrect http return codes
@@ -448,7 +447,9 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
                         jira_get_response = response.text
                         jira_get_response_json = json.loads(jira_get_response)
                         jira_issue_status = jira_get_response_json['fields']['status']['name']
+                        jira_issue_status_category = jira_get_response_json['fields']['status']['statusCategory']['name']
                         helper.log_debug("jira_issue_status:={}".format(jira_issue_status))
+                        helper.log_debug("jira_issue_status_category:={}".format(jira_issue_status_category))
 
                 # any exception such as proxy error, dns failure etc. will be catch here
                 except Exception as e:
@@ -458,12 +459,12 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
                     jira_issue_status = 'Unknown'
 
                 # If dedup is enabled and the issue status is not closed
-                if jira_dedup in ("enabled") and jira_issue_status not in jira_dedup_exclude_statuses:
+                if jira_dedup in ("enabled") and jira_issue_status_category not in jira_dedup_exclude_statuses:
                     
                     # Log a message
                     helper.log_info(
-                    'jira_dedup: The issue with key ' + str(jira_backlog_key) + ' was set to status '
-                    + jira_issue_status + ' in JIRA, '
+                    'jira_dedup: The issue with key ' + str(jira_backlog_key) + ' was set to status: \"'
+                    + jira_issue_status + '\" (status category: \"' + jira_issue_status_category + '\"), '
                     'therefore, a new comment will be added to this issue.')
                     
                     # generate a new jira_url, and the comment
@@ -485,12 +486,12 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
                         data = jira_update_comment
 
                 # dedup is enabled but the issue was resolved, closed or cancelled
-                elif jira_dedup in ("enabled") and jira_issue_status in jira_dedup_exclude_statuses:
+                elif jira_dedup in ("enabled") and jira_issue_status_category in jira_dedup_exclude_statuses:
                     helper.log_info(
                     'jira_dedup: The issue with key ' + str(jira_backlog_key) + ' has the same MD5 hash: '
                     + jira_backlog_md5
-                    + ' and its status was set to ' + jira_issue_status + ' in JIRA, '
-                    'a new comment will not be added to an issue in this status, therefore a new issue '
+                    + ' and its status was set to: \"' + jira_issue_status + '\" (status category: \"' + jira_issue_status_category +
+                    '\"), a new comment will not be added to an issue in this status, therefore a new issue '
                                                                           'will be created.')
 
                     # Remove this issue from the backlog collection
@@ -507,9 +508,11 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
                         helper.log_error(
                             'KVstore saving has failed!. url={}, data={}, HTTP Error={}, '
                             'content={}'.format(record_url, record, response.status_code, response.text))
+                    else:
+                        helper.log_debug('JIRA issue record in the backlog collection was successfully delete. '
+                                    'content={}'.format(response.text))
 
                     jira_dedup_md5_found = False
-                    jira_is_completed = True
 
             else:
                 helper.log_info(

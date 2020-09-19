@@ -302,7 +302,7 @@ JIRA REST API get wrapper
 Indexing JIRA statistics for reporting purposes
 -----------------------------------------------
 
-**If you wish to index the JIRA statistic results in Splunk for reporting purposes over time, you can easily modify or clone this report to use collect or mcd do collect:**
+**If you wish to index the JIRA statistic results in Splunk for reporting purposes over time, you can easily modify or clone this report to use collect or mcollect to index these statistics:**
 
 Indexing the results to a summary report
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

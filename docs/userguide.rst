@@ -1,8 +1,8 @@
 User guide
 ##########
 
-Using the JIRA Service Desk alert action
-========================================
+Using the JIRA Service Desk alert action from alerts and correlation searches
+=============================================================================
 
 **Whenever you create or configure a Splunk core alert or Enterprise Security correlation search, you can now select the JIRA Service Desk action to automatically create a new JIRA issue based on the results of a search.**
 
@@ -11,6 +11,17 @@ Using the JIRA Service Desk alert action
    :align: center
 
 The configuration of the alert is pretty straightforward and described in details in the further sections of the above documentation.
+
+Using the JIRA Service Desk alert adaptive response action from Splunk Enterprise Security
+==========================================================================================
+
+**In Splunk Enterprise Security, the JIRA action can be triggered as an adaptive response action from Incident Review:**
+
+.. image:: img/userguide1_ar.png
+   :alt: userguide1_ar.png
+   :align: center
+
+The same options are available with the same level of features, however tokens expansion will depend on the notable event context.
 
 JIRA project
 ============
@@ -94,7 +105,7 @@ JIRA assignee
    :alt: userguide7.png
    :align: center
 
-The JIRA assignee field is **optional**, and can be defined to a static or dynamic value to used to automatically assign the ticket to a specific JIRA user.
+The JIRA assignee field is **optional**, and can be defined to a static or a dynamic value (using a token) to automatically assign the issue to a specific JIRA user.
 
 JIRA labels
 ===========
@@ -238,6 +249,16 @@ To add a list of custom fields, make sure you add a comma after each custom fiel
     "customfield_10052": {"value": "$result.single_choice$"},
     "customfield_10053": [ {"value": "$result.multi_choice_grp1$" }, {"value": "$result.multi_choice_grp2" }]
 
+**Custom fields parsing:**
+
+By default, the content of the custom fields is parsed to escape and protect any special characters that would potentially lead the JSON data not to be parsed properly.
+
+In some circumstances, the builtin parser rules may fail to recognise an unexpected custom fields structure, the parsing can be disabled if required:
+
+.. image:: img/customfields_parsing.png
+   :alt: img/customfields_parsing.png
+   :align: center
+
 How to retrieve the IDs of the custom fields configured ?
 ---------------------------------------------------------
 
@@ -281,7 +302,7 @@ JIRA REST API get wrapper
 Indexing JIRA statistics for reporting purposes
 -----------------------------------------------
 
-**If you wish to index the JIRA statistic report result in Splunk for reporting purposes over time, you can very easily clone this report or modify it to call the collect command, or the mctollect command:**
+**If you wish to index the JIRA statistic results in Splunk for reporting purposes over time, you can easily modify or clone this report to use collect or mcd do collect:**
 
 Indexing the results to a summary report
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

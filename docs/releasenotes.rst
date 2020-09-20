@@ -1,6 +1,19 @@
 Release notes
 #############
 
+Version 1.0.19
+==============
+
+- Feature: Issue #33 - Exclude closed statuses from the JIRA dedup behavior, to prevent deduplicating closed issues, which list can be customised if required (defaults to Closed,Completed,Canceled)
+- Feature: Issue #34 - Provides granular control against the content to be taken into account for dedup behavior and the md5 calculation used to identify duplicated tickets
+- Feature: Provide a new REST API custom command wrapper to allow performing any get call against any endpoint of the JIRA API, provides a builting issue statistic report that can be used with collect/mcollect to index issues statistics, provide a new dashboard exposing the wrapper usage
+- Feature: Jira get field report split into two reports, one for all projects, one report providing results per project
+- Fix: Issue #41 - Incident Review Manual AR Issue #41
+- Fix: default.meta does not define permissions for the builtin jira_admin role for the JIRA issue backlog collection used for the dedup feature
+- Change: Issue #42 - Removing Priority as a Required Input #42
+- Change: Improved rendering of options and clearness for required inputs in the alert definition
+- Change: Issue #16 - Deprecation of jiragetfields custom command, which is replaced with calls to the new REST wrapper jirarest
+
 Version 1.0.18
 ==============
 

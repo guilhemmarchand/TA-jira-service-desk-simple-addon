@@ -13,7 +13,7 @@
     </div>
 
     <div class="control-group">
-        <label class="control-label" for="jira_service_desk_jira_project">Project <span class="required">*</span> </label>
+        <label class="control-label" for="jira_service_desk_jira_project">Project <span class="required">* required</span> </label>
         <div class="controls">
             <splunk-search-dropdown name="action.jira_service_desk.param.jira_project" id="jira_service_desk_jira_project"
                                     search="| jirafill opt=1 | stats count by key, key_projects | dedup key_projects | sort key_projects | fields key, key_projects"
@@ -23,7 +23,7 @@
         </div>
     </div>
     <div class="control-group">
-        <label class="control-label" for="jira_service_desk_jira_issue_type">Issue Type <span class="required">*</span> </label>
+        <label class="control-label" for="jira_service_desk_jira_issue_type">Issue Type <span class="required">* required</span> </label>
         <div class="controls">
             <splunk-search-dropdown name="action.jira_service_desk.param.jira_issue_type" id="jira_service_desk_jira_issue_type"
                                     search="| jirafill opt=2 | stats count by issues | dedup issues | sort issues | fields issues"
@@ -33,7 +33,7 @@
         </div>
     </div>
     <div class="control-group">
-        <label class="control-label" for="jira_service_desk_jira_priority">Priority <span class="required">*</span> </label>
+        <label class="control-label" for="jira_service_desk_jira_priority">Priority</label>
         <div class="controls">
             <splunk-search-dropdown name="action.jira_service_desk.param.jira_priority" id="jira_service_desk_jira_priority"
                                     search="| jirafill opt=3 | stats count by priorities | dedup priorities | sort priorities | fields priorities"
@@ -47,12 +47,12 @@
         <div class="controls">
             <input type="text" name="action.jira_service_desk.param.jira_priority_dynamic" id="jira_service_desk_priority_dynamic"/>
             <span class="help-block">
-                <br />Override priority using a field result, ex $result.jira_priority$. (optional, case sensitive, ticket creation will fail if incorrectly defined)
+                <br />(Optional) Override priority using a field result, ex $result.jira_priority$. (case sensitive, ticket creation will fail if incorrectly defined)
             </span>
         </div>
     </div>
     <div class="control-group">
-        <label class="control-label" for="jira_service_desk_jira_summary">Summary <span class="required">*</span> </label>
+        <label class="control-label" for="jira_service_desk_jira_summary">Summary <span class="required">* required</span> </label>
         <div class="controls">
             <input type="text" name="action.jira_service_desk.param.jira_summary" id="jira_service_desk_jira_summary"/>
         </div>
@@ -62,7 +62,7 @@
         <div class="controls">
             <textarea name="action.jira_service_desk.param.jira_description" id="jira_service_desk_jira_description" style="height: 120px;"></textarea>
             <span class="help-block">
-                <br />Issue description, this text can include tokens based on the search results (E.g: $result.src$)
+                <br />(Required) Issue description, this text can include tokens based on the search results (E.g: $result.src$)
             </span>
         </div>
     </div>
@@ -71,7 +71,7 @@
         <div class="controls">
             <input type="text" name="action.jira_service_desk.param.jira_assignee" id="jira_service_desk_jira_assignee"/>
             <span class="help-block">
-                <br />Issue assignee. (optional)
+                <br />(Optional) Issue assignee.
             </span>
         </div>
     </div>
@@ -80,7 +80,7 @@
         <div class="controls">
             <input type="text" name="action.jira_service_desk.param.jira_labels" id="jira_service_desk_jira_labels"/>
             <span class="help-block">
-                <br />Comma separated list of labels for the issue. (optional, no space characters after commas if specifying multiple labels)
+                <br />(Optional) Comma separated list of labels for the issue. (no space characters after commas if specifying multiple labels)
             </span>
         </div>
     </div>
@@ -89,13 +89,13 @@
         <div class="controls">
             <input type="text" name="action.jira_service_desk.param.jira_components" id="jira_service_desk_jira_components"/>
             <span class="help-block">
-                <br />Comma separated list of component names for the issue. (optional, no space characters after commas if specifying multiple component names)
+                <br />(Optional) Comma separated list of component names for the issue. (no space characters after commas if specifying multiple component names)
             </span>
         </div>
     </div>
 
     <div class="control-group">
-        <label class="control-label" for="jira_service_desk_jira_dedup">JIRA dedup behaviour: <span class="required">*</span> </label>
+        <label class="control-label" for="jira_service_desk_jira_dedup">JIRA dedup behaviour: </label>
         <div class="controls">
     <select name="action.jira_service_desk.param.jira_dedup" id="jira_service_desk_jira_dedup">
             <option value="disabled">Disabled</option>
@@ -105,15 +105,40 @@
                          <br />When a new JIRA issue is created, the issue key reference and it's unique md5 hash are stored in a KVstore.<br />
                          If the jira dedup option is enabled and shall the same issue creation be requested again, a new comment will be added to the existing issue rather than a new issue created.<br />
                          <br />
-                         The md5 hash calculation guarantees the issue unique identification and is performed against the entire issue content.
+                         The md5 hash calculation guarantees the issue unique identification and is performed against the entire issue content. (unless jira_dedup_content is defined)
                          <br /><br />
-                         To define the content of the comment (defaults to: New alert triggered: &lt;issue summary&gt;), generate a field named "jira_update_comment" amd this will be used as the comment automatically.
+                         To define the content of the comment (defaults to: New alert triggered: &lt;issue summary&gt;), generate a field named "jira_update_comment" and this will be used as the comment automatically.
                     </span>
         </div>
     </div>
 
     <div class="control-group">
-        <label class="control-label" for="jira_service_desk_jira_attachment">Results attachment: <span class="required">*</span> </label>
+        <label class="control-label" for="jira_service_desk_jira_dedup_exclude_statuses">JIRA dedup excluded status categories </label>
+        <div class="controls">
+            <input type="text" name="action.jira_service_desk.param.jira_dedup_exclude_statuses" id="jira_service_desk_jira_dedup_exclude_statuses"/>
+            <span class="help-block">
+                <br />Comma separated list of Jira status categories that will not be considered for updates, if dedup is enabled and the duplicated issue
+                <br />status is in one of these categories, a new issue will be created instead.
+            </span>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label" for="jira_service_desk_jira_dedup_content">JIRA dedup content  </label>
+        <div class="controls">
+            <textarea name="action.jira_service_desk.param.jira_dedup_content" id="jira_service_desk_jira_dedup_content" style="height: 60px;"></textarea>
+            <span class="help-block">
+                <br />(Optional) The default behavior is to use the full issue content to calculate the md5, by defining its content here you can limit its scope.
+                <br />If this field is unset, the entire issue data is used for the deduping purposes.
+                <br />
+                <br />Example:
+                <br />Splunk Alert: $name$, action=$result.action$, user=$result.user$, message=$result.message$
+            </span>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label" for="jira_service_desk_jira_attachment">Results attachment: </label>
         <div class="controls">
     <select name="action.jira_service_desk.param.jira_attachment" id="jira_service_desk_jira_attachment">
             <option value="disabled">Disabled</option>
@@ -179,7 +204,7 @@
     </div>
 
     <div class="control-group">
-        <label class="control-label" for="jira_service_desk_jira_customfields_parsing">Custom fields parsing: <span class="required">*</span> </label>
+        <label class="control-label" for="jira_service_desk_jira_customfields_parsing">Custom fields parsing: </label>
         <div class="controls">
     <select name="action.jira_service_desk.param.jira_customfields_parsing" id="jira_service_desk_jira_customfields_parsing">
             <option value="enabled">Enabled</option>

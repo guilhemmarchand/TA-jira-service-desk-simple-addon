@@ -65,3 +65,11 @@ access = read : [ * ], write : [ admin, jira_alert_action ]
 
 [collections/kv_jira_failures_replay]
 access = read : [ * ], write : [ admin, jira_alert_action ]
+
+### Dedup behaviour relies on this collection
+
+[transforms/jira_issues_backlog]
+access = read : [ * ], write : [ admin, jira_alert_action ]
+
+[collections/kv_jira_issues_backlog]
+access = read : [ * ], write : [ admin, jira_alert_action ]

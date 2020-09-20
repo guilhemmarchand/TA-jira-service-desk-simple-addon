@@ -1,8 +1,8 @@
 User guide
 ##########
 
-Using the JIRA Service Desk alert action
-========================================
+Using the JIRA Service Desk alert action from alerts and correlation searches
+=============================================================================
 
 **Whenever you create or configure a Splunk core alert or Enterprise Security correlation search, you can now select the JIRA Service Desk action to automatically create a new JIRA issue based on the results of a search.**
 
@@ -11,6 +11,17 @@ Using the JIRA Service Desk alert action
    :align: center
 
 The configuration of the alert is pretty straightforward and described in details in the further sections of the above documentation.
+
+Using the JIRA Service Desk alert adaptive response action from Splunk Enterprise Security
+==========================================================================================
+
+**In Splunk Enterprise Security, the JIRA action can be triggered as an adaptive response action from Incident Review:**
+
+.. image:: img/userguide1_ar.png
+   :alt: userguide1_ar.png
+   :align: center
+
+The same options are available with the same level of features, however tokens expansion will depend on the notable event context.
 
 JIRA project
 ============
@@ -94,7 +105,7 @@ JIRA assignee
    :alt: userguide7.png
    :align: center
 
-The JIRA assignee field is **optional**, and can be defined to a static or dynamic value to used to automatically assign the ticket to a specific JIRA user.
+The JIRA assignee field is **optional**, and can be defined to a static or a dynamic value (using a token) to automatically assign the issue to a specific JIRA user.
 
 JIRA labels
 ===========
@@ -158,6 +169,11 @@ The JIRA returned information are logged as well and contain the ticket referenc
 .. image:: img/jira_dedup3.png
    :alt: jira_dedup3.png
    :align: center
+
+**Additional options for the dedup feature:**
+
+- **JIRA dedup excluded status categories** lists all the JIRA status categories to be excluded, if the status category of the duplicated issue is in this list, a new ticket will be created instead of a comment added to resolved or closed ticket
+- **JIRA dedup content** by default the entire JIRA issue is used for the md5 calculation which is used to identity a duplicate, this options allows granular control over the behavior
 
 JIRA attachment
 ===============
@@ -233,6 +249,16 @@ To add a list of custom fields, make sure you add a comma after each custom fiel
     "customfield_10052": {"value": "$result.single_choice$"},
     "customfield_10053": [ {"value": "$result.multi_choice_grp1$" }, {"value": "$result.multi_choice_grp2" }]
 
+**Custom fields parsing:**
+
+By default, the content of the custom fields is parsed to escape and protect any special characters that would potentially lead the JSON data not to be parsed properly.
+
+In some circumstances, the builtin parser rules may fail to recognise an unexpected custom fields structure, the parsing can be disabled if required:
+
+.. image:: img/customfields_parsing.png
+   :alt: img/customfields_parsing.png
+   :align: center
+
 How to retrieve the IDs of the custom fields configured ?
 ---------------------------------------------------------
 
@@ -246,4 +272,74 @@ How to retrieve the IDs of the custom fields configured ?
 
 .. image:: img/userguide_getfields2.png
    :alt: userguide_getfields2.png
+   :align: center
+
+JIRA REST API get wrapper
+=========================
+
+**A custom command is provided as a generic API wrapper which can be used to get information from JIRA by calling any REST endpoint availale:**
+
+::
+
+   | jirarest target="<endpoint>"
+
+**Open the REST API dashboard to get examples of usage:**
+
+.. image:: img/jirarest_001.png
+   :alt: jirarest_001.png
+   :align: center
+
+**The following report is provided to retrieve issues statistics per project and per status categories:**
+
+::
+
+   JIRA Service Desk - Issues statistics report per project
+
+.. image:: img/jirarest_002.png
+   :alt: jirarest_002.png
+   :align: center
+
+Indexing JIRA statistics for reporting purposes
+-----------------------------------------------
+
+**If you wish to index the JIRA statistic results in Splunk for reporting purposes over time, you can easily modify or clone this report to use collect or mcollect to index these statistics:**
+
+Indexing the results to a summary report
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You can use the ``collect`` command to automatically index the report results in a summary index of your choice, schedule this report and add a call to collect, example:
+
+::
+
+   | collect index=summary source="JIRA - issues stats per project"
+
+.. image:: img/jirarest_003.png
+   :alt: jirarest_003.png
+   :align: center
+
+Indexing the results to a metric index
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Another option is to use the mcollect command to automatically index these statistics as native metrics in a metric index of your choice, the following example assumes a metric index named "jira_metrics" was created, the report scheduled and the following mcollect command is added:
+
+::
+
+   | eval type="jira_" | mcollect split=t prefix_field=type index=jira_metrics project
+
+Each statistic is stored as a metric_name with a prefix "jira\_", while the project is stored as a dimension, you can use the mcatalog and mstats commands to use the metrics, or use the Analytics view in Splunk:
+
+*mcatalog example:*
+
+::
+
+   | mcatalog values(metric_name) values(_dims) where index=jira_metrics metric_name=jira_*
+
+*mstats example:*
+
+::
+
+   | mstats latest(jira_pct_total_done) as pct_total_done, latest(jira_pct_total_in_progress) as pct_total_in_progress, latest(jira_pct_total_to_do) as pct_total_to_do where index=jira_metrics by project span=5m
+
+.. image:: img/jirarest_004.png
+   :alt: jirarest_004.png
    :align: center

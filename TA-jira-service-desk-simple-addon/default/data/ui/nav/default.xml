@@ -11,14 +11,20 @@
 		<saved name="JIRA Service Desk - Get projects" />
 		<saved name="JIRA Service Desk - Get issue types" />
 		<saved name="JIRA Service Desk - Get issue priorities" />
-		<saved name="JIRA Service Desk - Get fields description" />
+		<saved name="JIRA Service Desk - Get status categories" />
+		<saved name="JIRA Service Desk - Get fields description per project" />
+		<saved name="JIRA Service Desk - Get fields description for all projects" />		
 	</collection>
+	<view name="rest_api_explore" />
 	<collection label="Logging reports">
 		<saved name="JIRA Service Desk - modular action logs" />
 		<saved name="JIRA Service Desk - modular resilient store action logs" />
 		<saved name="JIRA Service Desk - Issue creation successes" />
 		<saved name="JIRA Service Desk - temporary issue creation failures" />
 		<saved name="JIRA Service Desk - permanent issue creation failures" />
+	</collection>
+	<collection label="Statistic JIRA reports">
+		<saved name="JIRA Service Desk - Issues statistics report per project" />
 	</collection>
 	<collection label="Builtin alerts">
 		<saved name="JIRA Service Desk - detection of temporary issue creation failure" />

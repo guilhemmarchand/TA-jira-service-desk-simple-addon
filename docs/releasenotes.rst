@@ -1,6 +1,11 @@
 Release notes
 #############
 
+Version 1.0.20
+==============
+
+- Fix: Issue #50 - Deduplication Creating One Duplicate After Item Closed #50
+
 Version 1.0.19
 ==============
 

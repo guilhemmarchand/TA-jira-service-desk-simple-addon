@@ -1,5 +1,6 @@
 <nav search_view="search" color="#708794">
 	<view name="overview" label="Overview" default="true"/>
+	<view name="overview_jira_analytic" label="Overview projects" default="true"/>
 	<collection label="Search">
 		<view name="search" />
 		<view name="reports" />

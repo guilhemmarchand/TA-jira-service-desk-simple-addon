@@ -1,6 +1,13 @@
 Release notes
 #############
 
+Version 1.0.21
+==============
+
+- Fix: Issue #54 - Appinspect failure due to missing key in spec file
+- Fix: Issue #55 - Appinspect failure in reports using the jirarest command due to checks attempting to run the run the reports in non JIRA connected environments, causing the map command to return an error
+- Feaure: Issue #56 - New Overview JIRA analytic view relying on the new jirarest command that allows live REST calls to JIRA and execution of JQL queries #56
+
 Version 1.0.20
 ==============
 

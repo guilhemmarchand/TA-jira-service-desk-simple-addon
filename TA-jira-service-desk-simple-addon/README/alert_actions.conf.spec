@@ -15,6 +15,7 @@ param.jira_customfields = <string> JIRA custom fields structure, optional.
 param.jira_customfields_parsing = <boolean> enable or disable parsing of the custom fields, optional.
 param.jira_dedup = <string> JIRA deduplication behaviour, optional.
 param.jira_dedup_exclude_statuses = <string> list of JIRA statuses that will not be considered for comment updates, optional.
+param.jira_dedup_content = <string> restricted scope for dedup MD5 sum calculation
 param.jira_attachment = <string> Attach Splunk results to the JIRA issue, optional.
 param.jira_attachment_token = <string> Attach Splunk results to the JIRA issue (token), optional.
 

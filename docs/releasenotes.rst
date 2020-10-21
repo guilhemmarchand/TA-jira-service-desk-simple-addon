@@ -1,6 +1,11 @@
 Release notes
 #############
 
+Version 1.0.22
+==============
+
+- Fix: For Splunk Cloud vetting purposes, commands.conf needs to specify python3 explicitly
+
 Version 1.0.21
 ==============
 

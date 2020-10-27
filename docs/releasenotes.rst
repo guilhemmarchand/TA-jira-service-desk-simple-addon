@@ -1,6 +1,11 @@
 Release notes
 #############
 
+Version 1.0.23
+==============
+
+- Fix: Issue #61 - Custom commands now require Python3 mode explicity which with AoB py3 SDK version causes error messages on the indexers #61
+
 Version 1.0.22
 ==============
 

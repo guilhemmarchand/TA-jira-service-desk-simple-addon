@@ -4,6 +4,8 @@ Release notes
 Version 1.0.24
 ==============
 
+- Feature: Issue #65 - Allows defining the JIRA Issue reporter
+
 Version 1.0.23
 ==============
 

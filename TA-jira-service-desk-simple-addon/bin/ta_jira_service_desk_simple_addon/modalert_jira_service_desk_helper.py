@@ -107,6 +107,7 @@ def process_event(helper, *args, **kwargs):
     jira_summary = helper.get_param("jira_summary")
     jira_description = helper.get_param("jira_description")
     jira_assignee = helper.get_param("jira_assignee")
+    jira_reporter = helper.get_param("jira_reporter")
 
     return 0
 
@@ -297,6 +298,10 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
         jira_assignee = checkstr(jira_assignee)
         helper.log_debug("jira_assignee={}".format(jira_assignee))
 
+        jira_reporter = helper.get_param("jira_reporter")
+        jira_reporter = checkstr(jira_reporter)
+        helper.log_debug("jira_reporter={}".format(jira_reporter))
+
         jira_labels = helper.get_param("jira_labels")
         jira_labels = checkstr(jira_labels)
         helper.log_debug("jira_labels={}".format(jira_labels))
@@ -322,8 +327,13 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
                + jira_summary + '",\n"description": "' + jira_description + '",\n"issuetype": {\n"name": "' \
                + jira_issue_type + '"\n}'
 
+        # JIRA assignee
         if jira_assignee not in ["", "None", None]:
             data = data + ',\n "assignee" : {\n' + '"name": "' + jira_assignee + '"\n }'
+
+        # JIRA reporter
+        if jira_reporter not in ["", "None", None]:
+            data = data + ',\n "reporter" : {\n' + '"name": "' + jira_reporter + '"\n }'
 
         # Priority can be dynamically overridden by the text input dynamic priority, if set
         if jira_priority not in ["", "None", None]:

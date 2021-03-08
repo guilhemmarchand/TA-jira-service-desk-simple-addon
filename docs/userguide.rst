@@ -107,6 +107,15 @@ JIRA assignee
 
 The JIRA assignee field is **optional**, and can be defined to a static or a dynamic value (using a token) to automatically assign the issue to a specific JIRA user.
 
+JIRA reporter
+=============
+
+.. image:: img/jira_reporter.png
+   :alt: jira_reporter.png
+   :align: center
+
+The JIRA reporter field is **optional**, and can be defined to a static or a dynamic value (using a token) to automatically assign the issue to a specific JIRA user.
+
 JIRA labels
 ===========
 

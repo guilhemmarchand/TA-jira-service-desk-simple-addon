@@ -4,6 +4,7 @@ python.version = python3
 param.jira_issue_type = <string> Issue type. It's a required parameter.
 param.jira_labels = <string> Labels.
 param.jira_assignee = <string> Jira assignee.
+param.jira_reporter = <string> Jira reporter.
 param.jira_description = <string> Description.
 param.jira_summary = <string> Summary. It's a required parameter.
 param._cam = <json> Active response parameters.

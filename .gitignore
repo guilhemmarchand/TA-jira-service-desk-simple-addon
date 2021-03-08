@@ -36,3 +36,10 @@ backups
 
 # appinspect reports
 appinspect_report*.html
+
+# build
+build/*.tgz
+build/release-sha256.txt
+
+# Python pickle
+*.pickle

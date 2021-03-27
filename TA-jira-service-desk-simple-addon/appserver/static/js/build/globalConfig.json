@@ -204,7 +204,15 @@
                             "help": "Check this box to perform SSL certificate validation",
                             "required": false,
                             "defaultValue": 0
-                        }
+                        },
+                        {
+                            "field": "jira_passthrough_mode",
+                            "label": "Enable passthrough mode",
+                            "type": "checkbox",
+                            "help": "Enable the passthrough mode, in this mode the instance will not attempt to contact the Jira instance but will write directly to the replay KVstore, see the documentation for more details",
+                            "required": false,
+                            "defaultValue": 0
+                        }                        
                     ]
                 }
             ]

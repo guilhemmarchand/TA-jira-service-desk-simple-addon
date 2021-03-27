@@ -16,7 +16,7 @@
         <label class="control-label" for="jira_service_desk_jira_project">Project <span class="required">* required</span> </label>
         <div class="controls">
             <splunk-search-dropdown name="action.jira_service_desk.param.jira_project" id="jira_service_desk_jira_project"
-                                    search="| jirafill opt=1 | stats count by key, key_projects | dedup key_projects | sort key_projects | fields key, key_projects"
+                                    search="| `get_jira_projects`"
                                     label-field="key_projects" value-field="key"
                                     allow-custom-value
             />
@@ -26,7 +26,7 @@
         <label class="control-label" for="jira_service_desk_jira_issue_type">Issue Type <span class="required">* required</span> </label>
         <div class="controls">
             <splunk-search-dropdown name="action.jira_service_desk.param.jira_issue_type" id="jira_service_desk_jira_issue_type"
-                                    search="| jirafill opt=2 | stats count by issues | dedup issues | sort issues | fields issues"
+                                    search="| `get_jira_issue_types`"
                                     label-field="issues" value-field="issues"
                                     allow-custom-value
             />
@@ -36,7 +36,7 @@
         <label class="control-label" for="jira_service_desk_jira_priority">Priority</label>
         <div class="controls">
             <splunk-search-dropdown name="action.jira_service_desk.param.jira_priority" id="jira_service_desk_jira_priority"
-                                    search="| jirafill opt=3 | stats count by priorities | dedup priorities | sort priorities | fields priorities"
+                                    search="| `get_jira_priorities`"
                                     label-field="priorities" value-field="priorities"
                                     allow-custom-value
             />

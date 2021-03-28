@@ -1,6 +1,12 @@
 Release notes
 #############
 
+Version 1.0.26
+==============
+
+- Feature: Issue #72 - Provides a new mode called passthrough mode, which is designed for scenarios where Splunk cannot contact the JIRA instance directly for security or restrictions purposes (such as Splunk Cloud potentially). A second Splunk instance that can connect to JIRA instance would recycle the replay KVstore content to perform the final call. 
+- Enhancement: Issue #73 - Provides custom search auto description (searchbnf.conf)
+
 Version 1.0.25
 ==============
 

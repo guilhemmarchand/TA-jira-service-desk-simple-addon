@@ -128,7 +128,14 @@ fields_additional_parameters = [
         encrypted=False,
         default=0,
         validator=None
-    )
+    ),
+    field.RestField(
+        'jira_passthrough_mode',
+        required=False,
+        encrypted=False,
+        default=0,
+        validator=None
+    )    
 ]
 model_additional_parameters = RestModel(fields_additional_parameters, name='additional_parameters')
 

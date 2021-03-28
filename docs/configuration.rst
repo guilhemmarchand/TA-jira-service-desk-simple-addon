@@ -133,12 +133,12 @@ Step 1: Get the JIRA Add-on installed
 
 The JIRA Add-on must be installed to both the Splunk Cloud search, and the hybrid on-premise search head.
 
-Step 2: Splunk Cloud - create a dummary configuration in the Add-on and enable the passthrough
-----------------------------------------------------------------------------------------------
+Step 2: Splunk Cloud - create a dummy configuration in the Add-on and enable the passthrough
+--------------------------------------------------------------------------------------------
 
 To accept creating records in the local replay KVstore, you first need to setup a dummy connection to JIRA.
 
-The target does is not important, it will not be used as soon as the passthrough is enabled and is required to allow the Add-on to create records in the replay KVstore.
+The target is not important, it will not be used as soon when the passthrough is enabled, it is required to allow the Add-on to create records in the replay KVstore.
 
 *Example:*
 
@@ -171,20 +171,20 @@ Get JIRA projects
 
 Run the report **JIRA Service Desk - Get projects** from the hybrid search head (in the nav menu "Get JIRA INFO") and export as a CSV file:
 
-.. image:: img/passthrough_img003.png
-   :alt: passthrough_img003.png
+.. image:: img/passthrough_img_get_projects.png
+   :alt: passthrough_img_get_projects.png
    :align: center
 
 Run the report **JIRA Service Desk - Get issue types** from the hybrid search head (in the nav menu "Get JIRA INFO") and export as a CSV file:
 
-.. image:: img/passthrough_img004.png
-   :alt: passthrough_img004.png
+.. image:: img/passthrough_img_get_issue_types.png
+   :alt: passthrough_img_get_issue_types.png
    :align: center
 
 Run the report **JIRA Service Desk - Get issue priorities** from the hybrid search head (in the nav menu "Get JIRA INFO") and export as a CSV file:
 
-.. image:: img/passthrough_img005.png
-   :alt: passthrough_img005.png
+.. image:: img/passthrough_img_get_issue_priorities.png
+   :alt: passthrough_img_get_issue_priorities.png
    :align: center
 
 **Upload these lookups files in Splunk Cloud via Splunk Web, example:**

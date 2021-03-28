@@ -93,29 +93,22 @@ def process_event(helper, *args, **kwargs):
     helper.log_debug("ssl_certificate_validation={}".format(ssl_certificate_validation))
 
     # JIRA passthrough mode
-    jira_passthrough_mode = int(helper.get_global_setting("jira_passthrough_mode"))
+    jira_passthrough_mode = helper.get_global_setting("jira_passthrough_mode")
+    # if an alert was created before this setting was introduced
+    if jira_passthrough_mode in ["", "None", None]:
+        jira_passthrough_mode = 0
+    else:
+        jira_passthrough_mode = int(jira_passthrough_mode)
+    # False by default
     passthrough_mode = False
     helper.log_debug("jira_passthrough_mode={}".format(jira_passthrough_mode))
     if jira_passthrough_mode == 1:
         passthrough_mode = True
-    helper.log_debug("passthrough_mode={}".format(passthrough_mode))    
+        helper.log_info("passthrough_mode: Jira passthrough mode is enabled, this instance will not attempt to contact Jira, issues will be written to the replay KVstore.")
+    helper.log_debug("passthrough_mode={}".format(passthrough_mode))
 
     #call the query URL REST Endpoint and pass the url and API token
     content = query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_validation, passthrough_mode)  
-
-    #write the response returned by Virus Total API to splunk index
-    #helper.addevent(content, sourcetype="VirusTotal")
-    #helper.writeevents(index="main", host="localhost", source="VirusTotal")    
-
-    # Retrieve parameters
-    jira_project = helper.get_param("jira_project")
-    jira_issue_type = helper.get_param("jira_issue_type")
-    jira_priority = helper.get_param("jira_priority")
-    jira_priority_dynamic = helper.get_param("jira_priority_dynamic")
-    jira_summary = helper.get_param("jira_summary")
-    jira_description = helper.get_param("jira_description")
-    jira_assignee = helper.get_param("jira_assignee")
-    jira_reporter = helper.get_param("jira_reporter")
 
     return 0
 

@@ -10,7 +10,7 @@ Using the JIRA Service Desk alert action from alerts and correlation searches
    :alt: userguide1.png
    :align: center
 
-The configuration of the alert is pretty straightforward and described in details in the further sections of the above documentation.
+The configuration of the alert is pretty straightforward and described in detail in the further sections of the above documentation.
 
 Using the JIRA Service Desk alert adaptive response action from Splunk Enterprise Security
 ==========================================================================================
@@ -21,7 +21,7 @@ Using the JIRA Service Desk alert adaptive response action from Splunk Enterpris
    :alt: userguide1_ar.png
    :align: center
 
-The same options are available with the same level of features, however tokens expansion will depend on the notable event context.
+The same options are available with the same level of features; however, tokens expansion will depend on the notable event context.
 
 JIRA project
 ============
@@ -30,7 +30,7 @@ JIRA project
    :alt: userguide2.png
    :align: center
 
-Several projects might have been created in your JIRA instance, you can choose any of the projects available on per alert basis.
+Several projects might have been created in your JIRA instance; you can choose any of the projects available on per alert basis.
 
 The list of JIRA projects made available within the configuration screen is the result of a dynamic REST call achieved against your JIRA instance anytime you access this screen, which can be reproduced manually too:
 
@@ -73,7 +73,7 @@ JIRA issue dynamic priority
 
 **The dynamic priority is a feature that allows you to dynamically define the priority based on the search result rather than a selected priority from the dynamic list provided by JIRA.**
 
-To use the priority of a the search results, you need to define a field in your search results that exactly match the priority value expected by JIRA, which can obviously be the results of conditional operations in your SPL logic.
+To use the priority of the search results, you need to define a field in your search results that exactly match the priority value expected by JIRA, which can obviously be the results of conditional operations in your SPL logic.
 
 *Assuming the following simplistic example in your search:*
 
@@ -123,7 +123,7 @@ JIRA labels
    :alt: userguide8.png
    :align: center
 
-JIRA labels is an **optional** field, which can defined as a comma separated list of values to assign a list of labels to the JIRA issue.
+JIRA labels is an **optional** field, which can be defined as a comma separated list of values to assign a list of labels to the JIRA issue.
 
 JIRA components
 ===============
@@ -132,9 +132,9 @@ JIRA components
    :alt: components.png
    :align: center
 
-JIRA components is an **optional** field, which can defined as a comma separated list of values to assign a list of components to the JIRA issue. (by their names)
+JIRA components is an **optional** field, which can be defined as a comma separated list of values to assign a list of components to the JIRA issue. (by their names)
 
-JIRA dedup behaviour
+JIRA dedup behavior
 ====================
 
 .. image:: img/jira_dedup1.png
@@ -149,7 +149,7 @@ JIRA dedup behaviour
 - This md5 hash is compared with records stored in the backlog collection
 - Shall the md5 hash be matching, the JIRA issue key reference is extracted from backlog KVstore
 - As the JIRA dedup option is enabled, the Python backend will add a new comment to this JIRA issue, instead of creating a brand new issue with the entire same content
-- The content os the comment can be modified (defaults to: New alert triggered: <issue summary>) by defining a field named "jira_update_comment" as port of the search results
+- The content of the comment can be modified (defaults to: New alert triggered: <issue summary>) by defining a field named "jira_update_comment" as part of the search results
 - If the field jira_update_comment exists, its content will automatically be added as the comment
 
 **The Overview dashboard exposes tickets that have been updated due to deduplication as "success_update" rather than "success" for a standard creation:**
@@ -169,8 +169,8 @@ The JIRA returned information are logged as well and contain the ticket referenc
 **Open the report "JIRA Service Desk - Issues backlog collection" to access the backlog collection:**
 
 - **key** is the internal uuid of the KVstore, as well the key will be equal to the md5 hash of the first occurrence of JIRA issue created (next occurrences will have a key uuid generated automatically with no link with the md5 of the issue)
-- **ctime** is the milliseconds epochtime that corresponds to the initial creation of the ticket, this value not change once the record is inserted
-- **mtime** is the milliseconds epochtime of the last modification of the record, if a comment is added to this ticket, this values corresponds to the time of that action
+- **ctime** is the milliseconds epochtime that corresponds to the initial creation of the ticket, this value can not be changed once the record is created
+- **mtime** is the milliseconds epochtime of the last modification of the record, if a comment is added to this ticket, this value corresponds to the time of that action
 - **jira_md5** is the actual md5 hash for the entire JIRA issue, when the dedup option is activated for an alert, this will always be equal to the key id of the record in the KVstore
 - **status** reflects the status of the issue as it is known from the add-on perspective, created means the issue was created, updated means at least one comment was made to this ticket due to dedup matching
 - **jira_id / jira_key / jira_self** are JIRA information related to this ticket
@@ -182,7 +182,7 @@ The JIRA returned information are logged as well and contain the ticket referenc
 **Additional options for the dedup feature:**
 
 - **JIRA dedup excluded status categories** lists all the JIRA status categories to be excluded, if the status category of the duplicated issue is in this list, a new ticket will be created instead of a comment added to resolved or closed ticket
-- **JIRA dedup content** by default the entire JIRA issue is used for the md5 calculation which is used to identity a duplicate, this options allows granular control over the behavior
+- **JIRA dedup content** by default the entire JIRA issue is used for the md5 calculation, which is used to identity a duplicate, this option allows granular control over the behavior
 
 JIRA attachment
 ===============
@@ -198,7 +198,7 @@ JIRA attachment
 - The attachment feature is disabled by default, and needs to be enabled on a per alert basis
 - The format of the results can be attached in CSV format, or JSON format
 - JIRA file preview only supports the CSV format at the time of this writing
-- The feature is not currently available if an HTTP proxy is used (a warning message will be emitted in logs but the action will have not effects)
+- The feature is not currently available if an HTTP proxy is used (a warning message will be emitted in logs, but the action will have not effects)
 - The feature is not compatible with the resilient store, if the JIRA issue initially fails due to a temporary failure, the ticket will be created by the resilient tracker when possible but without the original attachment
 
 *When the attachment option is enabled, the following message will be logged if the attachment was successfully added to the JIRA issue, in addition with details of the ticket returned by JIRA:*
@@ -222,7 +222,7 @@ JIRA custom fields
 
 **JIRA custom fields are fields that can designed by your JIRA administrators to be available during the issue creation.**
 
-The Splunk Add-on for JIRA Service Desk supports any kind and any number of custom fields by allowing you to insert a custom field JSON structure im the alert configuration.
+The Splunk Add-on for JIRA Service Desk supports any kind and any number of custom fields by allowing you to insert a custom field JSON structure in the alert configuration.
 
 **There are different types of custom fields, from a single ling text input to date and time pickers, which are described in the JIRA API documentation:**
 
@@ -250,7 +250,7 @@ https://developer.atlassian.com/server/jira/platform/jira-rest-api-examples
 
 To add a list of custom fields, make sure you add a comma after each custom field, and none at the end of the JSON structure.
 
-*A full example o structure is provided in the alert action screen:*
+*A full example JSON structure is provided in the alert action screen:*
 
 ::
 
@@ -262,7 +262,7 @@ To add a list of custom fields, make sure you add a comma after each custom fiel
 
 By default, the content of the custom fields is parsed to escape and protect any special characters that would potentially lead the JSON data not to be parsed properly.
 
-In some circumstances, the builtin parser rules may fail to recognise an unexpected custom fields structure, the parsing can be disabled if required:
+In some circumstances, the built-in parser rules may fail to recognize an unexpected custom fields structure, the parsing can be disabled if required:
 
 .. image:: img/customfields_parsing.png
    :alt: img/customfields_parsing.png
@@ -271,7 +271,7 @@ In some circumstances, the builtin parser rules may fail to recognise an unexpec
 How to retrieve the IDs of the custom fields configured ?
 ---------------------------------------------------------
 
-**Use the builtin report and associate custom command to retrieve the list of JIRA fields information:**
+**Use the built-in report and associate custom command to retrieve the list of JIRA fields information:**
 
 .. image:: img/userguide_getfields1.png
    :alt: userguide_getfields1.png
@@ -286,7 +286,7 @@ How to retrieve the IDs of the custom fields configured ?
 JIRA REST API get wrapper
 =========================
 
-**A custom command is provided as a generic API wrapper which can be used to get information from JIRA by calling any REST endpoint availale:**
+**A custom command is provided as a generic API wrapper which can be used to get information from JIRA by calling any REST endpoint available:**
 
 ::
 

@@ -3,24 +3,15 @@
 # Check https://circleci.com/docs/2.0/language-python/ for more details
 #
 
-dependencies:
-  cache_directories:
-    - "~/.apt-cache"
-  pre:
-    - sudo rm -rf /var/cache/apt/archives && sudo ln -s ~/.apt-cache /var/cache/apt/archives && mkdir -p ~/.apt-cache/partial
-
-apt-run: &apt-install
-  name: install system packages
-  command: |
-    sudo apt update -qq
-    sudo apt install -y python-pip
-
 version: 2.1
 
 executors:
   content-executor:
     docker:
-      - image: circleci/python:3.7.2
+      - image: cimg/base:stable
+        auth:
+          username: $DOCKERHUB_LOGIN  # can specify string literal values
+          password: $DOCKERHUB_TOKEN  # or project environment variable reference
     working_directory: ~/repo
 
 jobs:
@@ -37,39 +28,18 @@ jobs:
             fi
       - restore_cache:
           key: deps1-{{ .Branch }}-{{ checksum "TA-jira-service-desk-simple-addon/TA-jira-service-desk-simple-addon/default/app.conf" }}
-      - run: *apt-install
       - run:
-          name: grab appinspect
+          name: run appinspect API app vetting
           command: |
-            curl -Ls https://download.splunk.com/misc/appinspect/splunk-appinspect-latest.tar.gz -o appinspect-lastest.tar.gz
-            mkdir appinspect-latest
-            tar -zxvf appinspect-lastest.tar.gz -C appinspect-latest --strip-components=1
-      - run:
-          name: install appinspect
-          command: |
-            cd appinspect-latest
-            rm -rf venv
-            sudo pip install --upgrade pip setuptools
-            sudo pip install virtualenv
-            virtualenv --clear venv
-            source venv/bin/activate
-            pip install .
-      - run:
-          name: run appinspect
-          command: |
-            cd TA-jira-service-desk-simple-addon 
+            cd TA-jira-service-desk-simple-addon
             rm -rf TA-jira-service-desk-simple-addon/.git
             rm -rf TA-jira-service-desk-simple-addon/.circleci
             rm -rf TA-jira-service-desk-simple-addon/.gitignore
-            tar -zcvf TA-jira-service-desk-simple-addon.tar.gz TA-jira-service-desk-simple-addon
+            tar -zcf TA-jira-service-desk-simple-addon.tar.gz TA-jira-service-desk-simple-addon
             mkdir dist
             cp TA-jira-service-desk-simple-addon.tar.gz dist/
             cd ../
-            cd appinspect-latest
-            pwd
-            ls -ltr
-            source venv/bin/activate
-            splunk-appinspect inspect ../TA-jira-service-desk-simple-addon/TA-jira-service-desk-simple-addon.tar.gz --included-tags=cloud
+            TA-jira-service-desk-simple-addon/build/appinspect_vetting.sh $SPLUNK_BASE_LOGIN $SPLUNK_BASE_PASSWD TA-jira-service-desk-simple-addon/dist/TA-jira-service-desk-simple-addon.tar.gz
       - save_cache:
           key: deps1-{{ .Branch }}-{{ checksum "TA-jira-service-desk-simple-addon/TA-jira-service-desk-simple-addon/default/app.conf" }}
           paths:
@@ -80,7 +50,10 @@ jobs:
               - TA-jira-service-desk-simple-addon.tar.gz
   publish-github-release:
     docker:
-      - image: cibuilds/github:0.10
+      - image: cibuilds/github:latest
+        auth:
+          username: $DOCKERHUB_LOGIN  # can specify string literal values
+          password: $DOCKERHUB_TOKEN  # or project environment variable reference
     steps:
       - attach_workspace:
           at: ~/TA-jira-service-desk-simple-addon/dist/TA-jira-service-desk-simple-addon.tar.gz
@@ -93,10 +66,14 @@ workflows:
   validate-and-build:
     jobs:
       - validate-content:
+          context: 
+            - docker-hub-creds
+            - splunk-base-creds
           filters:
             tags:
               only: /.*/
       - publish-github-release:
+          context: docker-hub-creds
           requires:
             - validate-content
           filters:

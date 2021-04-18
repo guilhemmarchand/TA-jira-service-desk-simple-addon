@@ -1,6 +1,11 @@
 Release notes
 #############
 
+Version 1.0.27
+==============
+
+- Fix: Issue #77 - Error reported in logs when the issue MD5 is equal, the alert continues to trigger and dedup is disabled
+
 Version 1.0.26
 ==============
 

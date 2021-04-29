@@ -693,7 +693,7 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
                         'Content-Type': 'application/json'}
 
                     if jira_dedup_md5_found:
-                        record = '{"_key": "' + jira_md5sum + '", "jira_md5": "' + jira_md5sum + '", "ctime": "' \
+                        record = '{"jira_md5": "' + jira_md5sum + '", "ctime": "' \
                                 + str(time.time()) + '", "mtime": "' \
                                 + str(time.time()) + '", "status": "created", "jira_id": "' \
                                 + jira_created_id + '", "jira_key": "' \

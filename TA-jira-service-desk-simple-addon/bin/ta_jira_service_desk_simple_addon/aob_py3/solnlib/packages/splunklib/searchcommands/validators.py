@@ -18,13 +18,13 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from json.encoder import encode_basestring_ascii as json_encode_string
 from collections import namedtuple
-from ..six.moves import StringIO
+from splunklib.six.moves import StringIO
 from io import open
 import csv
 import os
 import re
-from .. import six
-from ..six.moves import getcwd
+from splunklib import six
+from splunklib.six.moves import getcwd
 
 
 class Validator(object):
@@ -81,9 +81,9 @@ class Code(Validator):
     def __init__(self, mode='eval'):
         """
         :param mode: Specifies what kind of code must be compiled; it can be :const:`'exec'`, if source consists of a
-        sequence of statements, :const:`'eval'`, if it consists of a single expression, or :const:`'single'` if it
-        consists of a single interactive statement. In the latter case, expression statements that evaluate to
-        something other than :const:`None` will be printed.
+            sequence of statements, :const:`'eval'`, if it consists of a single expression, or :const:`'single'` if it
+            consists of a single interactive statement. In the latter case, expression statements that evaluate to
+            something other than :const:`None` will be printed.
         :type mode: unicode or bytes
 
         """
@@ -95,7 +95,12 @@ class Code(Validator):
         try:
             return Code.object(compile(value, 'string', self._mode), six.text_type(value))
         except (SyntaxError, TypeError) as error:
-            raise ValueError(error.message)
+            if six.PY2:
+                message = error.message
+            else:
+                message = str(error)
+
+            six.raise_from(ValueError(message), error)
 
     def format(self, value):
         return None if value is None else value.source
@@ -249,10 +254,10 @@ class List(Validator):
     class Dialect(csv.Dialect):
         """ Describes the properties of list option values. """
         strict = True
-        delimiter = b','
-        quotechar = b'"'
+        delimiter = str(',')
+        quotechar = str('"')
         doublequote = True
-        lineterminator = b'\n'
+        lineterminator = str('\n')
         skipinitialspace = True
         quoting = csv.QUOTE_MINIMAL
 

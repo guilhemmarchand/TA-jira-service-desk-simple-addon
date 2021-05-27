@@ -1,6 +1,11 @@
 Release notes
 #############
 
+Version 1.0.28
+==============
+
+- Change: Issue #83 - Python Upgrade Readiness App complains about 'outdated Python SDK'
+
 Version 1.0.27
 ==============
 

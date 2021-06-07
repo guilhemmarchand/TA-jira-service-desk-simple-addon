@@ -91,6 +91,8 @@ class GenerateTextCommand(GeneratingCommand):
                 raise Exception("jirarest: method {} requires a valid json_request. It is empty".format(jira_method))
 
         if self.target:
+            # set proper headers
+            headers = {'Content-type': 'application/json'}
             if jira_method == "GET":
                 jira_fields_response = requests.get(
                     url=str(url) + '/' + str(self.target),
@@ -105,6 +107,7 @@ class GenerateTextCommand(GeneratingCommand):
                 )
             elif jira_method == "POST":
                 jira_fields_response = requests.post(
+                    headers=headers,
                     url=str(url) + '/' + str(self.target),
                     data=json.dumps(body_dict).encode('utf-8'),
                     auth=(username, password),
@@ -112,13 +115,14 @@ class GenerateTextCommand(GeneratingCommand):
                 )
             elif jira_method == "PUT":
                 jira_fields_response = requests.put(
+                    headers=headers,
                     url=str(url) + '/' + str(self.target),
                     data=json.dumps(body_dict).encode('utf-8'),
                     auth=(username, password),
                     verify=False
                 )
 
-            if jira_fields_response.json() not in [None, '']:
+            if jira_fields_response.json():
                 data = {'_time': time.time(), '_raw': json.dumps(jira_fields_response.json())}
                 yield data
 

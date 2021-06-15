@@ -283,10 +283,11 @@ How to retrieve the IDs of the custom fields configured ?
    :alt: userguide_getfields2.png
    :align: center
 
-JIRA REST API get wrapper
+JIRA REST API wrapper
 =========================
 
-**A custom command is provided as a generic API wrapper which can be used to get information from JIRA by calling any REST endpoint available:**
+**A custom command is provided as a generic API wrapper which can be used to get information from JIRA by calling any REST endpoint available:**  
+By default, it uses method GET. Additional methods are supported DELETE, POST, PUT.
 
 ::
 
@@ -352,3 +353,35 @@ Each statistic is stored as a metric_name with a prefix "jira\_", while the proj
 .. image:: img/jirarest_004.png
    :alt: jirarest_004.png
    :align: center
+
+
+Additional examples for JIRA API wrapper
+----------------------------------------
+
+Method DELETE: Delete an issue
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+::
+
+   | jirarest target="rest/api/2/issue/{issueIdOrKey}" method=DELETE
+
+
+Method POST: Add a comment to an issue
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+::
+
+   | jirarest target="rest/api/2/issue/{issueIdOrKey}/comment" method=POST json_request="{
+    \"body\": \"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque eget venenatis elit. Duis eu justo eget augue iaculis fermentum. Sed semper quam laoreet nisi egestas at posuere augue semper.\",
+    \"visibility\": {
+        \"type\": \"role\",
+        \"value\": \"Administrators\"
+    }"
+   }"
+
+Method PUT: Assign an issue
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+::
+
+   | jirarest target="rest/api/2/issue/{issueIdOrKey}/assignee" method=POST json_request="{\"name\": \"harry\"}"

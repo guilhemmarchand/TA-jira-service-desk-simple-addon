@@ -20,17 +20,28 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import ta_jira_service_desk_simple_addon_declare
 from splunklib.searchcommands import dispatch, GeneratingCommand, Configuration, Option, validators
 
+import json
 import sys
 import splunk
 import time
 import requests
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-import json
+
 
 @Configuration(distributed=False)
 class GenerateTextCommand(GeneratingCommand):
 
+    method = Option(
+        doc='''
+        **Syntax:** **method=****
+        **Description:** method to use for API target. DELETE GET POST PUT are supported.''',
+        require=False, validate=validators.Match("method", r"^(DELETE|GET|POST|PUT)$"))
+    json_request = Option(
+        doc='''
+        **Syntax:** **json_request=***JSON request*
+        **Description:** JSON-formatted json_request.''',
+        require=False, validate=validators.Match("json_request", r"^{.+}$"))
     target = Option(require=True)
 
     def jira_url(self, url, endpoint):
@@ -60,27 +71,60 @@ class GenerateTextCommand(GeneratingCommand):
                     if key == "jira_url":
                         url = value
 
+        if not url.startswith("https://"):
+            url = "https://" + str(url)
+
         for credential in storage_passwords:
             if credential.content.get('username') == "additional_parameters``splunk_cred_sep``1" and credential.content.get('clear_password').find('jira_password') > 0:
                 password = json.loads(credential.content.get('clear_password')).get('jira_password')
                 break
 
+        if self.method:
+            jira_method = self.method
+        else:
+            jira_method = "GET"
+
+        if self.json_request:
+            body_dict = json.loads(self.json_request)
+        else:
+            if jira_method == "POST" or jira_method == "PUT":
+                raise Exception("jirarest: method {} requires a valid json_request. It is empty".format(jira_method))
+
         if self.target:
+            # set proper headers
+            headers = {'Content-type': 'application/json'}
+            if jira_method == "GET":
+                jira_fields_response = requests.get(
+                    url=str(url) + '/' + str(self.target),
+                    auth=(username, password),
+                    verify=False
+                )
+            elif jira_method == "DELETE":
+                jira_fields_response = requests.delete(
+                    url=str(url) + '/' + str(self.target),
+                    auth=(username, password),
+                    verify=False
+                )
+            elif jira_method == "POST":
+                jira_fields_response = requests.post(
+                    headers=headers,
+                    url=str(url) + '/' + str(self.target),
+                    data=json.dumps(body_dict).encode('utf-8'),
+                    auth=(username, password),
+                    verify=False
+                )
+            elif jira_method == "PUT":
+                jira_fields_response = requests.put(
+                    headers=headers,
+                    url=str(url) + '/' + str(self.target),
+                    data=json.dumps(body_dict).encode('utf-8'),
+                    auth=(username, password),
+                    verify=False
+                )
 
-                if not url.startswith("https://"):
-                    jira_fields_response = requests.get(
-                        url="https://" + str(url) + '/' + str(self.target),
-                        auth=(username, password),
-                        verify=False
-                    )
-                else:
-                    jira_fields_response = requests.get(
-                        url=str(url) + '/' + str(self.target),
-                        auth=(username, password),
-                        verify=False
-                    )
-
+            if jira_fields_response.json():
                 data = {'_time': time.time(), '_raw': json.dumps(jira_fields_response.json())}
                 yield data
+
 
 dispatch(GenerateTextCommand, sys.argv, sys.stdin, sys.stdout, __name__)

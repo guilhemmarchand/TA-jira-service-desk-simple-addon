@@ -1,6 +1,11 @@
 Release notes
 #############
 
+Version 1.0.29
+==============
+
+- Enhancement: jirarest supports additional method for extended JIRA integration #85 (Author: Rémi Séguy)
+
 Version 1.0.28
 ==============
 

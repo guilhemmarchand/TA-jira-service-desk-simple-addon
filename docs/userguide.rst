@@ -369,19 +369,21 @@ Method DELETE: Delete an issue
 Method POST: Add a comment to an issue
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+*Example 1:*
+
 ::
 
-   | jirarest target="rest/api/2/issue/{issueIdOrKey}/comment" method=POST json_request="{
-    \"body\": \"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque eget venenatis elit. Duis eu justo eget augue iaculis fermentum. Sed semper quam laoreet nisi egestas at posuere augue semper.\",
-    \"visibility\": {
-        \"type\": \"role\",
-        \"value\": \"Administrators\"
-    }"
-   }"
+   | jirarest target="rest/api/2/issue/{issueIdOrKey}/comment" method=POST json_request="{\"body\": \"This is a normal comment.\"}"
+
+*Example 2:*
+
+::
+
+   | jirarest target="rest/api/2/issue/{issueIdOrKey}/comment" method=POST json_request="{\"body\": \"This is a comment that only administrators can see.\", \"visibility\": {\"type\": \"role\", \"value\": \"Administrators\"}}"
 
 Method PUT: Assign an issue
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ::
 
-   | jirarest target="rest/api/2/issue/{issueIdOrKey}/assignee" method=POST json_request="{\"name\": \"harry\"}"
+   | jirarest target="rest/api/2/issue/{issueIdOrKey}/assignee" method=PUT json_request="{\"name\": \"harry\"}"

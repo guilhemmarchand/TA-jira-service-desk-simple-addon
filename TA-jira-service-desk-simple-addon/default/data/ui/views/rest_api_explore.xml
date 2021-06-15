@@ -6,24 +6,28 @@
       <html>
         <h1>JIRA Rest API</h1>
 
-        <h2>Use the custom command <code>| jirarest target="&lt;endpoint&gt;"</code> to perform a get call against any endpoint of your JIRA instance</h2>
+        <h2>Use the custom command <code>| jirarest target="&lt;endpoint&gt;"</code> to perform an HTTP rest call against any endpoint of your JIRA instance.<br />The default method is GET, but you can as well perform PUT, POST and DELETE calls using the <code>method</code> argument and the <code>json_request</code> if the API endpoint requires data to be provided</h2>
         
         <h3>For API references:</h3>
         
         <a href="https://docs.atlassian.com/software/jira/docs/api/REST/latest/#api/2/issue-getIssue">Jira Server platform REST API reference</a>
+
+        <h3>Add-on documentation page:</h3>
         
+        <a href="https://ta-jira-service-desk-simple-addon.readthedocs.io/en/latest/userguide.html#jira-rest-api-get-wrapper">REST wrapper documentation on Read the docs</a>
+
       </html>
     </panel>
   </row>
   <row>
     <panel>
       <title>Try your own:</title>
-      <title>| jirarest target="rest/api/2/serverInfo"</title>
+      <title>| jirarest target="rest/api/2/serverInfo" method="GET"</title>
       <input type="text" token="tk_rest" searchWhenChanged="true">
         <label></label>
         <default>rest/api/2/myself</default>
         <prefix>| jirarest target="</prefix>
-        <suffix>" | spath</suffix>
+        <suffix>" method="GET" | spath</suffix>
         <initialValue>rest/api/2/myself</initialValue>
       </input>
       <event>
@@ -59,22 +63,22 @@
       <title>You can use the JQL language and perform any advanced query in JIRA, the following example returns the number of issues per project: api/2/search?jql=project=&lt;my project&gt;&amp;maxResults=0</title>
       <table>
         <search>
-          <query>| jirarest target="rest/api/2/project" | spath | rename "{}.key" as key | table key | mvexpand key | streamstats count as project_no
+          <query>| jirarest target="rest/api/2/project" method="GET" | spath | rename "{}.key" as key | table key | mvexpand key | streamstats count as project_no
 
-| map [ | jirarest target="rest/api/2/search?jql=project=$$key$$&amp;maxResults=0" ] | streamstats count as result_no | rex field=_raw "\"total\":\s(?&lt;total_issues&gt;\d*)"
+| map [ | jirarest target="rest/api/2/search?jql=project=$$key$$&amp;maxResults=0" method="GET" ] | streamstats count as result_no | rex field=_raw "\"total\":\s(?&lt;total_issues&gt;\d*)"
 | append [ 
-| jirarest target="rest/api/2/project" | spath | rename "{}.key" as key | table key | mvexpand key | streamstats count as project_no
+| jirarest target="rest/api/2/project" method="GET" | spath | rename "{}.key" as key | table key | mvexpand key | streamstats count as project_no
 | map [ | jirarest target="rest/api/2/search?jql=project=$$key$$%20AND%20statuscategory%20IN%20%28%22Done%22%29&amp;maxResults=0" ] | streamstats count as result_no | rex field=_raw "\"total\":\s(?&lt;total_done&gt;\d*)"
 ]
 | append [ 
-| jirarest target="rest/api/2/project" | spath | rename "{}.key" as key | table key | mvexpand key | streamstats count as project_no
+| jirarest target="rest/api/2/project" method="GET" | spath | rename "{}.key" as key | table key | mvexpand key | streamstats count as project_no
 | map [ | jirarest target="rest/api/2/search?jql=project=$$key$$%20AND%20statuscategory%20IN%20%28%22To%20Do%22%29&amp;maxResults=0" ] | streamstats count as result_no | rex field=_raw "\"total\":\s(?&lt;total_to_do&gt;\d*)"
 ]
 | append [ 
-| jirarest target="rest/api/2/project" | spath | rename "{}.key" as key | table key | mvexpand key | streamstats count as project_no
+| jirarest target="rest/api/2/project" method="GET" | spath | rename "{}.key" as key | table key | mvexpand key | streamstats count as project_no
 | map [ | jirarest target="rest/api/2/search?jql=project=$$key$$%20AND%20statuscategory%20IN%20%28%22In%20Progress%22%29&amp;maxResults=0" ] | streamstats count as result_no | rex field=_raw "\"total\":\s(?&lt;total_in_progress&gt;\d*)"
 ]
-| append [ | jirarest target="rest/api/2/project" | spath | rename "{}.key" as key | table key | mvexpand key | streamstats count as project_no ]
+| append [ | jirarest target="rest/api/2/project" method="GET" | spath | rename "{}.key" as key | table key | mvexpand key | streamstats count as project_no ]
 | eval line_merge=case(isnum(project_no), project_no, isnum(result_no), result_no)
 | stats first(key) as project, first(total_*) as "total_*" by line_merge | fields - line_merge
 
@@ -121,9 +125,9 @@
       <title>You can use the JQL language and perform any advanced query in JIRA, the following example returns the number of issues per project: api/2/search?jql=project=&lt;my project&gt;&amp;maxResults=0</title>
       <table>
         <search>
-          <query>| jirarest target="rest/api/2/project" | spath | rename "{}.key" as key | table key | mvexpand key | streamstats count as project_no
-| map [ | jirarest target="rest/api/2/search?jql=project=$$key$$&amp;maxResults=0" ] | streamstats count as result_no
-| append [ | jirarest target="rest/api/2/project" | spath | rename "{}.key" as key | table key | mvexpand key | streamstats count as project_no ]
+          <query>| jirarest target="rest/api/2/project" method="GET" | spath | rename "{}.key" as key | table key | mvexpand key | streamstats count as project_no
+| map [ | jirarest target="rest/api/2/search?jql=project=$$key$$&amp;maxResults=0" method="GET" ] | streamstats count as result_no
+| append [ | jirarest target="rest/api/2/project" method="GET" | spath | rename "{}.key" as key | table key | mvexpand key | streamstats count as project_no ]
 | eval line_merge=case(isnum(project_no), project_no, isnum(result_no), result_no)
 | stats first(_time) as _time, first(key) as project, first(_raw) as _raw by line_merge | fields - line_merge</query>
           <earliest>-24h@h</earliest>
@@ -147,9 +151,9 @@
       <title>Get the number of issues per project in the status category "Done"</title>
       <table>
         <search>
-          <query>| jirarest target="rest/api/2/project" | spath | rename "{}.key" as key | table key | mvexpand key | streamstats count as project_no
-| map [ | jirarest target="rest/api/2/search?jql=project=$$key$$%20AND%20statuscategory%20IN%20%28%22Done%22%29&amp;maxResults=0" ] | streamstats count as result_no
-| append [ | jirarest target="rest/api/2/project" | spath | rename "{}.key" as key | table key | mvexpand key | streamstats count as project_no ]
+          <query>| jirarest target="rest/api/2/project" method="GET" | spath | rename "{}.key" as key | table key | mvexpand key | streamstats count as project_no
+| map [ | jirarest target="rest/api/2/search?jql=project=$$key$$%20AND%20statuscategory%20IN%20%28%22Done%22%29&amp;maxResults=0" method="GET" ] | streamstats count as result_no
+| append [ | jirarest target="rest/api/2/project" method="GET" | spath | rename "{}.key" as key | table key | mvexpand key | streamstats count as project_no ]
 | eval line_merge=case(isnum(project_no), project_no, isnum(result_no), result_no)
 | stats first(_time) as _time, first(key) as project, first(_raw) as _raw by line_merge | fields - line_merge</query>
           <earliest>-24h@h</earliest>
@@ -173,9 +177,9 @@
       <title>Get the number of issues per project in the status category "Done"</title>
       <table>
         <search>
-          <query>| jirarest target="rest/api/2/project" | spath | rename "{}.key" as key | table key | mvexpand key | streamstats count as project_no
-| map [ | jirarest target="rest/api/2/search?jql=project=$$key$$%20AND%20statuscategory%20IN%20%28%22To%20Do%22%2C%20%22In%20Progress%22%29&amp;maxResults=0" ] | streamstats count as result_no
-| append [ | jirarest target="rest/api/2/project" | spath | rename "{}.key" as key | table key | mvexpand key | streamstats count as project_no ]
+          <query>| jirarest target="rest/api/2/project" method="GET" | spath | rename "{}.key" as key | table key | mvexpand key | streamstats count as project_no
+| map [ | jirarest target="rest/api/2/search?jql=project=$$key$$%20AND%20statuscategory%20IN%20%28%22To%20Do%22%2C%20%22In%20Progress%22%29&amp;maxResults=0" method="GET" ] | streamstats count as result_no
+| append [ | jirarest target="rest/api/2/project" method="GET" | spath | rename "{}.key" as key | table key | mvexpand key | streamstats count as project_no ]
 | eval line_merge=case(isnum(project_no), project_no, isnum(result_no), result_no)
 | stats first(_time) as _time, first(key) as project, first(_raw) as _raw by line_merge | fields - line_merge</query>
           <earliest>-24h@h</earliest>

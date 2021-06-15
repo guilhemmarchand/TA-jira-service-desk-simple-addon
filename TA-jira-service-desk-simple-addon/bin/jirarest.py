@@ -122,9 +122,30 @@ class GenerateTextCommand(GeneratingCommand):
                     verify=False
                 )
 
-            if jira_fields_response.json():
-                data = {'_time': time.time(), '_raw': json.dumps(jira_fields_response.json())}
+            # Attenpt to get a JSON response, and render in Splunk
+            try:
+
+                json_response = jira_fields_response.json()
+                data = {'_time': time.time(), '_raw': json.dumps(json_response)}
                 yield data
 
+            except Exception as e:
+
+                # Build a custom response for Splunk dynamically
+
+                # Create an action field, convenient to quickly understanding when things go wrong
+                if jira_fields_response.status_code in (200, 201, 204):
+                    response_action = "success"
+                else:
+                    response_action = "failure"
+
+                # render
+                if jira_fields_response.text:
+                    json_response = "{\"action\": \"" + str(response_action) + "\", \"status_code\": \"" + str(jira_fields_response.status_code) + "\", \"text\": \"" + str(jira_fields_response.text) + "\"}"
+                else:
+                    json_response = "{\"action\": \"" + str(response_action) + "\", \"status_code\": \"" + str(jira_fields_response.status_code) + "\"}"
+                data = {'_time': time.time(), '_raw': str(json.dumps(json.loads(json_response, strict=False), indent=4))}
+
+                yield data
 
 dispatch(GenerateTextCommand, sys.argv, sys.stdin, sys.stdout, __name__)

@@ -6,6 +6,7 @@ Configuration
 .. image:: img/config1.png
    :alt: config1.png
    :align: center
+   :width: 1200px   
 
 Configure your JIRA instance
 ============================
@@ -40,6 +41,7 @@ Validating the connectivity
 .. image:: img/config_getprojects.png
    :alt: config_getprojects.png
    :align: center
+   :width: 1200px   
 
 Shall the connectivity be effective and if you open the Get projects report, the list of the JIRA projects available for your JIRA instance appears in the table.
 
@@ -52,6 +54,7 @@ If the command returns the list of your JIRA projects, then the connectivity is 
 .. image:: img/config3.png
    :alt: config3.png
    :align: center
+   :width: 1200px
 
 **You can as well simulate the creation of an alert and action the JIRA Service Desk:**
 
@@ -63,6 +66,7 @@ If the command returns the list of your JIRA projects, then the connectivity is 
 .. image:: img/config2.png
    :alt: config2.png
    :align: center
+   :width: 800px
 
 **Testing access and authentication with curl:**
 
@@ -92,14 +96,15 @@ This role needs to be inherited for the users, or your users to be member of thi
 JIRA passthrough mode
 =====================
 
-What is the JIRA passthrough
-----------------------------
+What is the JIRA passthrough?
+-----------------------------
 
 The passthrough has been designed for specific use cases where the Splunk main deployment is not capable of reaching directly the JIRA instance due to network and security constraints.
 
 .. image:: img/passthrough_img001.png
    :alt: passthrough_img001.png
    :align: center
+   :width: 1200px
 
 This use case is common enough for Splunk Cloud customers running JIRA on-premise, due to security considerations, it may be refused or complex to open a connectivity between Splunk Cloud and the on-premise JIRA.
 
@@ -145,6 +150,7 @@ The target is not important, it will not be used as soon when the passthrough is
 .. image:: img/passthrough_img002.png
    :alt: passthrough_img002.png
    :align: center
+   :width: 1200px   
 
 Step 3: Hybrid - configure the JIRA connectivity
 ------------------------------------------------
@@ -156,6 +162,7 @@ Make sure to setup properly the JIRA configuraton in the hybrid search head.
 .. image:: img/passthrough_img003.png
    :alt: passthrough_img003.png
    :align: center
+   :width: 1200px
 
 Step 4: Splunk Cloud - create lookups to populate the alert action dropdown
 ---------------------------------------------------------------------------
@@ -174,24 +181,28 @@ Run the report **JIRA Service Desk - Get projects** from the hybrid search head 
 .. image:: img/passthrough_img_get_projects.png
    :alt: passthrough_img_get_projects.png
    :align: center
+   :width: 1200px
 
 Run the report **JIRA Service Desk - Get issue types** from the hybrid search head (in the nav menu "Get JIRA INFO") and export as a CSV file:
 
 .. image:: img/passthrough_img_get_issue_types.png
    :alt: passthrough_img_get_issue_types.png
    :align: center
+   :width: 1200px
 
 Run the report **JIRA Service Desk - Get issue priorities** from the hybrid search head (in the nav menu "Get JIRA INFO") and export as a CSV file:
 
 .. image:: img/passthrough_img_get_issue_priorities.png
    :alt: passthrough_img_get_issue_priorities.png
    :align: center
+   :width: 1200px
 
 **Upload these lookups files in Splunk Cloud via Splunk Web, example:**
 
 .. image:: img/passthrough_img006.png
    :alt: passthrough_img006.png
    :align: center
+   :width: 1200px
 
 .. hint::
 
@@ -222,6 +233,7 @@ Run the report **JIRA Service Desk - Get issue priorities** from the hybrid sear
 .. image:: img/passthrough_img007.png
    :alt: passthrough_img007.png
    :align: center
+   :width: 1200px
 
 Step 6: Splunk Cloud - disable replay out of the box reports
 ------------------------------------------------------------
@@ -250,6 +262,7 @@ In the Splunk Cloud search head, create a new scheduled report in the JIRA Add-o
 .. image:: img/passthrough_img008.png
    :alt: passthrough_img008.png
    :align: center
+   :width: 800px
 
 Step 8: Splunk Cloud - create a purge scheduled report
 --------------------------------------------------------
@@ -272,6 +285,7 @@ This job will purge records in the KVstore that have been successfully proceeded
 .. image:: img/passthrough_img009.png
    :alt: passthrough_img009.png
    :align: center
+   :width: 800px
 
 Step 9 final: Hybrid search head - create a report recycling the summary events to feed the replay KVstore
 ----------------------------------------------------------------------------------------------------------
@@ -296,6 +310,7 @@ Finally, create a new scheduled report in the hybrid Splunk Search head, in the 
 .. image:: img/passthrough_img010.png
    :alt: passthrough_img010.png
    :align: center
+   :width: 800px
 
 Final review
 ------------
@@ -307,11 +322,13 @@ Congratulations! The step is now terminated, because logs from the execution of 
 .. image:: img/passthrough_img011.png
    :alt: passthrough_img011.png
    :align: center
+   :width: 1200px
 
 **The logs exposing the real creation of the issues via the replay KVstore are available in the second tab called "Resilient store activity":**
 
 .. image:: img/passthrough_img012.png
    :alt: passthrough_img012.png
    :align: center
+   :width: 1200px
 
 The configuration is now over and fully functional, the hybrid search will respect the normal TA workflow, issues to be created will be removed automatically from the replay KVstore upon a successful creation.

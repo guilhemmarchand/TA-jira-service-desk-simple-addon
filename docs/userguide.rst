@@ -9,6 +9,7 @@ Using the JIRA Service Desk alert action from alerts and correlation searches
 .. image:: img/userguide1.png
    :alt: userguide1.png
    :align: center
+   :width: 800px
 
 The configuration of the alert is pretty straightforward and described in detail in the further sections of the above documentation.
 
@@ -20,6 +21,7 @@ Using the JIRA Service Desk alert adaptive response action from Splunk Enterpris
 .. image:: img/userguide1_ar.png
    :alt: userguide1_ar.png
    :align: center
+   :width: 800px   
 
 The same options are available with the same level of features; however, tokens expansion will depend on the notable event context.
 
@@ -137,36 +139,181 @@ JIRA components is an **optional** field, which can be defined as a comma separa
 JIRA dedup behavior
 ====================
 
-.. image:: img/jira_dedup1.png
-   :alt: jira_dedup1.png
+.. image:: img/dedup/dedup1.png
+   :alt: dedup1.png
    :align: center
+   :width: 800px
 
-**The JIRA deduplication option is a per alert option which is disabled by default.**
+**The JIRA deduplication is a powerful feature that allows to automatically control the decision to create or update an issue, which relies on a bidirectional integration with JIRA.**
 
-**Once the option is enabled for an alert, the following workflow applies:**
+**The feature relies on 3 main options:**
 
-- When an alert triggers with the JIRA issue creation action, the Python backend verifies the md5 hash of the full issue content to be created
-- This md5 hash is compared with records stored in the backlog collection
-- Shall the md5 hash be matching, the JIRA issue key reference is extracted from backlog KVstore
-- As the JIRA dedup option is enabled, the Python backend will add a new comment to this JIRA issue, instead of creating a brand new issue with the entire same content
-- The content of the comment can be modified (defaults to: New alert triggered: <issue summary>) by defining a field named "jira_update_comment" as part of the search results
-- If the field jira_update_comment exists, its content will automatically be added as the comment
+- ``JIRA dedup behaviour:`` this enables the dedup feature, disabled by default
+- ``JIRA dedup excluded status categories:`` A comma seperated list of statuses that will be considered for the decision
+- ``JIRA dedup content:`` (Optional) Provides extra control on the content used to make the decision
 
-**The Overview dashboard exposes tickets that have been updated due to deduplication as "success_update" rather than "success" for a standard creation:**
+**Let's take the following example to explain how the feature works:**
 
-.. image:: img/jira_dedup2.png
-   :alt: jira_dedup2.png
-   :align: center
-
-**When a ticket is detected as a duplication creation request due to md5 matching, the backend logs events that describe its activity:**
+*The following search simulates an alert triggering:*
 
 ::
 
-    JIRA Service Desk ticket successfully updated
+   | makeresults
+   | eval user="foo@splunk.com", action="failure", reason="Authentication failed"
+   | eval time=strftime(_time, "%c")
 
-The JIRA returned information are logged as well and contain the ticket reference key, id, and more.
+.. image:: img/dedup/dedup2.png
+   :alt: dedup2.png
+   :align: center
+   :width: 1200px
 
-**Open the report "JIRA Service Desk - Issues backlog collection" to access the backlog collection:**
+- everytime the alert triggers, the values for user, action and reason remain the same
+- the time value differs every time the action triggers
+
+Let's enable the JIRA alert action, we'll include in the description field all the fields from resulting from the alert:
+
+.. image:: img/dedup/dedup3.png
+   :alt: dedup4.png
+   :align: center
+   :width: 800px
+
+For now, we didn't enable the dedup feature, if we use the ``DEBUG`` logging mode, the logs will show the full JSON payload sent to the JIRA API in pretty print manner:
+
+*Use the navigation bar shortcut to access the logs, the final JSON is logged with a message: json data for final rest call*
+
+.. image:: img/dedup/dedup4.png
+   :alt: dedup4.png
+   :align: center
+   :width: 1200px   
+
+Even if we didn't enable yet the feature, the Addon calculates an MD5 sum which is recorded in a KVstore collection, traces are logged about this:
+
+::
+
+   2021-06-25 20:33:05,394 DEBUG pid=5759 tid=MainThread file=cim_actions.py:message:243 | sendmodaction - signature="jira_dedup: The calculated md5 hash for this issue creation request (db05a46bd3a2e6ccb57906cd749db047) was not found in the backlog collection, a new issue will be created" action_name="jira_service_desk" search_name="Test JIRA - demo dedup" sid="scheduler__admin__search__RMD526ad4cfa87997743_at_1624653180_13" rid="0" app="search" user="admin" action_mode="saved"
+
+The MD5 sum is calculated against the entire JSON data.
+
+To access the KVstore collection containing these records, look at the nav menu "KVstore collections / JIRA Service Desk - Issues backlog collection".
+
+As every ticket corresponds to a new issue, the status is "created".
+
+**Now, let's modify a bit the alert, we will remove the time field from the description in JIRA, and enable the dedup:**
+
+.. image:: img/dedup/dedup5.png
+   :alt: dedup5.png
+   :align: center
+   :width: 800px   
+
+.. image:: img/dedup/dedup6.png
+   :alt: dedup6.png
+   :align: center
+   :width: 800px   
+
+As the content of the JSON is exactly the same (we removed the time from the description), the Addon will detect it and perform an update of first created issue, adding a comment, and updating the record in the KVstore lookup:
+
+::
+
+   2021-06-25 20:45:06,360 INFO pid=8814 tid=MainThread file=cim_actions.py:message:243 | sendmodaction - signature="jira_dedup: An issue with same md5 hash (60727858c049e599fdb68a3cd744a911) was found in the backlog collection, as jira_dedup is enabled a new comment will be added if the issue is active. (status is not resolved or any other done status), entry:={ "jira_md5" : "60727858c049e599fdb68a3cd744a911", "ctime" : "1624652826.254012", "mtime" : "1624652826.2540202", "status" : "created", "jira_id" : "10100", "jira_key" : "LAB-76", "jira_self" : "https://localhost:8081/rest/api/2/issue/10100", "_user" : "nobody", "_key" : "60727858c049e599fdb68a3cd744a911" }" action_name="jira_service_desk" search_name="Test JIRA - demo dedup" sid="scheduler__admin__search__RMD526ad4cfa87997743_at_1624653900_33" rid="0" app="search" user="admin" action_mode="saved" action_status="success"
+
+**The KVstore collection shows a status "updated" for the issue:**
+
+.. image:: img/dedup/dedup7.png
+   :alt: dedup7.png
+   :align: center
+   :width: 1200px   
+
+**The Addon UI shows as well that updates were performed rather than new issues creation:**
+
+.. image:: img/dedup/dedup8.png
+   :alt: dedup8.png
+   :align: center
+   :width: 1200px   
+
+**The issue itself in JIRA shows new comments added everytime the alert triggered for the same content:**
+
+.. image:: img/dedup/dedup9.png
+   :alt: dedup9.png
+   :align: center
+   :width: 1200px   
+
+**We can control the content of the comment added to the issue by creating a custom field in the resulting Splunk alert, let's modify the alert to include a new field used to control the comment:**
+
+::
+
+   | makeresults
+   | eval user="bar@splunk.com", action="failure", reason="Authentication failed"
+   | eval time=strftime(_time, "%c")
+   | eval jira_update_comment="The same condition was detected by Splunk for the user=" . user . " with action=" . action . " and reason=" . reason . ", therefore a new comment was adeed to the JIRA issue."
+
+**After the first issue creation, the next time the alert triggers, the Addon will use the content of the "jira_update_comment" field and use in the comment field in JIRA:**
+
+*Issue initially created:*
+
+.. image:: img/dedup/dedup10.png
+   :alt: dedup10.png
+   :align: center
+   :width: 1200px   
+
+*Issue updated with our comment field:*
+
+.. image:: img/dedup/dedup11.png
+   :alt: dedup11.png
+   :align: center
+   :width: 1200px   
+
+*Now, let's say this issue is taken in charge in JIRA, it status is changed to Done as we think the underneath condition is fixed:*
+
+.. image:: img/dedup/dedup12.png
+   :alt: dedup12.png
+   :align: center
+   :width: 1200px   
+
+This is where the second dedup option acts, thanks to this bi-directional integration, the Addon knows that the issue was fixed and decides to open a new issue.
+
+An INFO message is logegd explaining why the Addon took this decision:
+
+::
+
+   2021-06-26 09:42:06,237 INFO pid=13894 tid=MainThread file=cim_actions.py:message:243 | sendmodaction - signature="jira_dedup: The issue with key LAB-109 has the same MD5 hash: 60727858c049e599fdb68a3cd744a911 and its status was set to: "Done" (status category: "Done"), a new comment will not be added to an issue in this status, therefore a new issue will be created." action_name="jira_service_desk" search_name="Test JIRA - demo dedup" sid="scheduler__admin__search__RMD526ad4cfa87997743_at_1624700520_67" rid="0" app="search" user="admin" action_mode="saved" action_status="success"
+
+If you have custom statuses, you can update the list of statuses to be taken into account in the alert definition, the Addon accepts a comma separated list of statuses.
+
+**Now, let's say that we need to have more information added into our JIRA ticket, some will not change if the same alert triggers for the same condition, but others that we need such as the time field will always differ.**
+
+To achieve our goal, we will use the third option to "scope" what the Addon will use for the MD5 generation that is used to idenfity a duplicate issue, we will generate a specific field in the Splunk alert and recycle its value in the alert definition:
+
+::
+
+   | makeresults
+   | eval user="foo@splunk.com", action="failure", reason="Authentication failed"
+   | eval time=strftime(_time, "%c")
+   | eval jira_update_comment="The same condition was detected by Splunk for the user=" . user . " with action=" . action . " and reason=" . reason . ", therefore a new comment was adeed to the JIRA issue."
+   | eval dedup_condition = "user=" . user . "|action=" . action . "|reason=" . reason
+
+**Then, we modify our alert action to ask the Addon to use this token variable for the MD5 generation:**
+
+note: ``$result.dedup_condition$`` is how you will instruct Splunk to recycle dynamically the value of the field dedup_condition and pass it in the alert action.
+
+.. image:: img/dedup/dedup13.png
+   :alt: dedup13.png
+   :align: center
+   :width: 800px   
+
+We have now changed the way we idenfity what is a duplicate, and what is not, we can have fields which content will always change like our time field without breaking the dedup idenfitication:
+
+**When the alert triggers more than once, we can see a new comment added to our issue:**
+
+.. image:: img/dedup/dedup14.png
+   :alt: dedup14.png
+   :align: center
+   :width: 1200px   
+
+The same workflow applies again, if we fix the issue the Addon will detect it and create a new ticket, if something happens to be different in the condition for the dedup idenfitication, a new ticket will be created.
+
+Powerful, isn't?!
+
+*Additional information about the KVstore knowledge records:*
 
 - **key** is the internal uuid of the KVstore, as well the key will be equal to the md5 hash of the first occurrence of JIRA issue created (next occurrences will have a key uuid generated automatically with no link with the md5 of the issue)
 - **ctime** is the milliseconds epochtime that corresponds to the initial creation of the ticket, this value can not be changed once the record is created
@@ -178,11 +325,7 @@ The JIRA returned information are logged as well and contain the ticket referenc
 .. image:: img/jira_dedup3.png
    :alt: jira_dedup3.png
    :align: center
-
-**Additional options for the dedup feature:**
-
-- **JIRA dedup excluded status categories** lists all the JIRA status categories to be excluded, if the status category of the duplicated issue is in this list, a new ticket will be created instead of a comment added to resolved or closed ticket
-- **JIRA dedup content** by default the entire JIRA issue is used for the md5 calculation, which is used to identity a duplicate, this option allows granular control over the behavior
+   :width: 1200px   
 
 JIRA attachment
 ===============
@@ -212,6 +355,7 @@ JIRA attachment
 .. image:: img/attachment2.png
    :alt: attachment2.png
    :align: center
+   :width: 1200px   
 
 JIRA custom fields
 ==================
@@ -231,6 +375,7 @@ https://developer.atlassian.com/server/jira/platform/jira-rest-api-examples
 .. image:: img/userguide10.png
    :alt: userguide10.png
    :align: center
+   :width: 800px   
 
 **Depending on the format of the custom field, you need to use the proper syntax, the most common are:**
 
@@ -267,6 +412,7 @@ In some circumstances, the built-in parser rules may fail to recognize an unexpe
 .. image:: img/customfields_parsing.png
    :alt: img/customfields_parsing.png
    :align: center
+   :width: 800px   
 
 How to retrieve the IDs of the custom fields configured ?
 ---------------------------------------------------------
@@ -276,12 +422,14 @@ How to retrieve the IDs of the custom fields configured ?
 .. image:: img/userguide_getfields1.png
    :alt: userguide_getfields1.png
    :align: center
+   :width: 1200px   
 
 **This report achieves a REST call to JIRA to get the list of fields and their details per project and per type of issues, search for custom fields:**
 
 .. image:: img/userguide_getfields2.png
    :alt: userguide_getfields2.png
    :align: center
+   :width: 1200px   
 
 JIRA REST API wrapper
 =========================
@@ -298,6 +446,7 @@ By default, it uses method GET. Additional methods are supported DELETE, POST, P
 .. image:: img/jirarest_001.png
    :alt: jirarest_001.png
    :align: center
+   :width: 1200px   
 
 **The following report is provided to retrieve issues statistics per project and per status categories:**
 
@@ -308,6 +457,7 @@ By default, it uses method GET. Additional methods are supported DELETE, POST, P
 .. image:: img/jirarest_002.png
    :alt: jirarest_002.png
    :align: center
+   :width: 1200px   
 
 Indexing JIRA statistics for reporting purposes
 -----------------------------------------------
@@ -326,6 +476,7 @@ You can use the ``collect`` command to automatically index the report results in
 .. image:: img/jirarest_003.png
    :alt: jirarest_003.png
    :align: center
+   :width: 1200px   
 
 Indexing the results to a metric index
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -353,6 +504,7 @@ Each statistic is stored as a metric_name with a prefix "jira\_", while the proj
 .. image:: img/jirarest_004.png
    :alt: jirarest_004.png
    :align: center
+   :width: 1200px   
 
 
 Additional examples for JIRA API wrapper

@@ -25,6 +25,7 @@ Overview dashboard and Add-on logs
 .. image:: img/screenshot.png
    :alt: screenshot.png
    :align: center
+   :width: 1200px   
 
 The dashboard exposes the JIRA issue workflow and direct links to access the Add-on logs.
 

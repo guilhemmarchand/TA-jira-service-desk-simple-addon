@@ -1,6 +1,11 @@
 Configuration
 #############
 
+Configuring in Splunk Web
+=========================
+
+Usually, the configuration should be achieved via Splunk Web and the configuration UI:
+
 *Configuration page:*
 
 .. image:: img/config1.png
@@ -8,8 +13,82 @@ Configuration
    :align: center
    :width: 1200px   
 
+In a Search Head Cluster context, the generated configuration is automatically replicated across the members of the cluster.
+
+Configuring via REST API
+========================
+
+Alternatively, and this can be useful if for some reason you cannot access to the configuration UI (no end dead loop), the configuration can easily be achieved via REST calls to the Splunk API with curl.
+
+Configuring the JIRA instance via curl
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Assuming:
+
+- JIRA instance URL: ``myjira.mydomain.com:8443``
+- JIRA login username: ``admin``
+- JIRA password: ``ch@ngeM3``
+
+You would run the following curl command, either locally on a search head (in SHC, this will be replicated automatically), or remotely reaching out to a search head:
+
+::
+
+   curl -k -u admin:'ch@ngeM3' -X POST https://localhost:8089/servicesNS/nobody/TA-jira-service-desk-simple-addon/TA_jira_service_desk_simple_addon_settings/additional_parameters -d 'jira_url=myjira.mydomain.com:8443' -d 'jira_username=admin' -d 'jira_password=ch@ngeM3'
+
+You can verify your settings with a GET:
+
+::
+
+   curl -k -u admin:'ch@ngeM3' -X GET https://localhost:8089/servicesNS/nobody/TA-jira-service-desk-simple-addon/TA_jira_service_desk_simple_addon_settings/additional_parameters
+
+Enabling SSL validation
+^^^^^^^^^^^^^^^^^^^^^^^
+
+If you wish to enable the SSL certificate validation:
+
+::
+
+   curl -k -u admin:'ch@ngeM3' -X POST https://localhost:8089/servicesNS/nobody/TA-jira-service-desk-simple-addon/TA_jira_service_desk_simple_addon_settings/additional_parameters -d 'jira_ssl_certificate_validation=1'
+
+Enabling the passthrough mode
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To enable the passthrough mode:
+
+::
+
+   curl -k -u admin:'ch@ngeM3' -X POST https://localhost:8089/servicesNS/nobody/TA-jira-service-desk-simple-addon/TA_jira_service_desk_simple_addon_settings/additional_parameters -d 'jira_passthrough_mode=1'
+
+Setting the logging mode
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+To enable DEBUG logging:
+
+::
+
+   curl -k -u admin:'ch@ngeM3' -X POST https://localhost:8089/servicesNS/nobody/TA-jira-service-desk-simple-addon/TA_jira_service_desk_simple_addon_settings/logging -d 'loglevel=DEBUG'
+
+Enable and configure the proxy
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Example:
+
+::
+
+   curl -k -u admin:'ch@ngeM3' -X POST https://localhost:8089/servicesNS/nobody/TA-jira-service-desk-simple-addon/TA_jira_service_desk_simple_addon_settings/proxy -d 'proxy_enabled=1' -d 'proxy_url=myproxy.domain.com' -d 'proxy_port=8080'
+
+Additional options are:
+
+- proxy_username (string)
+- proxy_password (string)
+- proxy_rdns (boolean, 0 disabled, 1 enabled)
+- proxy_type (http/socks4/socks5)
+
+Configuration details
+=====================
+
 Configure your JIRA instance
-============================
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Enter the configuration page in the UI to setup the JIRA instance URL and credentials to be used.**
 
@@ -27,14 +106,14 @@ The Splunk Add-on for JIRA service desk implements basic authentication as descr
 Optionally you can request for SSL certificates validation during the REST call made to JIRA api during the issue creation, which will require the certificates of the instance to be fully valid.
 
 Logging level
-=============
+^^^^^^^^^^^^^
 
 The logging level can be defined within the configuration page too, the application makes a real usage of the debug mode and will generate many more messages in debug.
 
 In normal circumstances, the logging level should be defined to INFO, required logging level will automatically be used when any unexpected error is encountered.
 
 Validating the connectivity
-===========================
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **You can validate the connectivity very easily by opening any of the JIRA Get information reports, which achieve rest calls to the JIRA API to retrieve different information such as the list of projects available:**
 
@@ -79,7 +158,7 @@ You can as well very easily achieve a test with curl from the search head:
 Which, if successful, will return in a JSON format the list of projects available in your JIRA instance.
 
 Using the alert action for non admin users
-==========================================
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **For non admin users to be able to use the alert action, the following role is provided out of the box:**
 
@@ -94,7 +173,7 @@ This role needs to be inherited for the users, or your users to be member of thi
 - write permission to the resilient KVstore ``kv_jira_failures_replay``
 
 JIRA passthrough mode
-=====================
+^^^^^^^^^^^^^^^^^^^^^
 
 What is the JIRA passthrough?
 -----------------------------

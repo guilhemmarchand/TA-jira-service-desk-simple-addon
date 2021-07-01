@@ -4,6 +4,8 @@ Release notes
 Version 1.0.30
 ==============
 
+- Enhancement: proxy support for jirarest.py and jirafill.py #91 (Author: 8lex)
+
 Version 1.0.29
 ==============
 

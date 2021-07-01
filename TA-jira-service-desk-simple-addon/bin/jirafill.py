@@ -41,11 +41,12 @@ class GenerateTextCommand(GeneratingCommand):
         else:
             return '%s/rest/api/latest/%s' % (url, endpoint)
 
-    def get_jira_info(self, username, password, url, endpoint):
+    def get_jira_info(self, username, password, url, proxy_dict , endpoint):
         response = requests.get(
             url=self.jira_url(url, endpoint),
             auth=(username, password),
-            verify=False
+            verify=False,
+            proxies=proxy_dict
         )
         return response.json()
 
@@ -53,6 +54,8 @@ class GenerateTextCommand(GeneratingCommand):
         storage_passwords = self.service.storage_passwords
         conf_file = "ta_jira_service_desk_simple_addon_settings"
         confs = self.service.confs[str(conf_file)]
+        proxy_url = None
+        proxy_dict = None
         for stanza in confs:
             if stanza.name == "additional_parameters":
                 for key, value in stanza.content.items():
@@ -60,6 +63,24 @@ class GenerateTextCommand(GeneratingCommand):
                         username = value
                     if key == "jira_url":
                         url = value
+            if stanza.name == "proxy":
+                for key, value in stanza.content.items():
+                    if key == "proxy_enabled":
+                        proxy_enabled = value
+                    if key == "proxy_port":
+                        proxy_port = value
+                    if key == "proxy_rdns":
+                        proxy_rdns = value
+                    if key == "proxy_type":
+                        proxy_type = value
+                    if key == "proxy_url":
+                        proxy_url = value
+        if proxy_url:
+           proxy_dict= {
+              "http" : proxy_url + ":" + proxy_port,
+              "https" : proxy_url + ":" + proxy_port
+              }
+
 
         for credential in storage_passwords:
             if credential.content.get('username') == "additional_parameters``splunk_cred_sep``1" and credential.content.get('clear_password').find('jira_password') > 0:
@@ -67,22 +88,22 @@ class GenerateTextCommand(GeneratingCommand):
                 break
 
         if self.opt == 1:
-            for project in self.get_jira_info(username, password, url, 'project'):
+            for project in self.get_jira_info(username, password, url, proxy_dict ,'project'):
                 usercreds = {'_time': time.time(), 'key':project.get('key'), 'key_projects':project.get('key')+" - "+project.get('name')}
                 yield usercreds
 
         if self.opt == 2:
-            for issue in self.get_jira_info(username, password, url, 'issuetype'):
+            for issue in self.get_jira_info(username, password, url, proxy_dict , 'issuetype'):
                 usercreds = {'_time': time.time(), 'issues':issue.get('name')}
                 yield usercreds
 
         if self.opt == 3:
-            for priority in self.get_jira_info(username, password, url, 'priority'):
+            for priority in self.get_jira_info(username, password, url, proxy_dict , 'priority'):
                 usercreds = {'_time': time.time(), 'priorities':priority.get('name')}
                 yield usercreds
 
         if self.opt == 4:
-            for status in self.get_jira_info(username, password, url, 'status'):
+            for status in self.get_jira_info(username, password, url, proxy_dict , 'status'):
                 result = {'_time': time.time(), 'status':status.get('name'), 'statusCategory':status.get('statusCategory').get('name')}
                 yield result
 

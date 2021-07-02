@@ -130,6 +130,13 @@ fields_additional_parameters = [
         validator=None
     ),
     field.RestField(
+        'jira_ssl_certificate_path',
+        required=False,
+        encrypted=False,
+        default=0,
+        validator=None
+    ),
+    field.RestField(
         'jira_passthrough_mode',
         required=False,
         encrypted=False,

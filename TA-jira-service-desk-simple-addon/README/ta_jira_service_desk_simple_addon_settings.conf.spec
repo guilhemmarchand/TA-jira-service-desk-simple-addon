@@ -14,5 +14,6 @@ loglevel =
 jira_url = 
 jira_username = 
 jira_password = 
-jira_ssl_certificate_validation = 
+jira_ssl_certificate_validation =
+jira_ssl_certificate_path = 
 jira_passthrough_mode = 

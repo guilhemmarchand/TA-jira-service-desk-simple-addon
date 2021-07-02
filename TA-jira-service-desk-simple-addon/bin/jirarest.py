@@ -22,6 +22,7 @@ from splunklib.searchcommands import dispatch, GeneratingCommand, Configuration,
 
 import json
 import sys
+import os
 import splunk
 import time
 import requests
@@ -51,18 +52,24 @@ class GenerateTextCommand(GeneratingCommand):
         else:
             return '%s/rest/api/latest/%s' % (url, endpoint)
 
-    def get_jira_info(self, username, password, url, endpoint):
+    def get_jira_info(self, username, password, url, ssl_verify, proxy_dict, endpoint):
         response = requests.get(
             url=self.jira_url(url, endpoint),
             auth=(username, password),
-            verify=False
+            verify=ssl_verify,
+            proxies=proxy_dict
         )
         return response.json()
 
-    def generate(self):
+    def generate(self): 
         storage_passwords = self.service.storage_passwords
         conf_file = "ta_jira_service_desk_simple_addon_settings"
         confs = self.service.confs[str(conf_file)]
+        proxy_enabled = "0"
+        proxy_url = None
+        proxy_dict = None
+        ssl_verify = False
+        ssl_cert_path = None
         for stanza in confs:
             if stanza.name == "additional_parameters":
                 for key, value in stanza.content.items():
@@ -70,6 +77,34 @@ class GenerateTextCommand(GeneratingCommand):
                         username = value
                     if key == "jira_url":
                         url = value
+                    if key == "jira_ssl_certificate_validation":
+                        jira_ssl_certificate_validation = value
+                    if key == "jira_ssl_certificate_path":
+                        ssl_cert_path = value
+            if stanza.name == "proxy":
+               for key, value in stanza.content.items():
+                  if key == "proxy_enabled":
+                      proxy_enabled = value
+                  if key == "proxy_port":
+                      proxy_port = value
+                  if key == "proxy_rdns":
+                      proxy_rdns = value
+                  if key == "proxy_type":
+                      proxy_type = value
+                  if key == "proxy_url":
+                      proxy_url = value
+        if proxy_enabled == "1":
+           proxy_dict= {
+              "http" : proxy_url + ":" + proxy_port,
+              "https" : proxy_url + ":" + proxy_port
+              }
+        if jira_ssl_certificate_validation:
+            if jira_ssl_certificate_validation == '0':
+                ssl_verify = False
+            elif jira_ssl_certificate_validation == '1' and ssl_cert_path and os.path.isfile(ssl_cert_path):
+                ssl_verify = str(ssl_cert_path)
+            elif jira_ssl_certificate_validation == '1':
+                ssl_verify = True
 
         if not url.startswith("https://"):
             url = "https://" + str(url)
@@ -97,13 +132,15 @@ class GenerateTextCommand(GeneratingCommand):
                 jira_fields_response = requests.get(
                     url=str(url) + '/' + str(self.target),
                     auth=(username, password),
-                    verify=False
+                    verify=ssl_verify,
+                    proxies=proxy_dict
                 )
             elif jira_method == "DELETE":
                 jira_fields_response = requests.delete(
                     url=str(url) + '/' + str(self.target),
                     auth=(username, password),
-                    verify=False
+                    verify=ssl_verify,
+                    proxies=proxy_dict
                 )
             elif jira_method == "POST":
                 jira_fields_response = requests.post(
@@ -111,7 +148,8 @@ class GenerateTextCommand(GeneratingCommand):
                     url=str(url) + '/' + str(self.target),
                     data=json.dumps(body_dict).encode('utf-8'),
                     auth=(username, password),
-                    verify=False
+                    verify=ssl_verify,
+                    proxies=proxy_dict
                 )
             elif jira_method == "PUT":
                 jira_fields_response = requests.put(
@@ -119,7 +157,8 @@ class GenerateTextCommand(GeneratingCommand):
                     url=str(url) + '/' + str(self.target),
                     data=json.dumps(body_dict).encode('utf-8'),
                     auth=(username, password),
-                    verify=False
+                    verify=ssl_verify,
+                    proxies=proxy_dict
                 )
 
             # Attenpt to get a JSON response, and render in Splunk

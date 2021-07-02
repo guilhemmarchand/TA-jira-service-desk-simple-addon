@@ -50,6 +50,19 @@ If you wish to enable the SSL certificate validation:
 
    curl -k -u admin:'ch@ngeM3' -X POST https://localhost:8089/servicesNS/nobody/TA-jira-service-desk-simple-addon/TA_jira_service_desk_simple_addon_settings/additional_parameters -d 'jira_ssl_certificate_validation=1'
 
+*See "About SSL certificate validation"*
+
+Specifying the SSL certificate to be verifed
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you wish to enable the SSL certificate validation and you need to validate an internal certificate:
+
+::
+
+   curl -k -u admin:'ch@ngeM3' -X POST https://localhost:8089/servicesNS/nobody/TA-jira-service-desk-simple-addon/TA_jira_service_desk_simple_addon_settings/additional_parameters -d 'jira_ssl_certificate_path=/etc/ssl/server.pem'
+
+*See "About SSL certificate validation"*
+
 Enabling the passthrough mode
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -104,6 +117,21 @@ The Splunk Add-on for JIRA service desk implements basic authentication as descr
 - The secret token defined for this user
 
 Optionally you can request for SSL certificates validation during the REST call made to JIRA api during the issue creation, which will require the certificates of the instance to be fully valid.
+
+About SSL certificate validation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+SSL usage is enforced, this means you cannot access to a JIRA instance if it is not using SSL.
+
+**When using SSL, there might be different conditions:**
+
+- The SSL certificate is from an official third party certificate authority and it is valid, you normally can tick the SSL validation box which enforces the fact that we expect the certificate to be valid. If the certificate is not valid, we will not allow any action to be performed.
+
+- The SSL certificate is a self-signed certificate, you cannot verify the SSL certificate as it not a valid certificate, therefore the SSL validation box must not be ticked.
+
+- The SSL certificate is from an internal PKI, it is valid but not trusted by default by the operating system, you can use the SSL certificate path to specifiy the local path to the corresponding certificate bundle and tick the validation box. If the file exists, it will be used during the REST calls, otherwise the SSL validation will be ignored.
+
+For more information about validating an internal certificate: https://docs.python-requests.org/en/stable/user/advanced/#ssl-cert-verification
 
 Logging level
 ^^^^^^^^^^^^^

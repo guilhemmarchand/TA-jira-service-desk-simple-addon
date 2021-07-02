@@ -92,6 +92,19 @@ def process_event(helper, *args, **kwargs):
         ssl_certificate_validation = False
     helper.log_debug("ssl_certificate_validation={}".format(ssl_certificate_validation))
 
+    # SSL certificate path - customers using an internal PKI can use this option to verify the certificate bundle
+    # See: https://docs.python-requests.org/en/stable/user/advanced/#ssl-cert-verification
+    # If it is set, and the SSL verification is enabled, and the file exists, the file path replaces the boolean in the requests calls
+    jira_ssl_certificate_path = None
+    jira_ssl_certificate_path = helper.get_global_setting("jira_ssl_certificate_path")
+    if jira_ssl_certificate_path not in ["", "None", None]:
+        helper.log_debug("jira_ssl_certificate_path={}".format(jira_ssl_certificate_path))
+        # replace the ssl_certificate_validation boolean by the SSL certiticate path if the file exists
+        import os
+        if ssl_certificate_validation and jira_ssl_certificate_path:
+            if os.path.isfile(jira_ssl_certificate_path):
+                ssl_certificate_validation = str(jira_ssl_certificate_path)
+
     #call the query URL REST Endpoint and pass the url and API token
     content = query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_validation)  
 
@@ -142,9 +155,9 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
 
     # For Splunk Cloud vetting, the URL must start with https://
     if not jira_url.startswith("https://"):
-        jira_url = 'https://' + jira_url + '/rest/api/2/issue'
+        jira_url = 'https://' + jira_url + '/rest/api/latest/issue'
     else:
-        jira_url = jira_url + '/rest/api/2/issue'
+        jira_url = jira_url + '/rest/api/latest/issue'
 
     # get proxy configuration
     proxy_config = helper.get_proxy()

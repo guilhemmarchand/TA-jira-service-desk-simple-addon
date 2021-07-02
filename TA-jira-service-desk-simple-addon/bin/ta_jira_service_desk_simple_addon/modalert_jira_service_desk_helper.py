@@ -220,9 +220,9 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
 
     # For Splunk Cloud vetting, the URL must start with https://
     if not jira_url.startswith("https://"):
-        jira_url = 'https://' + jira_url + '/rest/api/2/issue'
+        jira_url = 'https://' + jira_url + '/rest/api/latest/issue'
     else:
-        jira_url = jira_url + '/rest/api/2/issue'
+        jira_url = jira_url + '/rest/api/latest/issue'
 
     # get proxy configuration
     proxy_config = helper.get_proxy()

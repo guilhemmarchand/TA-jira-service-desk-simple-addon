@@ -7,6 +7,7 @@ Version 1.0.30
 - Enhancement: Issue #91 - proxy support for jirarest.py and jirafill.py #91 (Author: 8lex)
 - Enhancement: Issue #92 - provide an SSL certificate path option for internal PKI certificate validation, honour SSL certificate validation in custom commands
 - Enhancement: Issue #93 - attachments are now supported when using a proxy
+- Enhancement: Issue #94 - Specify latest rather than static version 2 in API REST calls to allow last API version to be used when available
 
 Version 1.0.29
 ==============

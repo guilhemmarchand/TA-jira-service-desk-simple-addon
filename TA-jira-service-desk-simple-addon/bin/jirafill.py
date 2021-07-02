@@ -55,6 +55,7 @@ class GenerateTextCommand(GeneratingCommand):
         storage_passwords = self.service.storage_passwords
         conf_file = "ta_jira_service_desk_simple_addon_settings"
         confs = self.service.confs[str(conf_file)]
+        proxy_enabled = "0"
         proxy_url = None
         proxy_dict = None
         ssl_verify = False
@@ -82,7 +83,7 @@ class GenerateTextCommand(GeneratingCommand):
                         proxy_type = value
                     if key == "proxy_url":
                         proxy_url = value
-        if proxy_url:
+        if proxy_enabled == "1":
            proxy_dict= {
               "http" : proxy_url + ":" + proxy_port,
               "https" : proxy_url + ":" + proxy_port

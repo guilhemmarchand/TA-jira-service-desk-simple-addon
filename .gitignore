@@ -43,3 +43,8 @@ build/release-sha256.txt
 
 # Python pickle
 *.pickle
+
+# Docker testing env
+!Docker-env-testing/jira-volume/README.md
+Docker-env-testing/jira-volume/*
+

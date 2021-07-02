@@ -1,0 +1,65 @@
+version: '3.7'
+services:
+
+  # JIRA Software
+  # When the container is up, access using the SSL proxy (see bellow), this will bring you to an Atlasian page where you can enable a trial
+  # When the trial end of life is reached, make sure to stop the container, purge the content of the jira-volume directory, start the container again and re-process the configuration
+  jira:
+    image: atlassian/jira-software
+    hostname: jiraback
+    restart: unless-stopped
+    user: 'root'
+    environment:
+      - ATL_PROXY_NAME=localhost
+      - ATL_TOMCAT_SECURE=true
+      - ATL_PROXY_PORT=8081
+      - ATL_TOMCAT_SCHEME=https      
+    volumes:
+      - ./jira-volume:/var/atlassian/application-data/jira
+    ports:
+      - "8080:8080"
+
+  # Nginx acting as the SSL proxy to JIRA
+  # To configure the jira instance in Splunk, you will use nginx:8081 with SSL verify false
+  # Locally on the docker guest, you can access JIRA by: https://localhost:8081
+  nginx:
+    image: nginx:latest
+    restart: unless-stopped
+    hostname: jira
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx/jira.cert:/etc/nginx/cert/jira.cert
+      - ./nginx/jira.key:/etc/nginx/cert/jira.key
+    ports:
+      - 8081:8081
+      - 443:443
+
+  # To text and verify the TA capabilities with a proxy, in the TA configuration, you can configure the proxy with:
+  # Enable: Yes
+  # Host: proxy
+  # Port: 3128
+  proxy:
+    image: sameersbn/squid:3.5.27-2
+    restart: unless-stopped
+    hostname: proxy
+    volumes:
+      - ./squid/squid.conf:/etc/squid/squid.conf
+    ports:
+      - 3128:3128    
+
+  # Splunk
+  # Access Splunk on the Docker guest with: https://localhost:8000
+  splunk:
+    image: splunk/splunk:latest
+    hostname: splunk
+    ports:
+      - "8000:8000"
+      - "8089:8089"
+      - "9997:9997"
+      - "8088:8088"
+    environment:
+      SPLUNK_START_ARGS: "--accept-license"
+      SPLUNK_PASSWORD: "ch@ngeM3"
+    volumes:
+      - ./TA-config:/opt/splunk/etc/apps/TA-config
+      - ./TA-jira-unit-tests:/opt/splunk/etc/apps/TA-jira-unit-tests

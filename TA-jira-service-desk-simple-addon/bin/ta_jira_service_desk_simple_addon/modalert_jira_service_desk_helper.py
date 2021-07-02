@@ -198,6 +198,7 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
 
     import splunk.entity
     import splunk.Intersplunk
+    import splunklib.client as client
 
     # Retrieve the session_key
     helper.log_debug("Get session_key.")
@@ -210,6 +211,13 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
     splunkd_port = mydict['mgmtHostPort']
     helper.log_debug("splunkd_port={}".format(splunkd_port))
 
+    service = client.connect(
+        owner="nobody",
+        app="TA-jira-service-desk-simple-addon",
+        port=splunkd_port,
+        token=session_key
+    )    
+
     # For Splunk Cloud vetting, the URL must start with https://
     if not jira_url.startswith("https://"):
         jira_url = 'https://' + jira_url + '/rest/api/2/issue'
@@ -219,11 +227,35 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
     # get proxy configuration
     proxy_config = helper.get_proxy()
     proxy_url = proxy_config.get("proxy_url")
+    proxy_dict = None
     helper.log_debug("proxy_url={}".format(proxy_url))
 
     if proxy_url is not None:
         opt_use_proxy = True
         helper.log_debug("use_proxy set to True")
+
+        # to be used for attachment purposes with the requests module
+        conf_file = "ta_jira_service_desk_simple_addon_settings"
+        confs = service.confs[str(conf_file)]
+        for stanza in confs:
+            if stanza.name == "proxy":
+                for key, value in stanza.content.items():
+                    if key == "proxy_enabled":
+                        proxy_enabled = value
+                    if key == "proxy_port":
+                        proxy_port = value
+                    if key == "proxy_rdns":
+                        proxy_rdns = value
+                    if key == "proxy_type":
+                        proxy_type = value
+                    if key == "proxy_url":
+                        proxy_url = value
+        if proxy_url:
+           proxy_dict= {
+              "http" : proxy_url + ":" + proxy_port,
+              "https" : proxy_url + ":" + proxy_port
+              }
+
     else:
         opt_use_proxy = False
         helper.log_debug("use_proxy set to False")
@@ -730,16 +762,7 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
                                         'content={}'.format(response.text))
 
                     # Manage attachment
-
-                    # The http proxy mode is not currenly support for attachments, due to the lack of support of the
-                    # helper.send_http_request function for file uploading
-
-                    if jira_attachment not in ("disabled") and opt_use_proxy:
-                        helper.log_warn("The results attachment feature has been enabled, however this system uses"
-                                        " an http proxy to access JIRA API. Attachment feature when using proxy mode"
-                                        " is not currently supported and will have no effects.")
-
-                    elif jira_attachment in ("enabled_csv"):
+                    if jira_attachment in ("enabled_csv"):
 
                         import gzip
                         import tempfile
@@ -756,20 +779,12 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
 
                             jira_headers = {
                                 'Authorization': 'Basic %s' % b64_auth,
-                            #    'Content-Type': 'multipart/form-data',
                                 'X-Atlassian-Token': 'no-check'
-                            #    'Accept': 'application/json'
                             }
-
-                            #response = helper.send_http_request(jira_url, "POST", parameters="filename=\"test2.csv\"",
-                            #                                    payload=jira_attachment_token,
-                            #                                    headers=jira_headers, cookies=None,
-                            #                                    verify=ssl_certificate_validation,
-                            #                                    cert=None, timeout=120, use_proxy=opt_use_proxy)
 
                             files = {'file': open(results_csv.name, 'rb')}
                             response = requests.post(jira_url, files=files, headers=jira_headers,
-                                                    verify=ssl_certificate_validation)
+                                                    verify=ssl_certificate_validation, proxies=proxy_dict)
                             helper.log_debug("response status_code:={}".format(response.status_code))
 
                             if response.status_code not in (200, 201, 204):
@@ -819,20 +834,12 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
 
                             jira_headers = {
                                 'Authorization': 'Basic %s' % b64_auth,
-                            #    'Content-Type': 'multipart/form-data',
                                 'X-Atlassian-Token': 'no-check'
-                            #    'Accept': 'application/json'
                             }
-
-                            #response = helper.send_http_request(jira_url, "POST", parameters="filename=\"test2.csv\"",
-                            #                                    payload=jira_attachment_token,
-                            #                                    headers=jira_headers, cookies=None,
-                            #                                    verify=ssl_certificate_validation,
-                            #                                    cert=None, timeout=120, use_proxy=opt_use_proxy)
 
                             files = {'file': open(results_json.name, 'rb')}
                             response = requests.post(jira_url, files=files, headers=jira_headers,
-                                                    verify=ssl_certificate_validation)
+                                                    verify=ssl_certificate_validation, proxies=proxy_dict)
 
                             helper.log_debug("response status_code:={}".format(response.status_code))
 

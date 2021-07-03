@@ -47,4 +47,4 @@ build/release-sha256.txt
 # Docker testing env
 !Docker-env-testing/jira-volume/README.md
 Docker-env-testing/jira-volume/*
-
+Docker-env-testing/splunk-share-folder/*.[.spl, .tgz, .zip, .tar.gz]

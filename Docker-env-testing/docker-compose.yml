@@ -63,3 +63,4 @@ services:
     volumes:
       - ./TA-config:/opt/splunk/etc/apps/TA-config
       - ./TA-jira-unit-tests:/opt/splunk/etc/apps/TA-jira-unit-tests
+      - ./splunk-share-folder:/tmp/splunk-share-folder

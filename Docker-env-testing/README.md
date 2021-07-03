@@ -58,3 +58,9 @@ Proxy:
 - Proxy port: 3128
 
 And that's it! You have a fully functional environment to play with.
+
+## Exec into the Splunk container
+
+```
+docker-compose exec --user splunk splunk /bin/bash
+```

@@ -6,11 +6,8 @@ def process_event(helper, *args, **kwargs):
     helper.set_log_level(helper.log_level)
     helper.log_info("Alert action jira_service_desk started.")
 
-    name = helper.get_param("name")
-    helper.log_info("name={}".format(name))
-
+    # Get account
     account = helper.get_param("account")
-    helper.log_info("account={}".format(account))
 
     # Retrieve the session_key
     helper.log_debug("Get session_key.")
@@ -24,18 +21,17 @@ def process_event(helper, *args, **kwargs):
         app,
         realm="__REST_CREDENTIAL__#{}#configs/conf-ta_service_desk_simple_addon_account".format(app))
     splunk_ta_account_conf = account_cfm.get_conf("ta_service_desk_simple_addon_account").get_all()
-    helper.log_info("account={}".format(splunk_ta_account_conf))
 
     # account details
     account_details = splunk_ta_account_conf[account]
 
     # Get authentication type
     auth_type = account_details.get("auth_type", 0)
-    helper.log_info("auth_type={}".format(auth_type))
+    helper.log_debug("auth_type={}".format(auth_type))
 
     # Get username
     username = account_details.get("username", 0)
-    helper.log_info("username={}".format(username))
+    helper.log_debug("username={}".format(username))
     # by convention
     jira_username = username
 
@@ -47,11 +43,11 @@ def process_event(helper, *args, **kwargs):
 
     # Get jira_url
     jira_url = account_details.get("jira_url", 0)
-    helper.log_info("jira_url={}".format(jira_url))
+    helper.log_debug("jira_url={}".format(jira_url))
 
     # Get jira_ssl_certificate_validation
     jira_ssl_certificate_validation = int(account_details.get("jira_ssl_certificate_validation", 0))
-    helper.log_info("jira_ssl_certificate_validation={}".format(jira_ssl_certificate_validation))
+    helper.log_debug("jira_ssl_certificate_validation={}".format(jira_ssl_certificate_validation))
     ssl_certificate_validation = True
     if jira_ssl_certificate_validation == 0:
         ssl_certificate_validation = False
@@ -62,7 +58,7 @@ def process_event(helper, *args, **kwargs):
     # See: https://docs.python-requests.org/en/stable/user/advanced/#ssl-cert-verification
     # If it is set, and the SSL verification is enabled, and the file exists, the file path replaces the boolean in the requests calls    
     jira_ssl_certificate_path = account_details.get("jira_ssl_certificate_path", 0)
-    helper.log_info("jira_ssl_certificate_path={}".format(jira_ssl_certificate_path))
+    helper.log_debug("jira_ssl_certificate_path={}".format(jira_ssl_certificate_path))
     if jira_ssl_certificate_path not in ["", "None", None]:
         helper.log_debug("jira_ssl_certificate_path={}".format(jira_ssl_certificate_path))
         # replace the ssl_certificate_validation boolean by the SSL certiticate path if the file exists
@@ -73,7 +69,7 @@ def process_event(helper, *args, **kwargs):
 
     # Get Passthrough mode
     jira_passthrough_mode = helper.get_global_setting("jira_passthrough_mode")
-    helper.log_info("jira_passthrough_mode={}".format(jira_passthrough_mode))
+    helper.log_debug("jira_passthrough_mode={}".format(jira_passthrough_mode))
     # if an alert was created before this setting was introduced
     if jira_passthrough_mode in ["", "None", None]:
         jira_passthrough_mode = 0
@@ -88,7 +84,7 @@ def process_event(helper, *args, **kwargs):
     helper.log_debug("passthrough_mode={}".format(passthrough_mode))
 
     #call the query URL REST Endpoint and pass the url and API token
-    content = query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_validation, passthrough_mode)  
+    content = query_url(helper, account, jira_url, jira_username, jira_password, ssl_certificate_validation, passthrough_mode)  
 
     return 0
 
@@ -152,7 +148,7 @@ def reformat_customfields_minimal(i):
 
         return i
 
-def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_validation, passthrough_mode):
+def query_url(helper, account, jira_url, jira_username, jira_password, ssl_certificate_validation, passthrough_mode):
 
     import requests
     import json
@@ -202,7 +198,7 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
         helper.log_debug("use_proxy set to True")
 
         # to be used for attachment purposes with the requests module
-        conf_file = "ta_jira_service_desk_simple_addon_settings"
+        conf_file = "ta_service_desk_simple_addon_settings"
         confs = service.confs[str(conf_file)]
         for stanza in confs:
             if stanza.name == "proxy":
@@ -573,7 +569,7 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
                     'Authorization': 'Splunk %s' % session_key,
                     'Content-Type': 'application/json'}
 
-                record = '{"_key": "' + record_uuid + '", "ctime": "' + str(time.time()) \
+                record = '{"account": "' + str(account) + '", "_key": "' + record_uuid + '", "ctime": "' + str(time.time()) \
                          + '", "status": "temporary_failure", "no_attempts": "1", "data": "' + checkstr(data) + '"}'
                 response = requests.post(record_url, headers=headers, data=record,
                                          verify=False)
@@ -612,7 +608,7 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
                             'Authorization': 'Splunk %s' % session_key,
                             'Content-Type': 'application/json'}
 
-                        record = '{"_key": "' + record_uuid + '", "ctime": "' + str(time.time()) \
+                        record = '{"account": "' + str(account) + '", "_key": "' + record_uuid + '", "ctime": "' + str(time.time()) \
                                 + '", "status": "temporary_failure", "no_attempts": "1", "data": "' + checkstr(data) + '"}'
                         response = requests.post(record_url, headers=headers, data=record,
                                                 verify=False)
@@ -643,7 +639,7 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
                         'Authorization': 'Splunk %s' % session_key,
                         'Content-Type': 'application/json'}
 
-                    record = '{"_key": "' + record_uuid + '", "ctime": "' + str(time.time()) \
+                    record = '{"account": "' + str(account) + '", "_key": "' + record_uuid + '", "ctime": "' + str(time.time()) \
                             + '", "status": "temporary_failure", "no_attempts": "1", "data": "' + checkstr(data) + '"}'
                     response = requests.post(record_url, headers=headers, data=record,
                                             verify=False)
@@ -669,7 +665,7 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
                         'Authorization': 'Splunk %s' % session_key,
                         'Content-Type': 'application/json'}
 
-                    record = '{"jira_md5": "' + jira_backlog_md5 + '", "ctime": "' + jira_backlog_ctime + '", "mtime": "' \
+                    record = '{"account": "' + str(account) + '", "jira_md5": "' + jira_backlog_md5 + '", "ctime": "' + jira_backlog_ctime + '", "mtime": "' \
                             + str(time.time()) + '", "status": "updated", "jira_id": "' \
                             + jira_backlog_id + '", "jira_key": "' \
                             + jira_backlog_key + '", "jira_self": "' + jira_backlog_self + '"}'
@@ -705,14 +701,14 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
                         'Content-Type': 'application/json'}
 
                     if jira_dedup_md5_found:
-                        record = '{"jira_md5": "' + jira_md5sum + '", "ctime": "' \
+                        record = '{"account": "' + str(account) + '", "jira_md5": "' + jira_md5sum + '", "ctime": "' \
                                 + str(time.time()) + '", "mtime": "' \
                                 + str(time.time()) + '", "status": "created", "jira_id": "' \
                                 + jira_created_id + '", "jira_key": "' \
                                 + jira_created_key + '", "jira_self": "' + jira_created_self + '"}'
                         helper.log_debug('record={}'.format(record))
                     else:
-                        record = '{"_key": "' + jira_md5sum + '", "jira_md5": "' + jira_md5sum + '", "ctime": "' \
+                        record = '{"account": "' + str(account) + '", "_key": "' + jira_md5sum + '", "jira_md5": "' + jira_md5sum + '", "ctime": "' \
                                 + str(time.time()) + '", "mtime": "' + str(time.time()) \
                                 + '", "status": "created", "jira_id": "' + jira_created_id \
                                 + '", "jira_key": "' + jira_created_key + '", "jira_self": "' + jira_created_self + '"}'

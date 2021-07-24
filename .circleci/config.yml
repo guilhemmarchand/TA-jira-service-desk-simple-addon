@@ -60,9 +60,9 @@ jobs:
           paths:
             - "venv"
       - persist_to_workspace:
-          root: dist/
+          root: /home/circleci/dist
           paths:
-            - TA-jira-service-desk-simple-addon.tar.gz
+            - TA-jira-service-desk-simple-addon.tgz
       - store_artifacts:
           path: /tmp/appinspect_report.html
           destination: appinspect-report

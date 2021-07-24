@@ -4,11 +4,10 @@ def process_event(helper, *args, **kwargs):
 
     #REPLAY START    
     helper.set_log_level(helper.log_level)
-    helper.log_info("Alert action jira_service_desk_replay started.")
+    helper.log_debug("Alert action jira_service_desk_replay started.")
 
     # Get the JIRA account
     account = helper.get_param("account")
-    helper.log_info("account={}".format(account))
 
     # Retrieve the session_key
     helper.log_debug("Get session_key.")
@@ -22,18 +21,17 @@ def process_event(helper, *args, **kwargs):
         app,
         realm="__REST_CREDENTIAL__#{}#configs/conf-ta_service_desk_simple_addon_account".format(app))
     splunk_ta_account_conf = account_cfm.get_conf("ta_service_desk_simple_addon_account").get_all()
-    helper.log_info("account={}".format(splunk_ta_account_conf))
 
     # account details
     account_details = splunk_ta_account_conf[account]
 
     # Get authentication type
     auth_type = account_details.get("auth_type", 0)
-    helper.log_info("auth_type={}".format(auth_type))
+    helper.log_debug("auth_type={}".format(auth_type))
 
     # Get username
     username = account_details.get("username", 0)
-    helper.log_info("username={}".format(username))
+    helper.log_debug("username={}".format(username))
     # by convention
     jira_username = username
 
@@ -45,11 +43,11 @@ def process_event(helper, *args, **kwargs):
 
     # Get jira_url
     jira_url = account_details.get("jira_url", 0)
-    helper.log_info("jira_url={}".format(jira_url))
+    helper.log_debug("jira_url={}".format(jira_url))
 
     # Get jira_ssl_certificate_validation
     jira_ssl_certificate_validation = int(account_details.get("jira_ssl_certificate_validation", 0))
-    helper.log_info("jira_ssl_certificate_validation={}".format(jira_ssl_certificate_validation))
+    helper.log_debug("jira_ssl_certificate_validation={}".format(jira_ssl_certificate_validation))
     ssl_certificate_validation = True
     if jira_ssl_certificate_validation == 0:
         ssl_certificate_validation = False
@@ -60,7 +58,7 @@ def process_event(helper, *args, **kwargs):
     # See: https://docs.python-requests.org/en/stable/user/advanced/#ssl-cert-verification
     # If it is set, and the SSL verification is enabled, and the file exists, the file path replaces the boolean in the requests calls    
     jira_ssl_certificate_path = account_details.get("jira_ssl_certificate_path", 0)
-    helper.log_info("jira_ssl_certificate_path={}".format(jira_ssl_certificate_path))
+    helper.log_debug("jira_ssl_certificate_path={}".format(jira_ssl_certificate_path))
     if jira_ssl_certificate_path not in ["", "None", None]:
         helper.log_debug("jira_ssl_certificate_path={}".format(jira_ssl_certificate_path))
         # replace the ssl_certificate_validation boolean by the SSL certiticate path if the file exists
@@ -70,7 +68,7 @@ def process_event(helper, *args, **kwargs):
                 ssl_certificate_validation = str(jira_ssl_certificate_path)
 
     #call the query URL REST Endpoint and pass the url and API token
-    content = query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_validation)  
+    content = query_url(helper, account, jira_url, jira_username, jira_password, ssl_certificate_validation)  
 
     return 0
 
@@ -89,7 +87,7 @@ def checkstr(i):
         return i
 
 
-def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_validation):
+def query_url(helper, account, jira_url, jira_username, jira_password, ssl_certificate_validation):
 
     import requests
     import json
@@ -207,7 +205,7 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
                 ticket_no_attempts = int(ticket_no_attempts) + 1
 
                 # Update the KVstore record with the increment, and the new mtime
-                record = '{"_key": "' + str(ticket_uuid) + '", "ctime": "' + str(ticket_ctime) \
+                record = '{"account": "' + str(account) + '", "_key": "' + str(ticket_uuid) + '", "ctime": "' + str(ticket_ctime) \
                          + '", "mtime": "' + str(time.time()) \
                          + '", "status": "temporary_failure", "no_attempts": "' + str(ticket_no_attempts) \
                          + '", "data": "' + checkstr(ticket_data) + '"}'
@@ -261,7 +259,7 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
             ticket_no_attempts = int(ticket_no_attempts) + 1
 
             # Update the KVstore record with the increment, and the new mtime
-            record = '{"_key": "' + str(ticket_uuid) + '", "ctime": "' + str(ticket_ctime) + '", "mtime": "' + str(
+            record =  '{"account": "' + str(account) + '", "_key": "' + str(ticket_uuid) + '", "ctime": "' + str(ticket_ctime) + '", "mtime": "' + str(
                 time.time()) \
                      + '", "status": "temporary_failure", "no_attempts": "' + str(ticket_no_attempts) \
                      + '", "data": "' + checkstr(ticket_data) + '"}'
@@ -287,7 +285,7 @@ def query_url(helper, jira_url, jira_username, jira_password, ssl_certificate_va
             'Content-Type': 'application/json'}
 
         # Update the KVstore record with the increment, and the new mtime
-        record = '{"_key": "' + str(ticket_uuid) + '", "ctime": "' + str(ticket_ctime) + '", "mtime": "' \
+        record = '{"account": "' + str(account) +  + '", "_key": "' + str(ticket_uuid) + '", "ctime": "' + str(ticket_ctime) + '", "mtime": "' \
                  + str(time.time()) \
                  + '", "status": "permanent_failure", "no_attempts": "' + str(ticket_no_attempts) \
                  + '", "data": "' + checkstr(ticket_data) + '"}'

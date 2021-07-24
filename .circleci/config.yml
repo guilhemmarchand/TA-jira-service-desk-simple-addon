@@ -37,7 +37,7 @@ jobs:
           command: |
             git clone https://github.com/guilhemmarchand/splunk-appinspect-pipeline.git
       - restore_cache:
-          key: deps1-{{ .Branch }}-{{ checksum "TA-jira-service-desk-simple-addon/TA-jira-service-desk-simple-addon/default/app.conf" }}
+          key: deps1-{{ .Branch }}-{{ checksum "TA-jira-service-desk-simple-addon/package/default/app.conf" }}
       - run:
           name: run appinspect API app vetting
           command: |
@@ -56,7 +56,7 @@ jobs:
             cd $HOME
             splunk-appinspect-pipeline/appinspect_vetting.sh --username=$SPLUNK_BASE_LOGIN --password=$SPLUNK_BASE_PASSWD --app=$HOME/dist/{app}.tar.gz --included_tags=splunk_appinspect --excluded_tags=manual --excluded_checks=check_indexes_conf_does_not_exist --html_report_out=/tmp/appinspect_report.html
       - save_cache:
-          key: deps1-{{ .Branch }}-{{ checksum "TA-jira-service-desk-simple-addon/TA-jira-service-desk-simple-addon/default/app.conf" }}
+          key: deps1-{{ .Branch }}-{{ checksum "TA-jira-service-desk-simple-addon/package/default/app.conf" }}
           paths:
             - "venv"
       - persist_to_workspace:
@@ -74,11 +74,11 @@ jobs:
           password: $DOCKERHUB_TOKEN # or project environment variable reference
     steps:
       - attach_workspace:
-          at: ~/TA-jira-service-desk-simple-addon/dist/TA-jira-service-desk-simple-addon.tar.gz
+          at: ~/dist/TA-jira-service-desk-simple-addon.tar.gz
       - run:
           name: publish release on github
           command: |
-            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${CIRCLE_TAG} ~/TA-jira-service-desk-simple-addon/dist/TA-jira-service-desk-simple-addon.tar.gz
+            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${CIRCLE_TAG} ~/dist/TA-jira-service-desk-simple-addon.tar.gz
 workflows:
   version: 2.1
   validate-and-build:

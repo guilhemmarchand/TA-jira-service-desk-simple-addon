@@ -8,8 +8,8 @@ PWD=$(pwd)
 OUTDIR="output"
 
 app="TA-jira-service-desk-simple-addon"
-version=$(grep 'version =' ../package/default/app.conf | head -1 | awk '{print $3}' | sed 's/\.//g')
-ta_version=$(grep 'version =' ../package/default/app.conf | head -1)
+version=$(grep 'version =' ../version.txt | head -1 | awk '{print $3}' | sed 's/\.//g')
+ta_version=$(grep 'version =' ../version.txt | head -1)
 
 cd ../
 ucc-gen --ta-version "$ta_version"

@@ -1,6 +1,5 @@
-version: '3.7'
+version: "3.7"
 services:
-
   # JIRA Software
   # When the container is up, access using the SSL proxy (see bellow), this will bring you to an Atlasian page where you can enable a trial
   # When the trial end of life is reached, make sure to stop the container, purge the content of the jira-volume directory, start the container again and re-process the configuration
@@ -8,14 +7,14 @@ services:
     image: atlassian/jira-software
     hostname: jiraback
     restart: unless-stopped
-    user: 'root'
+    user: "root"
     environment:
       - ATL_PROXY_NAME=localhost
       - ATL_TOMCAT_SECURE=true
       - ATL_PROXY_PORT=8081
-      - ATL_TOMCAT_SCHEME=https      
+      - ATL_TOMCAT_SCHEME=https
     volumes:
-      - ./jira-volume:/var/atlassian/application-data/jira
+      - jiradata:/var/atlassian/application-data/jira
     ports:
       - "8080:8080"
 
@@ -45,7 +44,7 @@ services:
     volumes:
       - ./squid/squid.conf:/etc/squid/squid.conf
     ports:
-      - 3128:3128    
+      - 3128:3128
 
   # Splunk
   # Access Splunk on the Docker guest with: https://localhost:8000
@@ -64,3 +63,6 @@ services:
       - ./TA-config:/opt/splunk/etc/apps/TA-config
       - ./TA-jira-unit-tests:/opt/splunk/etc/apps/TA-jira-unit-tests
       - ./splunk-share-folder:/tmp/splunk-share-folder
+
+volumes:
+  jiradata: {}

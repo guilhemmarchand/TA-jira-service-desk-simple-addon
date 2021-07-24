@@ -1,23 +1,27 @@
 #!/usr/bin/env bash
-# set -x
+#set -x
 
 # for Mac OS X
 export COPYFILE_DISABLE=true
 
-PWD=`pwd`
-app="TA-jira-service-desk-simple-addon"
-cp -a ../${app} .
-version=`grep 'version =' ${app}/default/app.conf | head -1 | awk '{print $3}' | sed 's/\.//g'`
+PWD=$(pwd)
+OUTDIR="output"
 
+app="TA-jira-service-desk-simple-addon"
+version=$(grep 'version =' ../package/default/app.conf | head -1 | awk '{print $3}' | sed 's/\.//g')
+ta_version=$(grep 'version =' ../package/default/app.conf | head -1)
+
+cd ../
+ucc-gen --ta-version "$ta_version"
+
+cd "${OUTDIR}"
 find . -name "*.pyc" -type f -exec rm -f {} \;
 rm -f *.tgz
-tar -czf ${app}_${version}.tgz --exclude=${app}/local --exclude=${app}/metadata/local.meta --exclude=${app}/lookups/lookup_file_backups ${app}
+tar -czf ${app}_${version}.tgz ${app}
 echo "Wrote: ${app}_${version}.tgz"
 
 sha256=$(sha256sum ${app}_${version}.tgz)
-echo "Wrote: ${sha256}"
+echo "Wrote: ${sha256} in $OUTDIR"
 echo ${sha256} > release-sha256.txt
-
-rm -rf ${app}
 
 exit 0

@@ -1,0 +1,381 @@
+<form class="form-horizontal form-complex">
+  <style>
+    .help-block {
+      margin-left: 0px !important;
+    }
+  </style>
+
+  <div>
+    <br />
+    <h4>JIRA main fields:</h4>
+    <br />
+  </div>
+
+  <div class="control-group">
+    <label class="control-label" for="jira_service_desk_account"
+      >Select JIRA Account <span class="required">*</span>
+    </label>
+    <div class="controls">
+      <splunk-search-dropdown
+        name="action.jira_service_desk.param.account"
+        id="jira_service_desk_account"
+        value-field="title"
+        label-field="title"
+        search="| rest splunk_server=local /servicesNS/nobody/TA-jira-service-desk-simple-addon/ta_service_desk_simple_addon_account | dedup title"
+      />
+      <span class="help-block">
+        Select the JIRA account from the dropdown
+      </span>
+    </div>
+  </div>
+  <div class="control-group">
+    <label class="control-label" for="jira_service_desk_jira_project"
+      >Project <span class="required">* required</span>
+    </label>
+    <div class="controls">
+      <splunk-search-dropdown
+        name="action.jira_service_desk.param.jira_project"
+        id="jira_service_desk_jira_project"
+        search="| `get_jira_projects`"
+        label-field="key_projects"
+        value-field="key"
+        allow-custom-value
+      />
+    </div>
+  </div>
+  <div class="control-group">
+    <label class="control-label" for="jira_service_desk_jira_issue_type"
+      >Issue Type <span class="required">* required</span>
+    </label>
+    <div class="controls">
+      <splunk-search-dropdown
+        name="action.jira_service_desk.param.jira_issue_type"
+        id="jira_service_desk_jira_issue_type"
+        search="| `get_jira_issue_types`"
+        label-field="issues"
+        value-field="issues"
+        allow-custom-value
+      />
+    </div>
+  </div>
+  <div class="control-group">
+    <label class="control-label" for="jira_service_desk_jira_priority"
+      >Priority</label
+    >
+    <div class="controls">
+      <splunk-search-dropdown
+        name="action.jira_service_desk.param.jira_priority"
+        id="jira_service_desk_jira_priority"
+        search="| `get_jira_priorities`"
+        label-field="priorities"
+        value-field="priorities"
+        allow-custom-value
+      />
+    </div>
+  </div>
+  <div class="control-group">
+    <label class="control-label" for="jira_service_desk_jira_priority_dynamic"
+      >Dynamic Priority
+    </label>
+    <div class="controls">
+      <input
+        type="text"
+        name="action.jira_service_desk.param.jira_priority_dynamic"
+        id="jira_service_desk_priority_dynamic"
+      />
+      <span class="help-block">
+        <br />(Optional) Override priority using a field result, ex
+        $result.jira_priority$. (case sensitive, ticket creation will fail if
+        incorrectly defined)
+      </span>
+    </div>
+  </div>
+  <div class="control-group">
+    <label class="control-label" for="jira_service_desk_jira_summary"
+      >Summary <span class="required">* required</span>
+    </label>
+    <div class="controls">
+      <input
+        type="text"
+        name="action.jira_service_desk.param.jira_summary"
+        id="jira_service_desk_jira_summary"
+      />
+    </div>
+  </div>
+  <div class="control-group">
+    <label class="control-label" for="jira_service_desk_jira_description"
+      >Description
+    </label>
+    <div class="controls">
+      <textarea
+        name="action.jira_service_desk.param.jira_description"
+        id="jira_service_desk_jira_description"
+        style="height: 120px"
+      ></textarea>
+      <span class="help-block">
+        <br />(Required) Issue description, this text can include tokens based
+        on the search results (E.g: $result.src$)
+      </span>
+    </div>
+  </div>
+  <div class="control-group">
+    <label class="control-label" for="jira_service_desk_jira_assignee"
+      >Assignee
+    </label>
+    <div class="controls">
+      <input
+        type="text"
+        name="action.jira_service_desk.param.jira_assignee"
+        id="jira_service_desk_jira_assignee"
+      />
+      <span class="help-block"> <br />(Optional) Issue assignee. </span>
+    </div>
+  </div>
+  <div class="control-group">
+    <label class="control-label" for="jira_service_desk_jira_reporter"
+      >Reporter
+    </label>
+    <div class="controls">
+      <input
+        type="text"
+        name="action.jira_service_desk.param.jira_reporter"
+        id="jira_service_desk_jira_reporter"
+      />
+      <span class="help-block"> <br />(Optional) Issue reporter. </span>
+    </div>
+  </div>
+  <div class="control-group">
+    <label class="control-label" for="jira_service_desk_jira_labels"
+      >Labels
+    </label>
+    <div class="controls">
+      <input
+        type="text"
+        name="action.jira_service_desk.param.jira_labels"
+        id="jira_service_desk_jira_labels"
+      />
+      <span class="help-block">
+        <br />(Optional) Comma separated list of labels for the issue. (no space
+        characters after commas if specifying multiple labels)
+      </span>
+    </div>
+  </div>
+  <div class="control-group">
+    <label class="control-label" for="jira_service_desk_jira_components"
+      >Components names</label
+    >
+    <div class="controls">
+      <input
+        type="text"
+        name="action.jira_service_desk.param.jira_components"
+        id="jira_service_desk_jira_components"
+      />
+      <span class="help-block">
+        <br />(Optional) Comma separated list of component names for the issue.
+        (no space characters after commas if specifying multiple component
+        names)
+      </span>
+    </div>
+  </div>
+
+  <div class="control-group">
+    <label class="control-label" for="jira_service_desk_jira_dedup"
+      >JIRA dedup behaviour:
+    </label>
+    <div class="controls">
+      <select
+        name="action.jira_service_desk.param.jira_dedup"
+        id="jira_service_desk_jira_dedup"
+      >
+        <option value="disabled">Disabled</option>
+        <option value="enabled">Enabled</option>
+      </select>
+      <span class="help-block">
+        <br />When a new JIRA issue is created, the issue key reference and it's
+        unique md5 hash are stored in a KVstore.<br />
+        If the jira dedup option is enabled and shall the same issue creation be
+        requested again, a new comment will be added to the existing issue
+        rather than a new issue created.<br />
+        <br />
+        The md5 hash calculation guarantees the issue unique identification and
+        is performed against the entire issue content. (unless
+        jira_dedup_content is defined)
+        <br /><br />
+        To define the content of the comment (defaults to: New alert triggered:
+        &lt;issue summary&gt;), generate a field named "jira_update_comment" and
+        this will be used as the comment automatically.
+      </span>
+    </div>
+  </div>
+
+  <div class="control-group">
+    <label
+      class="control-label"
+      for="jira_service_desk_jira_dedup_exclude_statuses"
+      >JIRA dedup excluded status categories
+    </label>
+    <div class="controls">
+      <input
+        type="text"
+        name="action.jira_service_desk.param.jira_dedup_exclude_statuses"
+        id="jira_service_desk_jira_dedup_exclude_statuses"
+      />
+      <span class="help-block">
+        <br />Comma separated list of Jira status categories that will not be
+        considered for updates, if dedup is enabled and the duplicated issue
+        <br />status is in one of these categories, a new issue will be created
+        instead.
+      </span>
+    </div>
+  </div>
+
+  <div class="control-group">
+    <label class="control-label" for="jira_service_desk_jira_dedup_content"
+      >JIRA dedup content
+    </label>
+    <div class="controls">
+      <textarea
+        name="action.jira_service_desk.param.jira_dedup_content"
+        id="jira_service_desk_jira_dedup_content"
+        style="height: 60px"
+      ></textarea>
+      <span class="help-block">
+        <br />(Optional) The default behavior is to use the full issue content
+        to calculate the md5, by defining its content here you can limit its
+        scope. <br />If this field is unset, the entire issue data is used for
+        the deduping purposes.
+        <br />
+        <br />Example: <br />Splunk Alert: $name$, action=$result.action$,
+        user=$result.user$, message=$result.message$
+      </span>
+    </div>
+  </div>
+
+  <div class="control-group">
+    <label class="control-label" for="jira_service_desk_jira_attachment"
+      >Results attachment:
+    </label>
+    <div class="controls">
+      <select
+        name="action.jira_service_desk.param.jira_attachment"
+        id="jira_service_desk_jira_attachment"
+      >
+        <option value="disabled">Disabled</option>
+        <option value="enabled_csv">Enabled (CSV format)</option>
+        <option value="enabled_json">Enabled (JSON format)</option>
+      </select>
+      <span class="help-block">
+        <br />Enable this option to automatically attach the Splunk results as
+        an attachment to the JIRA issue.<br />
+        <br />
+        Attachments can be added in CSV or JSON format, however JIRA attachment
+        preview only supports csv format.<br />
+        <br />
+        Finally, the attachment action cannot be replayed by the resilient
+        store, shall the JIRA creation temporary fail, the attachment will not
+        be added if the issue creation had to be replayed due to a temporary
+        issue.
+        <br />
+      </span>
+    </div>
+  </div>
+
+  <div style="display: none" class="control-group">
+    <label class="control-label" for="jira_service_desk_jira_attachment_token"
+      >Attachment token</label
+    >
+    <div class="controls">
+      <input
+        type="text"
+        name="action.jira_service_desk.param.jira_attachment_token"
+        id="jira_service_desk_jira_attachment_token"
+      />
+      <span class="help-block"> <br />$results_file$ </span>
+    </div>
+  </div>
+
+  <div>
+    <br />
+    <h4>JIRA custom field: (optional)</h4>
+    <br />
+  </div>
+
+  <div class="control-group">
+    <label class="control-label" for="jira_service_desk_jira_customfields"
+      >custom fields structure
+    </label>
+    <div class="controls">
+      <textarea
+        name="action.jira_service_desk.param.jira_customfields"
+        id="jira_service_desk_jira_customfields"
+        style="height: 120px"
+      ></textarea>
+      <span class="help-block">
+        <br />
+        Optional, insert custom fields structure separated by commas, and its
+        values: (<a
+          href="https://developer.atlassian.com/server/jira/platform/jira-rest-api-examples"
+          >https://developer.atlassian.com/server/jira/platform/jira-rest-api-examples</a
+        >)
+        <br />
+        <br />
+        The structure of the custom field value definition depends on its type
+        which can be a text input, a dropdown or multiselect input, etc. See
+        JIRA rest API documentation.
+        <br />
+        <br />
+        In addition, you can use the custom field section to define non custom
+        fields, as for an example builtin fields that are not primary fields but
+        were made mandatory by JIRA admins. (ex: Components)
+        <br />
+        <br />
+        The backend will attempt to be protected against any special characters
+        that could impact the detection of the fields structure, but it is
+        recommended to avoid the usage of special characters in this content for
+        safety.
+        <br />
+        <br />
+        example:
+        <br />
+        <br />
+        "customfield_10048": "$result.singleline_text$",<br />
+        "customfield_10052": {"value": "$result.single_choice$"},<br />
+        "customfield_10053": [ {"value": "$result.multi_choice_grp1$" },
+        {"value": "$result.multi_choice_grp2" }]<br />
+        <br />
+      </span>
+    </div>
+  </div>
+
+  <div class="control-group">
+    <label
+      class="control-label"
+      for="jira_service_desk_jira_customfields_parsing"
+      >Custom fields parsing:
+    </label>
+    <div class="controls">
+      <select
+        name="action.jira_service_desk.param.jira_customfields_parsing"
+        id="jira_service_desk_jira_customfields_parsing"
+      >
+        <option value="enabled">Enabled</option>
+        <option value="disabled">Disabled</option>
+      </select>
+      <span class="help-block">
+        <br />This option performs parsing of the custom fields to prevent
+        failures that would be due to special characters in the content that
+        would need to be protected.<br />
+        <br />
+        However, in some cases where the sequence is not expected by the parsing
+        function, this can lead to a json parsing failure of the custom fields
+        structure.<br />
+        <br />
+        When the option is set to disabled, no parsing of the custom fields will
+        be performed and the alert needs to handle properly any special
+        character that would be need to be escaped, as a best practice you would
+        avoid any special characters.<br />
+        <br />
+      </span>
+    </div>
+  </div>
+</form>

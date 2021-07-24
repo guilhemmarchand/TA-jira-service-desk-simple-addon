@@ -44,8 +44,8 @@ jobs:
             cd TA-jira-service-desk-simple-addon
             OUTDIR="output"
             app="TA-jira-service-desk-simple-addon"
-            version=$(grep 'version =' package/default/app.conf | head -1 | awk '{print $3}' | sed 's/\.//g')
-            ta_version=$(grep 'version =' package/default/app.conf | head -1)
+            version=$(grep 'version =' version.txt | head -1 | awk '{print $3}' | sed 's/\.//g')
+            ta_version=$(grep 'version =' version.txt | head -1)
             ucc-gen --ta-version "$ta_version"
             cd "${OUTDIR}"
             find . -name "*.pyc" -type f -exec rm -f {} \;

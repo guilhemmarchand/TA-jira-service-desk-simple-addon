@@ -119,17 +119,17 @@
                             "type": "radio",
                             "label": "SSL certificate validation",
                             "field": "jira_ssl_certificate_validation",
-                            "defaultValue": "yes",
+                            "defaultValue": "1",
                             "help": "Verify that the SSL certificate is a valid certificate provided by a trusted entity",
                             "required": true,
                             "options": {
                                 "items": [
                                     {
-                                        "value": "yes",
+                                        "value": "1",
                                         "label": "Yes"
                                     },
                                     {
-                                        "value": "no",
+                                        "value": "0",
                                         "label": "No"
                                     }
                                 ],

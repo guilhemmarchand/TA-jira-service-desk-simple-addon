@@ -28,6 +28,7 @@ import requests
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 import json
+import base64
 
 @Configuration(distributed=False)
 class GenerateTextCommand(GeneratingCommand):
@@ -43,10 +44,10 @@ class GenerateTextCommand(GeneratingCommand):
         else:
             return '%s/rest/api/latest/%s' % (url, endpoint)
 
-    def get_jira_info(self, username, password, url, ssl_verify, proxy_dict , endpoint):
+    def get_jira_info(self, jira_headers, url, ssl_verify, proxy_dict , endpoint):
         response = requests.get(
             url=self.jira_url(url, endpoint),
-            auth=(username, password),
+            headers=jira_headers,
             verify=ssl_verify,
             proxies=proxy_dict
         )
@@ -149,6 +150,8 @@ class GenerateTextCommand(GeneratingCommand):
                                 jira_ssl_certificate_path = value
                             if key == 'auth_type':
                                 auth_type = value
+                            if key == 'jira_auth_mode':
+                                jira_auth_mode = value
                             if key == 'username':
                                 username = value
 
@@ -163,6 +166,20 @@ class GenerateTextCommand(GeneratingCommand):
                         password = json.loads(credential.content.get('clear_password')).get('password')
                         break
 
+                # Build the authentication header for JIRA
+                if str(jira_auth_mode) == 'basic':
+                    authorization = username + ':' + password
+                    b64_auth = base64.b64encode(authorization.encode()).decode()
+                    jira_headers = {
+                        'Authorization': 'Basic %s' % b64_auth,
+                        'Content-Type': 'application/json',
+                    }
+                elif str(jira_auth_mode) == 'pat':
+                    jira_headers = {
+                        'Authorization': 'Bearer %s' % str(password),
+                        'Content-Type': 'application/json',
+                    }
+
                 if jira_ssl_certificate_validation:
                     if jira_ssl_certificate_validation == '0':
                         ssl_verify = False
@@ -172,22 +189,22 @@ class GenerateTextCommand(GeneratingCommand):
                         ssl_verify = True
 
                 if self.opt == 1:
-                    for project in self.get_jira_info(username, password, jira_url, ssl_verify, proxy_dict ,'project'):
+                    for project in self.get_jira_info(jira_headers, jira_url, ssl_verify, proxy_dict ,'project'):
                         usercreds = {'_time': time.time(), 'account': str(account), 'key':project.get('key'), 'key_projects':project.get('key')+" - "+project.get('name')}
                         yield usercreds
 
                 if self.opt == 2:
-                    for issue in self.get_jira_info(username, password, jira_url, ssl_verify, proxy_dict , 'issuetype'):
+                    for issue in self.get_jira_info(jira_headers, jira_url, ssl_verify, proxy_dict , 'issuetype'):
                         usercreds = {'_time': time.time(), 'account': str(account), 'issues':issue.get('name')}
                         yield usercreds
 
                 if self.opt == 3:
-                    for priority in self.get_jira_info(username, password, jira_url, ssl_verify, proxy_dict , 'priority'):
+                    for priority in self.get_jira_info(jira_headers, jira_url, ssl_verify, proxy_dict , 'priority'):
                         usercreds = {'_time': time.time(), 'account': str(account), 'priorities':priority.get('name')}
                         yield usercreds
 
                 if self.opt == 4:
-                    for status in self.get_jira_info(username, password, jira_url, ssl_verify, proxy_dict , 'status'):
+                    for status in self.get_jira_info(jira_headers, jira_url, ssl_verify, proxy_dict , 'status'):
                         result = {'_time': time.time(), 'account': str(account), 'status':status.get('name'), 'statusCategory':status.get('statusCategory').get('name')}
                         yield result
 
@@ -215,6 +232,8 @@ class GenerateTextCommand(GeneratingCommand):
                             jira_ssl_certificate_path = value
                         if key == 'auth_type':
                             auth_type = value
+                        if key == 'jira_auth_mode':
+                            jira_auth_mode = value
                         if key == 'username':
                             username = value
 
@@ -235,6 +254,20 @@ class GenerateTextCommand(GeneratingCommand):
                         password = json.loads(credential.content.get('clear_password')).get('password')
                         break
 
+            # Build the authentication header for JIRA
+            if str(jira_auth_mode) == 'basic':
+                authorization = username + ':' + password
+                b64_auth = base64.b64encode(authorization.encode()).decode()
+                jira_headers = {
+                    'Authorization': 'Basic %s' % b64_auth,
+                    'Content-Type': 'application/json',
+                }
+            elif str(jira_auth_mode) == 'pat':
+                jira_headers = {
+                    'Authorization': 'Bearer %s' % str(password),
+                    'Content-Type': 'application/json',
+                }
+
             if jira_ssl_certificate_validation:
                 if jira_ssl_certificate_validation == '0':
                     ssl_verify = False
@@ -244,22 +277,22 @@ class GenerateTextCommand(GeneratingCommand):
                     ssl_verify = True
 
             if self.opt == 1:
-                for project in self.get_jira_info(username, password, jira_url, ssl_verify, proxy_dict ,'project'):
+                for project in self.get_jira_info(jira_headers, jira_url, ssl_verify, proxy_dict ,'project'):
                     usercreds = {'_time': time.time(), 'account': str(self.account), 'key':project.get('key'), 'key_projects':project.get('key')+" - "+project.get('name')}
                     yield usercreds
 
             if self.opt == 2:
-                for issue in self.get_jira_info(username, password, jira_url, ssl_verify, proxy_dict , 'issuetype'):
+                for issue in self.get_jira_info(jira_headers, jira_url, ssl_verify, proxy_dict , 'issuetype'):
                     usercreds = {'_time': time.time(), 'account': str(self.account), 'issues':issue.get('name')}
                     yield usercreds
 
             if self.opt == 3:
-                for priority in self.get_jira_info(username, password, jira_url, ssl_verify, proxy_dict , 'priority'):
+                for priority in self.get_jira_info(jira_headers, jira_url, ssl_verify, proxy_dict , 'priority'):
                     usercreds = {'_time': time.time(), 'account': str(self.account), 'priorities':priority.get('name')}
                     yield usercreds
 
             if self.opt == 4:
-                for status in self.get_jira_info(username, password, jira_url, ssl_verify, proxy_dict , 'status'):
+                for status in self.get_jira_info(jira_headers, jira_url, ssl_verify, proxy_dict , 'status'):
                     result = {'_time': time.time(), 'account': str(self.account), 'status':status.get('name'), 'statusCategory':status.get('statusCategory').get('name')}
                     yield result
 

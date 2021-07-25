@@ -67,15 +67,15 @@
                                 "basic": [
                                     {
                                         "oauth_field": "username",
-                                        "label": "Username",
-                                        "help": "Enter the username for this account.",
+                                        "label": "Username or PAT ID",
+                                        "help": "Enter the username for this account, or the Personal Access Token ID.",
                                         "field": "username"
                                     },
                                     {
                                         "oauth_field": "password",
-                                        "label": "Password",
+                                        "label": "Password or PAT",
                                         "encrypted": true,
-                                        "help": "Enter the password for this account.",
+                                        "help": "Enter the password for this account, or the Personal Access Token.",
                                         "field": "password"
                                     }
                                 ],
@@ -117,6 +117,36 @@
                         },
                         {
                             "type": "radio",
+                            "label": "Authentication method",
+                            "field": "jira_auth_mode",
+                            "defaultValue": "basic",
+                            "help": "Use basic authentication with combo username/password or use Personal Access Token (PAT)",
+                            "required": true,
+                            "options": {
+                                "items": [
+                                    {
+                                        "value": "basic",
+                                        "label": "Basic"
+                                    },
+                                    {
+                                        "value": "pat",
+                                        "label": "Personal Access Token"
+                                    }
+                                ],
+                                "display": true
+                            }
+                        },
+                        {
+                            "field": "using_pat_help_link",
+                            "label": " ",
+                            "type": "helpLink",
+                            "options": {
+                                "text": "Using Personal Access Tokens on Atlassian support",
+                                "link": "https://confluence.atlassian.com/enterprise/using-personal-access-tokens-1026032365.html"
+                            }
+                        },
+                        {
+                            "type": "radio",
                             "label": "SSL certificate validation",
                             "field": "jira_ssl_certificate_validation",
                             "defaultValue": "1",
@@ -152,7 +182,7 @@
                         },
                         {
                             "field": "ssl_help_link",
-                            "label": " ",
+                            "label": "  ",
                             "type": "helpLink",
                             "options": {
                                 "text": "SSL configuration documentation",

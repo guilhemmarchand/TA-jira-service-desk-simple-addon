@@ -41,6 +41,10 @@ def process_event(helper, *args, **kwargs):
     # by convention
     jira_password = password
 
+    # Get authentication mode
+    jira_auth_mode = account_details.get("jira_auth_mode", 0)
+    helper.log_debug("jira_auth_mode={}".format(jira_auth_mode))
+
     # Get jira_url
     jira_url = account_details.get("jira_url", 0)
     helper.log_debug("jira_url={}".format(jira_url))
@@ -68,7 +72,7 @@ def process_event(helper, *args, **kwargs):
                 ssl_certificate_validation = str(jira_ssl_certificate_path)
 
     #call the query URL REST Endpoint and pass the url and API token
-    content = query_url(helper, account, jira_url, jira_username, jira_password, ssl_certificate_validation)  
+    content = query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_password, ssl_certificate_validation)  
 
     return 0
 
@@ -87,7 +91,7 @@ def checkstr(i):
         return i
 
 
-def query_url(helper, account, jira_url, jira_username, jira_password, ssl_certificate_validation):
+def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_password, ssl_certificate_validation):
 
     import requests
     import json
@@ -160,13 +164,29 @@ def query_url(helper, account, jira_url, jira_username, jira_password, ssl_certi
     # log json in debug mode
     helper.log_debug("json data for final rest call:={}".format(ticket_data))
 
-    # Build the header including basic auth
-    authorization = jira_username + ':' + jira_password
-    b64_auth = base64.b64encode(authorization.encode()).decode()
-    headers = {
-        'Authorization': 'Basic %s' % b64_auth,
-        'Content-Type': 'application/json',
-    }
+    # Build the authentication header for JIRA
+    if str(jira_auth_mode) == 'basic':
+        authorization = jira_username + ':' + jira_password
+        b64_auth = base64.b64encode(authorization.encode()).decode()
+        jira_headers = {
+            'Authorization': 'Basic %s' % b64_auth,
+            'Content-Type': 'application/json',
+        }
+        # required when uploading attachments
+        jira_headers_attachment = {
+            'Authorization': 'Basic %s' % b64_auth,
+            'X-Atlassian-Token': 'no-check'
+        }
+    elif str(jira_auth_mode) == 'pat':
+        jira_headers = {
+            'Authorization': 'Bearer %s' % str(jira_password),
+            'Content-Type': 'application/json',
+        }
+        # required when uploading attachments
+        jira_headers_attachment = {
+            'Authorization': 'Bearer %s' % str(jira_password),
+            'X-Atlassian-Token': 'no-check'
+        }
 
     helper.log_debug("ticket_no_attempts={}".format(ticket_no_attempts))
     helper.log_debug("ticket_max_attempts={}".format(ticket_max_attempts))
@@ -180,7 +200,7 @@ def query_url(helper, account, jira_url, jira_username, jira_password, ssl_certi
         try:
 
             response = helper.send_http_request(jira_url, "POST", parameters=None, payload=ticket_data,
-                                                headers=headers, cookies=None, verify=ssl_certificate_validation,
+                                                headers=jira_headers, cookies=None, verify=ssl_certificate_validation,
                                                 cert=None, timeout=120, use_proxy=opt_use_proxy)
             helper.log_debug("response status_code:={}".format(response.status_code))
 

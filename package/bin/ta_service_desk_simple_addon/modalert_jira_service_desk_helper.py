@@ -41,6 +41,10 @@ def process_event(helper, *args, **kwargs):
     # by convention
     jira_password = password
 
+    # Get authentication mode
+    jira_auth_mode = account_details.get("jira_auth_mode", 0)
+    helper.log_debug("jira_auth_mode={}".format(jira_auth_mode))
+
     # Get jira_url
     jira_url = account_details.get("jira_url", 0)
     helper.log_debug("jira_url={}".format(jira_url))
@@ -84,7 +88,7 @@ def process_event(helper, *args, **kwargs):
     helper.log_debug("passthrough_mode={}".format(passthrough_mode))
 
     #call the query URL REST Endpoint and pass the url and API token
-    content = query_url(helper, account, jira_url, jira_username, jira_password, ssl_certificate_validation, passthrough_mode)  
+    content = query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_password, ssl_certificate_validation, passthrough_mode)  
 
     return 0
 
@@ -148,7 +152,7 @@ def reformat_customfields_minimal(i):
 
         return i
 
-def query_url(helper, account, jira_url, jira_username, jira_password, ssl_certificate_validation, passthrough_mode):
+def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_password, ssl_certificate_validation, passthrough_mode):
 
     import requests
     import json
@@ -310,13 +314,29 @@ def query_url(helper, account, jira_url, jira_username, jira_password, ssl_certi
         jira_customfields_parsing = "enabled"
     helper.log_debug("jira_customfields_parsing:={}".format(jira_customfields_parsing))
 
-    # Build the header including basic auth
-    authorization = jira_username + ':' + jira_password
-    b64_auth = base64.b64encode(authorization.encode()).decode()
-    jira_headers = {
-        'Authorization': 'Basic %s' % b64_auth,
-        'Content-Type': 'application/json',
-    }
+    # Build the authentication header for JIRA
+    if str(jira_auth_mode) == 'basic':
+        authorization = jira_username + ':' + jira_password
+        b64_auth = base64.b64encode(authorization.encode()).decode()
+        jira_headers = {
+            'Authorization': 'Basic %s' % b64_auth,
+            'Content-Type': 'application/json',
+        }
+        # required when uploading attachments
+        jira_headers_attachment = {
+            'Authorization': 'Basic %s' % b64_auth,
+            'X-Atlassian-Token': 'no-check'
+        }
+    elif str(jira_auth_mode) == 'pat':
+        jira_headers = {
+            'Authorization': 'Bearer %s' % str(jira_password),
+            'Content-Type': 'application/json',
+        }
+        # required when uploading attachments
+        jira_headers_attachment = {
+            'Authorization': 'Bearer %s' % str(jira_password),
+            'X-Atlassian-Token': 'no-check'
+        }
 
     # Loop within events and proceed
     events = helper.get_events()
@@ -772,13 +792,8 @@ def query_url(helper, account, jira_url, jira_username, jira_password, ssl_certi
 
                         try:
 
-                            jira_headers = {
-                                'Authorization': 'Basic %s' % b64_auth,
-                                'X-Atlassian-Token': 'no-check'
-                            }
-
                             files = {'file': open(results_csv.name, 'rb')}
-                            response = requests.post(jira_url, files=files, headers=jira_headers,
+                            response = requests.post(jira_url, files=files, headers=jira_headers_attachment,
                                                     verify=ssl_certificate_validation, proxies=proxy_dict)
                             helper.log_debug("response status_code:={}".format(response.status_code))
 
@@ -827,13 +842,8 @@ def query_url(helper, account, jira_url, jira_username, jira_password, ssl_certi
 
                         try:
 
-                            jira_headers = {
-                                'Authorization': 'Basic %s' % b64_auth,
-                                'X-Atlassian-Token': 'no-check'
-                            }
-
                             files = {'file': open(results_json.name, 'rb')}
-                            response = requests.post(jira_url, files=files, headers=jira_headers,
+                            response = requests.post(jira_url, files=files, headers=jira_headers_attachment,
                                                     verify=ssl_certificate_validation, proxies=proxy_dict)
 
                             helper.log_debug("response status_code:={}".format(response.status_code))

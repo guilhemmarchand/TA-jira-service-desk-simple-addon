@@ -152,9 +152,7 @@ def query_url(helper, account, jira_url, jira_username, jira_password, ssl_certi
 
     import requests
     import json
-    import os
     import uuid
-    import sys
     import time
     import base64
     import hashlib
@@ -179,7 +177,8 @@ def query_url(helper, account, jira_url, jira_username, jira_password, ssl_certi
         app="TA-jira-service-desk-simple-addon",
         port=splunkd_port,
         token=session_key
-    )    
+    )
+    storage_passwords = service.storage_passwords
 
     # For Splunk Cloud vetting, the URL must start with https://
     if not jira_url.startswith("https://"):
@@ -188,9 +187,12 @@ def query_url(helper, account, jira_url, jira_username, jira_password, ssl_certi
         jira_url = jira_url + '/rest/api/latest/issue'
 
     # get proxy configuration
+    # note: the proxy dict is used with requests calls when attachment is enabled
     proxy_config = helper.get_proxy()
+    proxy_enabled = "0"
     proxy_url = proxy_config.get("proxy_url")
     proxy_dict = None
+    proxy_username = None
     helper.log_debug("proxy_url={}".format(proxy_url))
 
     if proxy_url is not None:
@@ -213,11 +215,39 @@ def query_url(helper, account, jira_url, jira_username, jira_password, ssl_certi
                         proxy_type = value
                     if key == "proxy_url":
                         proxy_url = value
-        if proxy_url:
-           proxy_dict= {
-              "http" : proxy_url + ":" + proxy_port,
-              "https" : proxy_url + ":" + proxy_port
-              }
+                    if key == "proxy_username":
+                        proxy_username = value
+
+        if proxy_enabled == "1":
+
+            # get proxy password
+            if proxy_username:
+                proxy_password = None
+
+                # get proxy password, if any
+                credential_realm = '__REST_CREDENTIAL__#TA-jira-service-desk-simple-addon#configs/conf-ta_service_desk_simple_addon_settings'
+                for credential in storage_passwords:
+                    if credential.content.get('realm') == str(credential_realm) \
+                        and credential.content.get('clear_password').find('proxy_password') > 0:
+                        proxy_password = json.loads(credential.content.get('clear_password')).get('proxy_password')
+                        break
+
+                if proxy_type == 'http':
+                    proxy_dict= {
+                        "http" : "http://" + proxy_username + ":" + proxy_password + "@" + proxy_url + ":" + proxy_port,
+                        "https" : "https://" + proxy_username + ":" + proxy_password + "@" + proxy_url + ":" + proxy_port
+                        }
+                else:
+                    proxy_dict= {
+                        "http" : str(proxy_type) + "://" + proxy_username + ":" + proxy_password + "@" + proxy_url + ":" + proxy_port,
+                        "https" : str(proxy_type) + "://" + proxy_username + ":" + proxy_password + "@" + proxy_url + ":" + proxy_port
+                        }
+
+            else:
+                proxy_dict= {
+                    "http" : proxy_url + ":" + proxy_port,
+                    "https" : proxy_url + ":" + proxy_port
+                    }
 
     else:
         opt_use_proxy = False
@@ -236,9 +266,11 @@ def query_url(helper, account, jira_url, jira_username, jira_password, ssl_certi
     jira_priority = checkstr(jira_priority)
     helper.log_debug("jira_priority={}".format(jira_priority))
 
+    jira_dedup_enabled = False
     jira_dedup = helper.get_param("jira_dedup")
-    jira_dedup = checkstr(jira_dedup)
-    helper.log_debug("jira_dedup={}".format(jira_dedup))
+    if jira_dedup == 'enabled':
+        jira_dedup_enabled = True
+    helper.log_debug("jira_dedup_enabled={}".format(jira_dedup_enabled))
 
     jira_dedup_exclude_statuses = helper.get_param("jira_dedup_exclude_statuses")
     if jira_dedup_exclude_statuses in ["", "None", None]:
@@ -397,9 +429,9 @@ def query_url(helper, account, jira_url, jira_username, jira_password, ssl_certi
         helper.log_debug("json data for final rest call:={}".format(data))
 
         # Manage jira deduplication enablement
-        if jira_dedup in ["", "None", None]:
-            jira_dedup = False
-        helper.log_debug("jira_dedup:={}".format(jira_dedup))
+        #if jira_dedup in ["", "None", None]:
+        #    jira_dedup = False
+       # helper.log_debug("jira_dedup:={}".format(jira_dedup))
 
         # Initiate default behaviour
         jira_dedup_md5_found = False
@@ -419,7 +451,7 @@ def query_url(helper, account, jira_url, jira_username, jira_password, ssl_certi
         helper.log_debug("response status_code:={}".format(response.status_code))
 
         if response.status_code == 200:
-            if jira_dedup:
+            if jira_dedup_enabled:
                 helper.log_info(
                     'jira_dedup: An issue with same md5 hash (' + str(jira_md5sum) + ') was found in the backlog '
                     'collection, as jira_dedup is enabled a new comment '
@@ -478,7 +510,7 @@ def query_url(helper, account, jira_url, jira_username, jira_password, ssl_certi
                     jira_issue_status = 'Unknown'
 
                 # If dedup is enabled and the issue status is not closed
-                if jira_dedup in ("enabled") and jira_issue_status_category not in jira_dedup_exclude_statuses:
+                if jira_dedup_enabled and jira_issue_status_category not in jira_dedup_exclude_statuses:
                     
                     # Log a message
                     helper.log_info(
@@ -505,7 +537,7 @@ def query_url(helper, account, jira_url, jira_username, jira_password, ssl_certi
                         data = jira_update_comment
 
                 # dedup is enabled but the issue was resolved, closed or cancelled
-                elif jira_dedup in ("enabled") and jira_issue_status_category in jira_dedup_exclude_statuses:
+                elif jira_dedup_enabled and jira_issue_status_category in jira_dedup_exclude_statuses:
                     helper.log_info(
                     'jira_dedup: The issue with key ' + str(jira_backlog_key) + ' has the same MD5 hash: '
                     + jira_backlog_md5

@@ -37,12 +37,16 @@ services:
   # Enable: Yes
   # Host: proxy
   # Port: 3128
+  # User: proxy_user
+  # Password: ch@ngeM3
+  # Auth see: https://veesp.com/blog/squid-authentication/
   proxy:
     image: sameersbn/squid:3.5.27-2
     restart: unless-stopped
     hostname: proxy
     volumes:
       - ./squid/squid.conf:/etc/squid/squid.conf
+      - ./squid/squidusers:/etc/squid/squidusers
     ports:
       - 3128:3128
 

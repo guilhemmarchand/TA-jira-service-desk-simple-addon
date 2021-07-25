@@ -1,7 +1,20 @@
 <dashboard theme="dark">
   <label>Overview - JIRA Projects</label>
+  <fieldset submitButton="false">
+    <input type="dropdown" token="tk_account" searchWhenChanged="true">
+      <label>JIRA account</label>
+      <selectFirstChoice>true</selectFirstChoice>
+      <prefix>account="</prefix>
+      <suffix>"</suffix>
+      <search>
+      <query>| rest splunk_server=local /servicesNS/nobody/TA-jira-service-desk-simple-addon/ta_service_desk_simple_addon_account | dedup title</query>
+      </search>
+      <fieldForLabel>title</fieldForLabel>
+      <fieldForValue>title</fieldForValue>
+    </input>
+  </fieldset>
   <search id="base_get_projects">
-    <query>| jirarest target="rest/api/2/project" | spath | rename "{}.key" as key | table key | rename key as projects | eval projects_csv=mvjoin(projects, ",")</query>
+    <query>| jirarest $tk_account$ target="rest/api/2/project" | spath | rename "{}.key" as key | table key | rename key as projects | eval projects_csv=mvjoin(projects, ",")</query>
     <progress>
       <condition>
         <set token="tk_csv_projects">$result.projects_csv$</set>
@@ -11,18 +24,18 @@
   <search id="base_projects_stats" depends="$tk_csv_projects$">
     <query>| makeresults | eval projects_csv="$tk_csv_projects$" | makemv delim="," projects_csv | rename projects_csv as key | mvexpand key | streamstats count as project_no
 
-| map [ | jirarest target="rest/api/2/search?jql=project=$$key$$&amp;maxResults=0" ] | streamstats count as result_no | rex field=_raw "\"total\":\s(?&lt;total_issues&gt;\d*)"
+| map [ | jirarest $tk_account$ target="rest/api/2/search?jql=project=$$key$$&amp;maxResults=0" ] | streamstats count as result_no | rex field=_raw "\"total\":\s(?&lt;total_issues&gt;\d*)"
 | append [ 
 | makeresults | eval projects_csv="$tk_csv_projects$" | makemv delim="," projects_csv | rename projects_csv as key | mvexpand key | streamstats count as project_no
-| map [ | jirarest target="rest/api/2/search?jql=project=$$key$$%20AND%20statuscategory%20IN%20%28%22Done%22%29&amp;maxResults=0" ] | streamstats count as result_no | rex field=_raw "\"total\":\s(?&lt;total_done&gt;\d*)"
+| map [ | jirarest $tk_account$ target="rest/api/2/search?jql=project=$$key$$%20AND%20statuscategory%20IN%20%28%22Done%22%29&amp;maxResults=0" ] | streamstats count as result_no | rex field=_raw "\"total\":\s(?&lt;total_done&gt;\d*)"
 ]
 | append [ 
 | makeresults | eval projects_csv="$tk_csv_projects$" | makemv delim="," projects_csv | rename projects_csv as key | mvexpand key | streamstats count as project_no
-| map [ | jirarest target="rest/api/2/search?jql=project=$$key$$%20AND%20statuscategory%20IN%20%28%22To%20Do%22%29&amp;maxResults=0" ] | streamstats count as result_no | rex field=_raw "\"total\":\s(?&lt;total_to_do&gt;\d*)"
+| map [ | jirarest $tk_account$ target="rest/api/2/search?jql=project=$$key$$%20AND%20statuscategory%20IN%20%28%22To%20Do%22%29&amp;maxResults=0" ] | streamstats count as result_no | rex field=_raw "\"total\":\s(?&lt;total_to_do&gt;\d*)"
 ]
 | append [ 
 | makeresults | eval projects_csv="$tk_csv_projects$" | makemv delim="," projects_csv | rename projects_csv as key | mvexpand key | streamstats count as project_no
-| map [ | jirarest target="rest/api/2/search?jql=project=$$key$$%20AND%20statuscategory%20IN%20%28%22In%20Progress%22%29&amp;maxResults=0" ] | streamstats count as result_no | rex field=_raw "\"total\":\s(?&lt;total_in_progress&gt;\d*)"
+| map [ | jirarest $tk_account$ target="rest/api/2/search?jql=project=$$key$$%20AND%20statuscategory%20IN%20%28%22In%20Progress%22%29&amp;maxResults=0" ] | streamstats count as result_no | rex field=_raw "\"total\":\s(?&lt;total_in_progress&gt;\d*)"
 ]
 | append [ | makeresults | eval projects_csv="$tk_csv_projects$" | makemv delim="," projects_csv | rename projects_csv as key | mvexpand key | streamstats count as project_no ]
 | eval line_merge=case(isnum(project_no), project_no, isnum(result_no), result_no)

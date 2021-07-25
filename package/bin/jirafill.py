@@ -62,6 +62,7 @@ class GenerateTextCommand(GeneratingCommand):
         proxy_enabled = "0"
         proxy_url = None
         proxy_dict = None
+        proxy_username = None
         for stanza in confs:
             if stanza.name == "advanced_configuration":
                 for key, value in stanza.content.items():
@@ -79,11 +80,39 @@ class GenerateTextCommand(GeneratingCommand):
                         proxy_type = value
                     if key == "proxy_url":
                         proxy_url = value
+                    if key == "proxy_username":
+                        proxy_username = value
+
         if proxy_enabled == "1":
-           proxy_dict= {
-              "http" : proxy_url + ":" + proxy_port,
-              "https" : proxy_url + ":" + proxy_port
-              }
+
+            # get proxy password
+            if proxy_username:
+                proxy_password = None
+
+                # get proxy password, if any
+                credential_realm = '__REST_CREDENTIAL__#TA-jira-service-desk-simple-addon#configs/conf-ta_service_desk_simple_addon_settings'
+                for credential in storage_passwords:
+                    if credential.content.get('realm') == str(credential_realm) \
+                        and credential.content.get('clear_password').find('proxy_password') > 0:
+                        proxy_password = json.loads(credential.content.get('clear_password')).get('proxy_password')
+                        break
+
+                if proxy_type == 'http':
+                    proxy_dict= {
+                        "http" : "http://" + proxy_username + ":" + proxy_password + "@" + proxy_url + ":" + proxy_port,
+                        "https" : "https://" + proxy_username + ":" + proxy_password + "@" + proxy_url + ":" + proxy_port
+                        }
+                else:
+                    proxy_dict= {
+                        "http" : str(proxy_type) + "://" + proxy_username + ":" + proxy_password + "@" + proxy_url + ":" + proxy_port,
+                        "https" : str(proxy_type) + "://" + proxy_username + ":" + proxy_password + "@" + proxy_url + ":" + proxy_port
+                        }
+
+            else:
+                proxy_dict= {
+                    "http" : proxy_url + ":" + proxy_port,
+                    "https" : proxy_url + ":" + proxy_port
+                    }
 
         # get all acounts
         accounts = []

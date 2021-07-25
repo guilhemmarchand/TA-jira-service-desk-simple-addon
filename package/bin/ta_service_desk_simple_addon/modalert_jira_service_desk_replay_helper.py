@@ -91,9 +91,6 @@ def query_url(helper, account, jira_url, jira_username, jira_password, ssl_certi
 
     import requests
     import json
-    import os
-    import uuid
-    import sys
     import time
     import base64
 

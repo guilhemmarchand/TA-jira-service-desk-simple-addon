@@ -68,5 +68,20 @@ services:
       - ./TA-jira-unit-tests:/opt/splunk/etc/apps/TA-jira-unit-tests
       - ./splunk-share-folder:/tmp/splunk-share-folder
 
+  # Splunk HF
+  # Access Splunk on the Docker guest with: https://localhost:8001
+  # Use to simulate a distributed setup where the JIRA actions are achieved via a different host
+  splunk_hf:
+    image: splunk/splunk:latest
+    hostname: splunk_hf
+    ports:
+      - "8001:8000"
+      - "8089"
+    environment:
+      SPLUNK_START_ARGS: "--accept-license"
+      SPLUNK_PASSWORD: "ch@ngeM3"
+    volumes:
+      - ./TA-config-hf:/opt/splunk/etc/apps/TA-config-hf
+
 volumes:
   jiradata: {}

@@ -50,7 +50,7 @@
                             "label": "JIRA URL",
                             "help": "jira.atlassian.net (SSL is enforced and the URL submitted will be substituted with https://)",
                             "field": "jira_url",
-                            "required": true,
+                            "required": false,
                             "options": {
                                 "display": true
                             }
@@ -61,9 +61,11 @@
                             "label": "Not used",
                             "options": {
                                 "auth_type": [
+                                    "none",
                                     "basic",
                                     "oauth"
                                 ],
+                                "none": [],
                                 "basic": [
                                     {
                                         "oauth_field": "username",
@@ -330,19 +332,67 @@
                     "title": "JIRA advanced configuration",
                     "entity": [
                         {
-                            "type": "checkbox",
-                            "label": "Enable passthrough mode",
+                            "type": "radio",
+                            "label": "Passthrough mode",
                             "field": "jira_passthrough_mode",
-                            "help": "Enable the passthrough mode, in this mode the instance will not attempt to contact the Jira instance but will write directly to the replay KVstore, see the documentation for more details"
+                            "defaultValue": "0",
+                            "help": "When enabled, this instance acts as the frontend node in a distributed setup and writes tickets to the replay KVstore. One or more remote nodes handle the JIRA transactions.",
+                            "required": true,
+                            "options": {
+                                "items": [
+                                    {
+                                        "value": "1",
+                                        "label": "Enabled"
+                                    },
+                                    {
+                                        "value": "0",
+                                        "label": "Disabled"
+                                    }
+                                ],
+                                "display": true
+                            }
                         },
                         {
                             "field": "passthrough_help_link",
                             "label": "",
                             "type": "helpLink",
                             "options": {
-                                "text": "Passthrough documentation",
+                                "text": "Distributed setup documentation (Passthrough mode)",
                                 "link": "https://ta-jira-service-desk-simple-addon.readthedocs.io/en/latest/configuration.html#jira-passthrough-mode"
                             }
+                        },
+                        {
+                            "type": "text",
+                            "label": "KVstore instance and port",
+                            "help": "For client instances, define the KVstore instance in the format of <server>:<port>, example: acme.splunk.com:8089",
+                            "field": "kvstore_instance",
+                            "options": {
+                                "display": true
+                            },
+                            "defaultValue": "",
+                            "required": false
+                        },
+                        {
+                            "type": "text",
+                            "label": "Bearer token",
+                            "help": "For client instances, set the bearer token used for remote access to the KVstore instance",
+                            "field": "bearer_token",
+                            "options": {
+                                "display": true
+                            },
+                            "defaultValue": "",
+                            "required": false
+                        },
+                        {
+                            "type": "text",
+                            "label": "KVstore search filters",
+                            "help": "You can setup a search filter string if required, example: (account=\"LAB1\")",
+                            "field": "kvstore_search_filters",
+                            "options": {
+                                "display": true
+                            },
+                            "defaultValue": "(account=\"*\")",
+                            "required": false
                         }
                     ]
                 }

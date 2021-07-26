@@ -100,7 +100,7 @@
         <panel>
             <single>
                 <search>
-                    <query>| inputlookup jira_failures_replay | eval uuid=_key | stats dc(uuid) as count</query>
+                    <query>| inputlookup jira_failures_replay where (status="pending" OR status="temporary_failure") | eval uuid=_key | stats dc(uuid) as count</query>
                     <earliest>-15m</earliest>
                     <latest>now</latest>
                     <sampleRatio>1</sampleRatio>
@@ -119,7 +119,7 @@
                 <option name="trellis.size">medium</option>
                 <option name="trendColorInterpretation">standard</option>
                 <option name="trendDisplayMode">absolute</option>
-                <option name="underLabel">JIRA CURRENTLY IN THE REPLAY KVSTORE</option>
+                <option name="underLabel">JIRA PENDING FOR CREATION</option>
                 <option name="unitPosition">after</option>
                 <option name="useColors">1</option>
                 <option name="useThousandSeparators">1</option>

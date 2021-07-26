@@ -622,7 +622,7 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
                     'Content-Type': 'application/json'}
 
                 record = '{"account": "' + str(account) + '", "_key": "' + record_uuid + '", "ctime": "' + str(time.time()) \
-                         + '", "status": "temporary_failure", "no_attempts": "1", "data": "' + checkstr(data) + '"}'
+                         + '", "status": "pending", "no_attempts": "0", "data": "' + checkstr(data) + '"}'
                 response = requests.post(record_url, headers=headers, data=record,
                                          verify=False)
                 if response.status_code not in (200, 201, 204):

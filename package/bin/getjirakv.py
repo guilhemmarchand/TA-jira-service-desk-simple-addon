@@ -24,7 +24,7 @@ import splunklib.client as client
 
 @Configuration(distributed=False)
 
-class GetMqReplay(GeneratingCommand):
+class GetJiraKv(GeneratingCommand):
 
     def generate(self, **kwargs):
 
@@ -91,12 +91,21 @@ class GetMqReplay(GeneratingCommand):
             response = requests.post(url, headers={'Authorization': header}, verify=False, data={'search': search, 'output_mode': output_mode, 'exec_mode': exec_mode}) 
             csv_data = response.text
 
-            # Use the CSV dict reader
-            readCSV = csv.DictReader(csv_data.splitlines(True), delimiter=str(u','), quotechar=str(u'"'))
+            if response.status_code not in (200, 201, 204):
+                response_error = 'JIRA Get remove KVstore has failed!. url={}, data={}, HTTP Error={}, content={}'.format(url, search, response.status_code, response.text)
+                self.logger.fatal(str(response_error))
+                data = {'_time': time.time(), '_raw': "{\"response\": \"" + str(response_error) + "\""}
+                yield data
+                sys.exit(0)
 
-            # For row in CSV, generate the _raw
-            for row in readCSV:
-                yield {'_time': time.time(), 'uuid': str(row['uuid']), 'account': str(row['account']), 'data': str(row['data']), 'status': str(row['status']), 'ctime': str(row['ctime']), 'mtime': str(row['mtime']), 'no_attempts': str(row['no_attempts'])}
+            else:
+
+                # Use the CSV dict reader
+                readCSV = csv.DictReader(csv_data.splitlines(True), delimiter=str(u','), quotechar=str(u'"'))
+
+                # For row in CSV, generate the _raw
+                for row in readCSV:
+                    yield {'_time': time.time(), 'uuid': str(row['uuid']), 'account': str(row['account']), 'data': str(row['data']), 'status': str(row['status']), 'ctime': str(row['ctime']), 'mtime': str(row['mtime']), 'no_attempts': str(row['no_attempts'])}
 
         else:
 
@@ -104,4 +113,4 @@ class GetMqReplay(GeneratingCommand):
             data = {'_time': time.time(), '_raw': "{\"response\": \"" + "Error: bad request}"}
             yield data
 
-dispatch(GetMqReplay, sys.argv, sys.stdin, sys.stdout, __name__)
+dispatch(GetJiraKv, sys.argv, sys.stdin, sys.stdout, __name__)

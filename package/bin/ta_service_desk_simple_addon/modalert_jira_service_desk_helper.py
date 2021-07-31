@@ -152,6 +152,167 @@ def reformat_customfields_minimal(i):
 
         return i
 
+def attach_csv(helper, jira_url, jira_created_key, jira_attachment_token, jira_headers_attachment, ssl_certificate_validation, proxy_dict, data, *args, **kwargs):
+
+        import gzip
+        import tempfile
+        import requests
+
+        results_csv = tempfile.NamedTemporaryFile(mode='w+t', prefix="splunk_alert_results_", suffix='.csv')
+        jira_url = jira_url + "/" + jira_created_key + "/attachments"
+
+        input_file = gzip.open(jira_attachment_token, 'rt')
+        all_data = input_file.read()
+        results_csv.writelines(str(all_data))
+        results_csv.seek(0)
+
+        try:
+
+            files = {'file': open(results_csv.name, 'rb')}
+            response = requests.post(jira_url, files=files, headers=jira_headers_attachment,
+                                    verify=ssl_certificate_validation, proxies=proxy_dict)
+            helper.log_debug("response status_code:={}".format(response.status_code))
+
+            if response.status_code not in (200, 201, 204):
+                helper.log_error(
+                    'JIRA Service Desk ticket attachment file upload has failed!. url={}, '
+                    'jira_attachment_token={}, HTTP Error={}, '
+                    'content={}'.format(jira_url, jira_attachment_token, response.status_code,
+                                        response.text))
+            else:
+                helper.log_info('JIRA Service Desk ticket attachment file uploaded successfully. {},'
+                            ' content={}'.format(jira_url, response.text))
+                jira_creation_response = response.text
+
+        # any exception such as proxy error, dns failure etc. will be catch here
+        except Exception as e:
+            helper.log_error("JIRA Service Desk ticket attachment file "
+                            "upload has failed!:{}".format(str(e)))
+            helper.log_error(
+                'message content={}'.format(data))
+
+        finally:
+            results_csv.close()
+
+def attach_json(helper, jira_url, jira_created_key, jira_attachment_token, jira_headers_attachment, ssl_certificate_validation, proxy_dict, data, *args, **kwargs):
+
+        import gzip
+        import tempfile
+        import csv
+        import json
+        import requests
+
+        results_csv = tempfile.NamedTemporaryFile(mode='w+t', prefix="splunk_alert_results_",
+                                                suffix='.csv')
+        results_json = tempfile.NamedTemporaryFile(mode='w+t', prefix="splunk_alert_results_",
+                                                suffix='.json')
+        jira_url = jira_url + "/" + jira_created_key + "/attachments"
+
+        input_file = gzip.open(jira_attachment_token, 'rt')
+        all_data = input_file.read()
+        results_csv.writelines(str(all_data))
+        results_csv.seek(0)
+
+        # Convert CSV to JSON
+        reader = csv.DictReader(open(results_csv.name))
+        results_json.writelines(str(json.dumps([row for row in reader], indent=2)))
+        results_json.seek(0)
+
+        try:
+
+            files = {'file': open(results_json.name, 'rb')}
+            response = requests.post(jira_url, files=files, headers=jira_headers_attachment,
+                                    verify=ssl_certificate_validation, proxies=proxy_dict)
+
+            helper.log_debug("response status_code:={}".format(response.status_code))
+
+            if response.status_code not in (200, 201, 204):
+                helper.log_error(
+                    'JIRA Service Desk ticket attachment file upload has failed!. url={}, '
+                    'jira_attachment_token={}, HTTP Error={}, '
+                    'content={}'.format(jira_url, jira_attachment_token, response.status_code,
+                                        response.text))
+            else:
+                helper.log_info('JIRA Service Desk ticket attachment file uploaded successfully. {},'
+                            ' content={}'.format(jira_url, response.text))
+                jira_creation_response = response.text
+
+        # any exception such as proxy error, dns failure etc. will be catch here
+        except Exception as e:
+            helper.log_error("JIRA Service Desk ticket attachment file upload "
+                            "has failed!:{}".format(str(e)))
+            helper.log_error(
+                'message content={}'.format(data))
+
+        finally:
+            results_csv.close()
+            results_json.close()
+
+
+def attach_xlsx(helper, jira_url, jira_created_key, jira_attachment_token, jira_headers_attachment, ssl_certificate_validation, proxy_dict, data, *args, **kwargs):
+
+        import gzip
+        import tempfile
+        import requests
+        import csv
+        import openpyxl
+        from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
+
+        results_csv = tempfile.NamedTemporaryFile(mode='w+t', prefix="splunk_alert_results_", suffix='.csv')
+        results_xlsx = tempfile.NamedTemporaryFile(mode='w+t', prefix="splunk_alert_results_", suffix='.xlsx')
+        jira_url = jira_url + "/" + jira_created_key + "/attachments"
+
+        input_file = gzip.open(jira_attachment_token, 'rt')
+        all_data = input_file.read()
+        results_csv.writelines(str(all_data))
+        results_csv.seek(0)
+        
+        # convert csv to xlsx
+        wb = openpyxl.Workbook()
+        ws = wb.active
+
+        reader = csv.reader(open(results_csv.name), delimiter=',')
+        count = 0
+        for row in reader:
+            count+=1
+            if count ==1:
+                # to allow column names starting with _
+                ws.append([ILLEGAL_CHARACTERS_RE.sub('', _i) for _i in row])
+            else:
+                ws.append(row)
+
+        wb.save(results_xlsx.name)
+        results_xlsx.seek(0)
+
+        try:
+
+            files = {'file': open(results_xlsx.name, 'rb')}
+            response = requests.post(jira_url, files=files, headers=jira_headers_attachment,
+                                    verify=ssl_certificate_validation, proxies=proxy_dict)
+            helper.log_debug("response status_code:={}".format(response.status_code))
+
+            if response.status_code not in (200, 201, 204):
+                helper.log_error(
+                    'JIRA Service Desk ticket attachment file upload has failed!. url={}, '
+                    'jira_attachment_token={}, HTTP Error={}, '
+                    'content={}'.format(jira_url, jira_attachment_token, response.status_code,
+                                        response.text))
+            else:
+                helper.log_info('JIRA Service Desk ticket attachment file uploaded successfully. {},'
+                            ' content={}'.format(jira_url, response.text))
+                jira_creation_response = response.text
+
+        # any exception such as proxy error, dns failure etc. will be catch here
+        except Exception as e:
+            helper.log_error("JIRA Service Desk ticket attachment file "
+                            "upload has failed!:{}".format(str(e)))
+            helper.log_error(
+                'message content={}'.format(data))
+
+        finally:
+            results_csv.close()
+
+
 def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_password, ssl_certificate_validation, passthrough_mode):
 
     import requests
@@ -778,97 +939,14 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
 
                     # Manage attachment
                     if jira_attachment in ("enabled_csv"):
-
-                        import gzip
-                        import tempfile
-
-                        results_csv = tempfile.NamedTemporaryFile(mode='w+t', prefix="splunk_alert_results_", suffix='.csv')
-                        jira_url = jira_url + "/" + jira_created_key + "/attachments"
-
-                        input_file = gzip.open(jira_attachment_token, 'rt')
-                        all_data = input_file.read()
-                        results_csv.writelines(str(all_data))
-                        results_csv.seek(0)
-
-                        try:
-
-                            files = {'file': open(results_csv.name, 'rb')}
-                            response = requests.post(jira_url, files=files, headers=jira_headers_attachment,
-                                                    verify=ssl_certificate_validation, proxies=proxy_dict)
-                            helper.log_debug("response status_code:={}".format(response.status_code))
-
-                            if response.status_code not in (200, 201, 204):
-                                helper.log_error(
-                                    'JIRA Service Desk ticket attachment file upload has failed!. url={}, '
-                                    'jira_attachment_token={}, HTTP Error={}, '
-                                    'content={}'.format(jira_url, jira_attachment_token, response.status_code,
-                                                        response.text))
-                            else:
-                                helper.log_info('JIRA Service Desk ticket attachment file uploaded successfully. {},'
-                                            ' content={}'.format(jira_url, response.text))
-                                jira_creation_response = response.text
-
-                        # any exception such as proxy error, dns failure etc. will be catch here
-                        except Exception as e:
-                            helper.log_error("JIRA Service Desk ticket attachment file "
-                                            "upload has failed!:{}".format(str(e)))
-                            helper.log_error(
-                                'message content={}'.format(data))
-
-                        finally:
-                            results_csv.close()
+                        attach_csv(helper, jira_url, jira_created_key, jira_attachment_token, jira_headers_attachment, ssl_certificate_validation, proxy_dict, data)
 
                     elif jira_attachment in ("enabled_json"):
+                        attach_json(helper, jira_url, jira_created_key, jira_attachment_token, jira_headers_attachment, ssl_certificate_validation, proxy_dict, data)                        
 
-                        import gzip
-                        import tempfile
-                        import csv
+                    elif jira_attachment in ("enabled_xlsx"):
+                        attach_xlsx(helper, jira_url, jira_created_key, jira_attachment_token, jira_headers_attachment, ssl_certificate_validation, proxy_dict, data)                        
 
-                        results_csv = tempfile.NamedTemporaryFile(mode='w+t', prefix="splunk_alert_results_",
-                                                                suffix='.csv')
-                        results_json = tempfile.NamedTemporaryFile(mode='w+t', prefix="splunk_alert_results_",
-                                                                suffix='.json')
-                        jira_url = jira_url + "/" + jira_created_key + "/attachments"
-
-                        input_file = gzip.open(jira_attachment_token, 'rt')
-                        all_data = input_file.read()
-                        results_csv.writelines(str(all_data))
-                        results_csv.seek(0)
-
-                        # Convert CSV to JSON
-                        reader = csv.DictReader(open(results_csv.name))
-                        results_json.writelines(str(json.dumps([row for row in reader], indent=2)))
-                        results_json.seek(0)
-
-                        try:
-
-                            files = {'file': open(results_json.name, 'rb')}
-                            response = requests.post(jira_url, files=files, headers=jira_headers_attachment,
-                                                    verify=ssl_certificate_validation, proxies=proxy_dict)
-
-                            helper.log_debug("response status_code:={}".format(response.status_code))
-
-                            if response.status_code not in (200, 201, 204):
-                                helper.log_error(
-                                    'JIRA Service Desk ticket attachment file upload has failed!. url={}, '
-                                    'jira_attachment_token={}, HTTP Error={}, '
-                                    'content={}'.format(jira_url, jira_attachment_token, response.status_code,
-                                                        response.text))
-                            else:
-                                helper.log_info('JIRA Service Desk ticket attachment file uploaded successfully. {},'
-                                            ' content={}'.format(jira_url, response.text))
-                                jira_creation_response = response.text
-
-                        # any exception such as proxy error, dns failure etc. will be catch here
-                        except Exception as e:
-                            helper.log_error("JIRA Service Desk ticket attachment file upload "
-                                            "has failed!:{}".format(str(e)))
-                            helper.log_error(
-                                'message content={}'.format(data))
-
-                        finally:
-                            results_csv.close()
-                            results_json.close()
 
                 # Return the JIRA response as final word
                 return jira_creation_response

@@ -576,6 +576,10 @@
                             {
                                 "value": "enabled_json",
                                 "label": "Enabled (JSON format)"
+                            },
+                            {
+                                "value": "enabled_xlsx",
+                                "label": "Enabled (Excel format)"
                             }
                         ],
                         "display": true

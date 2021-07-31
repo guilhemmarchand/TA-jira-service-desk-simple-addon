@@ -162,7 +162,7 @@ def get_timestr():
     return timestr
 
 
-def attach_csv(helper, jira_url, jira_created_key, jira_attachment_token, jira_headers_attachment, ssl_certificate_validation, proxy_dict, data, *args, **kwargs):
+def attach_csv(helper, jira_url, jira_created_key, jira_attachment_token, jira_headers_attachment, ssl_certificate_validation, proxy_dict, *args, **kwargs):
 
     import gzip
     import tempfile
@@ -193,19 +193,16 @@ def attach_csv(helper, jira_url, jira_created_key, jira_attachment_token, jira_h
         else:
             helper.log_info('JIRA Service Desk ticket attachment file uploaded successfully. {},'
                         ' content={}'.format(jira_url, response.text))
-            jira_creation_response = response.text
 
     # any exception such as proxy error, dns failure etc. will be catch here
     except Exception as e:
         helper.log_error("JIRA Service Desk ticket attachment file "
                         "upload has failed!:{}".format(str(e)))
-        helper.log_error(
-            'message content={}'.format(data))
 
     finally:
         results_csv.close()
 
-def attach_json(helper, jira_url, jira_created_key, jira_attachment_token, jira_headers_attachment, ssl_certificate_validation, proxy_dict, data, *args, **kwargs):
+def attach_json(helper, jira_url, jira_created_key, jira_attachment_token, jira_headers_attachment, ssl_certificate_validation, proxy_dict, *args, **kwargs):
 
     import gzip
     import tempfile
@@ -247,21 +244,18 @@ def attach_json(helper, jira_url, jira_created_key, jira_attachment_token, jira_
         else:
             helper.log_info('JIRA Service Desk ticket attachment file uploaded successfully. {},'
                         ' content={}'.format(jira_url, response.text))
-            jira_creation_response = response.text
 
     # any exception such as proxy error, dns failure etc. will be catch here
     except Exception as e:
         helper.log_error("JIRA Service Desk ticket attachment file upload "
                         "has failed!:{}".format(str(e)))
-        helper.log_error(
-            'message content={}'.format(data))
 
     finally:
         results_csv.close()
         results_json.close()
 
 
-def attach_xlsx(helper, jira_url, jira_created_key, jira_attachment_token, jira_headers_attachment, ssl_certificate_validation, proxy_dict, data, *args, **kwargs):
+def attach_xlsx(helper, jira_url, jira_created_key, jira_attachment_token, jira_headers_attachment, ssl_certificate_validation, proxy_dict, *args, **kwargs):
 
     import gzip
     import tempfile
@@ -313,14 +307,11 @@ def attach_xlsx(helper, jira_url, jira_created_key, jira_attachment_token, jira_
         else:
             helper.log_info('JIRA Service Desk ticket attachment file uploaded successfully. {},'
                         ' content={}'.format(jira_url, response.text))
-            jira_creation_response = response.text
 
     # any exception such as proxy error, dns failure etc. will be catch here
     except Exception as e:
         helper.log_error("JIRA Service Desk ticket attachment file "
                         "upload has failed!:{}".format(str(e)))
-        helper.log_error(
-            'message content={}'.format(data))
 
     finally:
         results_csv.close()
@@ -912,13 +903,13 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
 
                     # Manage attachment
                     if jira_attachment in ("enabled_csv"):
-                        attach_csv(helper, jira_root_url, jira_backlog_key, jira_attachment_token, jira_headers_attachment, ssl_certificate_validation, proxy_dict, data)
+                        attach_csv(helper, jira_root_url, jira_backlog_key, jira_attachment_token, jira_headers_attachment, ssl_certificate_validation, proxy_dict)
 
                     elif jira_attachment in ("enabled_json"):
-                        attach_json(helper, jira_root_url, jira_backlog_key, jira_attachment_token, jira_headers_attachment, ssl_certificate_validation, proxy_dict, data)
+                        attach_json(helper, jira_root_url, jira_backlog_key, jira_attachment_token, jira_headers_attachment, ssl_certificate_validation, proxy_dict)
 
                     elif jira_attachment in ("enabled_xlsx"):
-                        attach_xlsx(helper, jira_root_url, jira_backlog_key, jira_attachment_token, jira_headers_attachment, ssl_certificate_validation, proxy_dict, data)
+                        attach_xlsx(helper, jira_root_url, jira_backlog_key, jira_attachment_token, jira_headers_attachment, ssl_certificate_validation, proxy_dict)
 
                 else:
                     helper.log_info('JIRA Service Desk ticket successfully created. {},'
@@ -965,13 +956,13 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
 
                     # Manage attachment
                     if jira_attachment in ("enabled_csv"):
-                        attach_csv(helper, jira_root_url, jira_created_key, jira_attachment_token, jira_headers_attachment, ssl_certificate_validation, proxy_dict, data)
+                        attach_csv(helper, jira_root_url, jira_created_key, jira_attachment_token, jira_headers_attachment, ssl_certificate_validation, proxy_dict)
 
                     elif jira_attachment in ("enabled_json"):
-                        attach_json(helper, jira_root_url, jira_created_key, jira_attachment_token, jira_headers_attachment, ssl_certificate_validation, proxy_dict, data)
+                        attach_json(helper, jira_root_url, jira_created_key, jira_attachment_token, jira_headers_attachment, ssl_certificate_validation, proxy_dict)
 
                     elif jira_attachment in ("enabled_xlsx"):
-                        attach_xlsx(helper, jira_root_url, jira_created_key, jira_attachment_token, jira_headers_attachment, ssl_certificate_validation, proxy_dict, data)
+                        attach_xlsx(helper, jira_root_url, jira_created_key, jira_attachment_token, jira_headers_attachment, ssl_certificate_validation, proxy_dict)
 
 
                 # Return the JIRA response as final word

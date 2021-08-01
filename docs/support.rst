@@ -13,12 +13,12 @@ If you enjoy it, and want to support and encourage me, buy me a coffee (or a Piz
 
 This application is community supported.
 
-Splunk Answers
-==============
+Splunk Community
+================
 
 Open a question in Splunk answers for the application:
 
-- https://answers.splunk.com/app/questions/4958.html
+- https://community.splunk.com
 
 Splunk community slack
 ======================

@@ -26,6 +26,12 @@ import splunklib.client as client
 
 class GetJiraKv(GeneratingCommand):
 
+    verify = Option(
+        doc='''
+        **Syntax:** **verify=****
+        **Description:** verify the connectivity to a remote instance. True / False are supported.''',
+        require=False, default="False", validate=validators.Match("verify", r"^(True|False)$"))
+
     def generate(self, **kwargs):
 
         if self:
@@ -100,12 +106,21 @@ class GetJiraKv(GeneratingCommand):
 
             else:
 
-                # Use the CSV dict reader
-                readCSV = csv.DictReader(csv_data.splitlines(True), delimiter=str(u','), quotechar=str(u'"'))
+                if self.verify == 'True':
 
-                # For row in CSV, generate the _raw
-                for row in readCSV:
-                    yield {'_time': time.time(), 'uuid': str(row['uuid']), 'account': str(row['account']), 'data': str(row['data']), 'status': str(row['status']), 'ctime': str(row['ctime']), 'mtime': str(row['mtime']), 'no_attempts': str(row['no_attempts'])}
+                    response_error = 'JIRA Get remove KVstore was successfull. url={}, data={}, HTTP Error={}'.format(url, search, response.status_code)
+                    data = {'_time': time.time(), '_raw': "{\"response\": \"" + str(response_error) + "\""}
+                    yield data
+                    sys.exit(0)
+
+                else:
+
+                    # Use the CSV dict reader
+                    readCSV = csv.DictReader(csv_data.splitlines(True), delimiter=str(u','), quotechar=str(u'"'))
+
+                    # For row in CSV, generate the _raw
+                    for row in readCSV:
+                        yield {'_time': time.time(), 'uuid': str(row['uuid']), 'account': str(row['account']), 'data': str(row['data']), 'status': str(row['status']), 'ctime': str(row['ctime']), 'mtime': str(row['mtime']), 'no_attempts': str(row['no_attempts'])}
 
         else:
 

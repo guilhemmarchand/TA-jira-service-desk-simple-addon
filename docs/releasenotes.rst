@@ -10,6 +10,7 @@ Version 2.0.0
 - Support for Proxy authentication
 - Python 3 only support (Splunk 7.x is not supported any longer)
 - Support for attachments in Excel (xlsx) format
+- Support for attachments with the issue dedup feature
 
 Version 1.0.30
 ==============

@@ -33,7 +33,7 @@ services:
       - 8081:8081
       - 443:443
 
-  # To text and verify the TA capabilities with a proxy, in the TA configuration, you can configure the proxy with:
+  # To test and verify the TA capabilities with a proxy, in the TA configuration, you can configure the proxy with:
   # Enable: Yes
   # Host: proxy
   # Port: 3128
@@ -49,6 +49,22 @@ services:
       - ./squid/squidusers:/etc/squid/squidusers
     ports:
       - 3128:3128
+
+  # Same, with a socks5 proxy
+  # Host: proxysocks
+  # Port: 1080
+  # User: proxy_user
+  # Password: proxy_password
+
+  proxysocks:
+    image: serjs/go-socks5-proxy
+    restart: unless-stopped
+    hostname: proxysocks
+    environment:
+      - PROXY_USER=proxy_user
+      - PROXY_PASSWORD=proxy_password
+    ports:
+      - 1080:1080
 
   # Splunk
   # Access Splunk on the Docker guest with: https://localhost:8000

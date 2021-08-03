@@ -1,0 +1,700 @@
+{
+    "pages": {
+        "configuration": {
+            "tabs": [
+                {
+                    "name": "account",
+                    "table": {
+                        "actions": [
+                            "edit",
+                            "delete",
+                            "clone"
+                        ],
+                        "header": [
+                            {
+                                "label": "Name",
+                                "field": "name"
+                            },
+                            {
+                                "label": "Auth Type",
+                                "field": "auth_type"
+                            }
+                        ]
+                    },
+                    "entity": [
+                        {
+                            "type": "text",
+                            "label": "Name",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "errorMsg": "Length of ID should be between 1 and 50",
+                                    "minLength": 1,
+                                    "maxLength": 50
+                                },
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Name must begin with a letter and consist exclusively of alphanumeric characters and underscores.",
+                                    "pattern": "^[a-zA-Z]\\w*$"
+                                }
+                            ],
+                            "options": {
+                                "placeholder": "Required"
+                            },
+                            "field": "name",
+                            "help": "Enter a unique name for this JIRA account.",
+                            "required": true
+                        },
+                        {
+                            "type": "text",
+                            "label": "JIRA URL",
+                            "help": "jira.atlassian.net (SSL is enforced and the URL submitted will be substituted with https://)",
+                            "field": "jira_url",
+                            "required": false,
+                            "options": {
+                                "display": true
+                            }
+                        },
+                        {
+                            "type": "oauth",
+                            "field": "oauth",
+                            "label": "Not used",
+                            "options": {
+                                "auth_type": [
+                                    "none",
+                                    "basic",
+                                    "oauth"
+                                ],
+                                "none": [],
+                                "basic": [
+                                    {
+                                        "oauth_field": "username",
+                                        "label": "Username or PAT ID",
+                                        "help": "Enter the username for this account, or the Personal Access Token ID.",
+                                        "field": "username"
+                                    },
+                                    {
+                                        "oauth_field": "password",
+                                        "label": "Password or PAT",
+                                        "encrypted": true,
+                                        "help": "Enter the password for this account, or the Personal Access Token.",
+                                        "field": "password"
+                                    }
+                                ],
+                                "oauth": [
+                                    {
+                                        "oauth_field": "client_id",
+                                        "label": "Client Id",
+                                        "field": "client_id",
+                                        "help": "Enter the Client Id for this account."
+                                    },
+                                    {
+                                        "oauth_field": "client_secret",
+                                        "label": "Client Secret",
+                                        "field": "client_secret",
+                                        "encrypted": true,
+                                        "help": "Enter the Client Secret key for this account."
+                                    },
+                                    {
+                                        "oauth_field": "redirect_url",
+                                        "label": "Redirect url",
+                                        "field": "redirect_url",
+                                        "help": "Copy and paste this URL into your app."
+                                    }
+                                ],
+                                "auth_code_endpoint": "/services/oauth2/authorize",
+                                "access_token_endpoint": "/services/oauth2/token",
+                                "oauth_timeout": 30,
+                                "oauth_state_enabled": false
+                            }
+                        },
+                        {
+                            "field": "configuration_help_link",
+                            "label": "",
+                            "type": "helpLink",
+                            "options": {
+                                "text": "Add-on configuration documentation",
+                                "link": "https://ta-jira-service-desk-simple-addon.readthedocs.io/en/latest/configuration.html"
+                            }
+                        },
+                        {
+                            "type": "radio",
+                            "label": "Authentication method",
+                            "field": "jira_auth_mode",
+                            "defaultValue": "basic",
+                            "help": "Use basic authentication with combo username/password or use Personal Access Token (PAT)",
+                            "required": true,
+                            "options": {
+                                "items": [
+                                    {
+                                        "value": "basic",
+                                        "label": "Basic"
+                                    },
+                                    {
+                                        "value": "pat",
+                                        "label": "Personal Access Token"
+                                    }
+                                ],
+                                "display": true
+                            }
+                        },
+                        {
+                            "field": "using_pat_help_link",
+                            "label": " ",
+                            "type": "helpLink",
+                            "options": {
+                                "text": "Using Personal Access Tokens on Atlassian support",
+                                "link": "https://confluence.atlassian.com/enterprise/using-personal-access-tokens-1026032365.html"
+                            }
+                        },
+                        {
+                            "type": "radio",
+                            "label": "SSL certificate validation",
+                            "field": "jira_ssl_certificate_validation",
+                            "defaultValue": "1",
+                            "help": "Verify that the SSL certificate is a valid certificate provided by a trusted entity",
+                            "required": true,
+                            "options": {
+                                "items": [
+                                    {
+                                        "value": "1",
+                                        "label": "Yes"
+                                    },
+                                    {
+                                        "value": "0",
+                                        "label": "No"
+                                    }
+                                ],
+                                "display": true
+                            }
+                        },
+                        {
+                            "type": "text",
+                            "label": "SSL certificate path",
+                            "help": "To verify a self-signed or internal PKI certificate, you can specifify the local path to the PEM file",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "errorMsg": "Max host length is 4096",
+                                    "minLength": 0,
+                                    "maxLength": 4096
+                                }
+                            ],
+                            "field": "jira_ssl_certificate_path"
+                        },
+                        {
+                            "field": "ssl_help_link",
+                            "label": "  ",
+                            "type": "helpLink",
+                            "options": {
+                                "text": "SSL configuration documentation",
+                                "link": "https://ta-jira-service-desk-simple-addon.readthedocs.io/en/latest/configuration.html#about-ssl-certificate-validation"
+                            }
+                        }
+                    ],
+                    "title": "JIRA Account"
+                },
+                {
+                    "name": "proxy",
+                    "entity": [
+                        {
+                            "type": "checkbox",
+                            "label": "Enable",
+                            "field": "proxy_enabled"
+                        },
+                        {
+                            "type": "singleSelect",
+                            "label": "Proxy Type",
+                            "options": {
+                                "disableSearch": true,
+                                "autoCompleteFields": [
+                                    {
+                                        "value": "http",
+                                        "label": "http"
+                                    },
+                                    {
+                                        "value": "socks4",
+                                        "label": "socks4"
+                                    },
+                                    {
+                                        "value": "socks5",
+                                        "label": "socks5"
+                                    }
+                                ]
+                            },
+                            "defaultValue": "http",
+                            "field": "proxy_type"
+                        },
+                        {
+                            "type": "text",
+                            "label": "Host",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "errorMsg": "Max host length is 4096",
+                                    "minLength": 0,
+                                    "maxLength": 4096
+                                }
+                            ],
+                            "field": "proxy_url"
+                        },
+                        {
+                            "type": "text",
+                            "label": "Port",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        1,
+                                        65535
+                                    ]
+                                }
+                            ],
+                            "field": "proxy_port"
+                        },
+                        {
+                            "type": "text",
+                            "label": "Username",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "errorMsg": "Max length of username is 50",
+                                    "minLength": 0,
+                                    "maxLength": 50
+                                }
+                            ],
+                            "field": "proxy_username"
+                        },
+                        {
+                            "type": "text",
+                            "label": "Password",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "errorMsg": "Max length of password is 8192",
+                                    "minLength": 0,
+                                    "maxLength": 8192
+                                }
+                            ],
+                            "encrypted": true,
+                            "field": "proxy_password"
+                        },
+                        {
+                            "type": "checkbox",
+                            "label": "Reverse DNS resolution",
+                            "field": "proxy_rdns"
+                        }
+                    ],
+                    "options": {
+                        "saveValidator": "function(formData) { if(!formData.proxy_enabled || formData.proxy_enabled === '0') {return true; } if(!formData.proxy_url) { return 'Proxy Host can not be empty'; } if(!formData.proxy_port) { return 'Proxy Port can not be empty'; } return true; }"
+                    },
+                    "title": "JIRA Proxy Setup"
+                },
+                {
+                    "name": "logging",
+                    "entity": [
+                        {
+                            "type": "singleSelect",
+                            "label": "Log level",
+                            "options": {
+                                "disableSearch": true,
+                                "autoCompleteFields": [
+                                    {
+                                        "value": "DEBUG",
+                                        "label": "DEBUG"
+                                    },
+                                    {
+                                        "value": "INFO",
+                                        "label": "INFO"
+                                    },
+                                    {
+                                        "value": "WARNING",
+                                        "label": "WARNING"
+                                    },
+                                    {
+                                        "value": "ERROR",
+                                        "label": "ERROR"
+                                    },
+                                    {
+                                        "value": "CRITICAL",
+                                        "label": "CRITICAL"
+                                    }
+                                ]
+                            },
+                            "defaultValue": "INFO",
+                            "field": "loglevel"
+                        }
+                    ],
+                    "title": "Logging"
+                },
+                {
+                    "name": "advanced_configuration",
+                    "title": "JIRA advanced configuration",
+                    "entity": [
+                        {
+                            "type": "radio",
+                            "label": "Passthrough mode",
+                            "field": "jira_passthrough_mode",
+                            "defaultValue": "0",
+                            "help": "When enabled, this instance acts as the frontend node in a distributed setup and writes tickets to the replay KVstore. One or more remote nodes handle the JIRA transactions.",
+                            "required": true,
+                            "options": {
+                                "items": [
+                                    {
+                                        "value": "1",
+                                        "label": "Enabled"
+                                    },
+                                    {
+                                        "value": "0",
+                                        "label": "Disabled"
+                                    }
+                                ],
+                                "display": true
+                            }
+                        },
+                        {
+                            "field": "passthrough_help_link",
+                            "label": "",
+                            "type": "helpLink",
+                            "options": {
+                                "text": "Distributed setup documentation (Passthrough mode)",
+                                "link": "https://ta-jira-service-desk-simple-addon.readthedocs.io/en/latest/configuration.html#jira-passthrough-mode"
+                            }
+                        },
+                        {
+                            "type": "text",
+                            "label": "KVstore instance and port",
+                            "help": "For client instances, define the KVstore instance in the format of <server>:<port>, example: acme.splunk.com:8089",
+                            "field": "kvstore_instance",
+                            "options": {
+                                "display": true
+                            },
+                            "defaultValue": "",
+                            "required": false
+                        },
+                        {
+                            "type": "text",
+                            "label": "Bearer token",
+                            "help": "For client instances, set the bearer token used for remote access to the KVstore instance",
+                            "field": "bearer_token",
+                            "options": {
+                                "display": true
+                            },
+                            "defaultValue": "",
+                            "required": false
+                        },
+                        {
+                            "type": "text",
+                            "label": "KVstore search filters",
+                            "help": "You can setup a search filter string if required, example: (account=\"LAB1\")",
+                            "field": "kvstore_search_filters",
+                            "options": {
+                                "display": true
+                            },
+                            "defaultValue": "(account=\"*\")",
+                            "required": false
+                        }
+                    ]
+                }
+            ],
+            "title": "Configuration",
+            "description": "Configure the Add-on for JIRA"
+        }
+    },
+    "alerts": [
+        {
+            "name": "jira_service_desk",
+            "label": "Open an issue in JIRA Service Desk",
+            "description": "JIRA Service Desk",
+            "activeResponse": {
+                "task": [
+                    "Create",
+                    "Update"
+                ],
+                "supportsAdhoc": true,
+                "subject": [
+                    "incident"
+                ],
+                "category": [
+                    "Ticketing system",
+                    "Incident management"
+                ],
+                "technology": [
+                    {
+                        "version": [
+                            "1.0.0"
+                        ],
+                        "product": "JIRA Service Desk",
+                        "vendor": "Atlasian"
+                    }
+                ],
+                "drilldownUri": "search?q=search%20index%3D_internal%20OR%20index%3Dcim_modaction%20sourcetype%3Djira%3Aservice_desk_alert_action&earliest=0&latest=",
+                "sourcetype": "jira:service_desk_alert_action"
+            },
+            "entity": [
+                {
+                    "type": "singleSelectSplunkSearch",
+                    "label": "Select JIRA Account",
+                    "field": "account",
+                    "search": "| rest splunk_server=local /servicesNS/nobody/TA-jira-service-desk-simple-addon/ta_service_desk_simple_addon_account | dedup title",
+                    "valueField": "title",
+                    "labelField": "title",
+                    "help": "Select the JIRA account from the dropdown",
+                    "required": true
+                },
+                {
+                    "type": "singleSelectSplunkSearch",
+                    "label": "Project",
+                    "field": "jira_project",
+                    "search": "| `get_jira_projects`",
+                    "valueField": "key",
+                    "labelField": "key",
+                    "help": "Select the JIRA project from the dropdown",
+                    "required": true
+                },
+                {
+                    "type": "singleSelectSplunkSearch",
+                    "label": "Issue Type",
+                    "field": "jira_issue_type",
+                    "search": "| `get_jira_issue_types`",
+                    "valueField": "issues",
+                    "labelField": "issues",
+                    "help": "Select the type of issue from the dropdown",
+                    "required": true
+                },
+                {
+                    "type": "singleSelectSplunkSearch",
+                    "label": "Priority",
+                    "field": "jira_priority",
+                    "search": "| `get_jira_priorities`",
+                    "valueField": "priorities",
+                    "labelField": "priorities",
+                    "help": "Select the priority for this issue",
+                    "required": true
+                },
+                {
+                    "type": "text",
+                    "label": "Dynamic Priority",
+                    "help": "(Optional) Override priority using a field result, ex $result.jira_priority$. (case sensitive, ticket creation will fail if incorrectly defined)",
+                    "field": "jira_priority_dynamic",
+                    "required": false
+                },
+                {
+                    "type": "text",
+                    "label": "Summary",
+                    "help": "Summary text for this issue",
+                    "field": "jira_summary",
+                    "required": true
+                },
+                {
+                    "type": "text",
+                    "label": "Description",
+                    "help": "(Required) Issue description, this text can include tokens based on the search results (E.g: $result.src$)",
+                    "field": "jira_description",
+                    "required": true
+                },
+                {
+                    "type": "text",
+                    "label": "Assignee",
+                    "help": "(Optional) Issue assignee.",
+                    "field": "jira_assignee",
+                    "required": false
+                },
+                {
+                    "type": "text",
+                    "label": "Reporter",
+                    "help": "(Optional) Issue reporter.",
+                    "field": "jira_reporter",
+                    "required": false
+                },
+                {
+                    "type": "text",
+                    "label": "Labels",
+                    "help": "(Optional) Comma separated list of labels for the issue. (no space characters after commas if specifying multiple labels)",
+                    "field": "jira_labels",
+                    "required": false
+                },
+                {
+                    "type": "text",
+                    "label": "Components names",
+                    "help": "(Optional) Comma separated list of component names for the issue. (no space characters after commas if specifying multiple component names)",
+                    "field": "jira_components",
+                    "required": false
+                },
+                {
+                    "type": "singleSelect",
+                    "label": "JIRA dedup behaviour:",
+                    "field": "jira_dedup",
+                    "defaultValue": "disabled",
+                    "help": "Use the dedup feature to automatically add a comment instead of creating a new issue when the same issue is detected, see the documentation for more details.",
+                    "required": true,
+                    "options": {
+                        "items": [
+                            {
+                                "value": "enabled",
+                                "label": "Enabled"
+                            },
+                            {
+                                "value": "disabled",
+                                "label": "Disabled"
+                            }
+                        ],
+                        "display": true
+                    }
+                },
+                {
+                    "type": "text",
+                    "label": "JIRA dedup excluded statuses",
+                    "help": "CSV list of Jira status categories not considered for updates, if dedup is enabled and the duplicated issue status is in one of these categories, a new issue will be created instead.",
+                    "field": "jira_dedup_exclude_statuses",
+                    "required": false
+                },
+                {
+                    "type": "text",
+                    "label": "JIRA dedup content",
+                    "help": "(Optional) The default behavior is to use the full issue content to calculate the md5, by defining its content here you can limit its scope.",
+                    "field": "jira_dedup_content",
+                    "required": false
+                },
+                {
+                    "type": "singleSelect",
+                    "label": "Results attachment:",
+                    "field": "jira_attachment",
+                    "defaultValue": "disabled",
+                    "help": "Enable this option to automatically attach the Splunk results as an attachment to the JIRA issue.",
+                    "required": true,
+                    "options": {
+                        "items": [
+                            {
+                                "value": "disabled",
+                                "label": "Disabled"
+                            },
+                            {
+                                "value": "enabled_csv",
+                                "label": "Enabled (CSV format)"
+                            },
+                            {
+                                "value": "enabled_json",
+                                "label": "Enabled (JSON format)"
+                            },
+                            {
+                                "value": "enabled_xlsx",
+                                "label": "Enabled (Excel format)"
+                            }
+                        ],
+                        "display": true
+                    }
+                },
+                {
+                    "type": "text",
+                    "label": "Attachment token",
+                    "help": "hidden system used",
+                    "field": "jira_attachment_token",
+                    "required": false
+                },
+                {
+                    "type": "text",
+                    "label": "custom fields structure",
+                    "help": "(Optional) Jira custom field",
+                    "field": "jira_customfields",
+                    "required": false
+                },
+                {
+                    "type": "singleSelect",
+                    "label": "Custom fields parsing:",
+                    "field": "jira_customfields_parsing",
+                    "defaultValue": "enabled",
+                    "help": "Enable custom field parsing.",
+                    "required": true,
+                    "options": {
+                        "items": [
+                            {
+                                "value": "disabled",
+                                "label": "Disabled"
+                            },
+                            {
+                                "value": "enabled",
+                                "label": "Enabled"
+                            }
+                        ],
+                        "display": true
+                    }
+                }
+            ]
+        },
+        {
+            "name": "jira_service_desk_replay",
+            "label": "Replay an issue in JIRA Service Desk",
+            "description": "JIRA Service Desk replay",
+            "entity": [
+                {
+                    "type": "singleSelectSplunkSearch",
+                    "label": "Select Account",
+                    "field": "account",
+                    "search": "| rest splunk_server=local /servicesNS/nobody/TA-jira-service-desk-simple-addon/ta_service_desk_simple_addon_account | dedup title",
+                    "valueField": "title",
+                    "labelField": "title",
+                    "help": "Select the account from the dropdown",
+                    "required": true
+                },
+                {
+                    "type": "text",
+                    "label": "Ticket uuid",
+                    "help": "",
+                    "field": "ticket_uuid",
+                    "required": false
+                },
+                {
+                    "type": "text",
+                    "label": "Ticket data",
+                    "help": "",
+                    "field": "ticket_data",
+                    "required": false
+                },
+                {
+                    "type": "text",
+                    "label": "Ticket status",
+                    "help": "",
+                    "field": "ticket_status",
+                    "required": false
+                },
+                {
+                    "type": "text",
+                    "label": "Ticket number of attempts",
+                    "help": "",
+                    "field": "ticket_no_attempts",
+                    "required": false
+                },
+                {
+                    "type": "text",
+                    "label": "Ticket max number of attempts",
+                    "help": "",
+                    "field": "ticket_max_attempts",
+                    "required": false
+                },
+                {
+                    "type": "text",
+                    "label": "Ticket creation time",
+                    "help": "",
+                    "field": "ticket_ctime",
+                    "required": false
+                },
+                {
+                    "type": "text",
+                    "label": "Ticket modification time",
+                    "help": "",
+                    "field": "ticket_mtime",
+                    "required": false
+                }
+            ]
+        }
+    ],
+    "meta": {
+        "apiVersion": "3.2.0",
+        "name": "TA-jira-service-desk-simple-addon",
+        "restRoot": "ta_service_desk_simple_addon",
+        "version": "2.0.0",
+        "displayName": "JIRA Service Desk simple addon",
+        "schemaVersion": "0.0.2"
+    }
+}

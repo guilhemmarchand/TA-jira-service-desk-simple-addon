@@ -1,6 +1,17 @@
 Release notes
 #############
 
+Version 2.0.0
+=============
+
+- Migration to ucc-gen (Splunk Add-on factory framework), refreshed modern configuration UI
+- Support for JIRA multi tenant accounts (Multiple JIRA accounts can now be set up targeting different JIRA instances)
+- Support for Personal Access Token (PAT) authentication (See: https://confluence.atlassian.com/enterprise/using-personal-access-tokens-1026032365.html)
+- Support for Proxy authentication
+- Python 3 only support (Splunk 7.x is not supported any longer)
+- Support for attachments in Excel (xlsx) format
+- Support for attachments with the issue dedup feature
+
 Version 1.0.30
 ==============
 

@@ -11,6 +11,7 @@ Version 2.0.0
 - Python 3 only support (Splunk 7.x is not supported any longer)
 - Support for attachments in Excel (xlsx) format
 - Support for attachments with the issue dedup feature
+- Fix - Issue #102 - Issue in dedup behaviour when dedup is enabled but the issue was resolved, closed or cancelled
 
 Version 1.0.30
 ==============

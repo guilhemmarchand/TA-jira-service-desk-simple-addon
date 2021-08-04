@@ -1,1 +1,2 @@
-splunktaucclib==5.0.4
+splunktaucclib>=5.0.4
+openpyxl>=3.0.7

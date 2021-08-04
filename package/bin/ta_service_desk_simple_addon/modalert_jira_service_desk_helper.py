@@ -758,7 +758,7 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
                     'jira_dedup: An issue with same md5 hash (' + str(jira_md5sum) + ') was found in the backlog '
                     'collection, as jira_dedup is not enabled a new issue '
                     'will be created, entry:={}'.format(response.text))
-            jira_dedup_md5_found = True
+                jira_dedup_md5_found = True
 
         else:
             helper.log_debug(

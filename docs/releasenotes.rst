@@ -18,6 +18,7 @@ Version 2.0.0
 - Support for Personal Access Token (PAT) authentication (See: https://confluence.atlassian.com/enterprise/using-personal-access-tokens-1026032365.html)
 - Support for Proxy authentication
 - Python 3 only support (Splunk 7.x is not supported any longer)
+- Jquery migration
 - Improved distributed setup with bearer based remote KVstore feature relying on the replay KVstore (for setups where JIRA is not available from the main Splunk search heads)
 - Support for attachments in Excel (xlsx) format
 - Support for attachments with the issue dedup feature

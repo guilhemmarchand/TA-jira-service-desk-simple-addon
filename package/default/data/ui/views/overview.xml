@@ -1,4 +1,4 @@
-<form stylesheet="table.css" script="table.js" theme="dark" hideEdit="false">
+<form stylesheet="table.css" script="table.js" theme="dark" hideEdit="false" version="1.1">
     <label>Overview - JIRA Service Desk</label>
     <fieldset submitButton="false">
         <input type="time" token="timerange" searchWhenChanged="true">

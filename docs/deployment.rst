@@ -40,3 +40,19 @@ Upgrades
 Upgrading the Splunk application is pretty much the same operation than the initial deployment.
 
 All of TrackMe components and configuration items are upgraded resilient, in respects with Splunk configuration good practices.
+
+Upgrade from version 1.x.x to 2.x.x
+===================================
+
+.. warning:: **BREAKING CHANGES!**
+
+    - The major release 2.0 migrates from the Splunk Add-on Builder framework to the Splunk add-on-ucc-framework.
+    - This fundamentally changes the way accounts are handled automatically, which means that once the upgrade has been performed you need to re-create your account(s) defining the connectivity to JIRA before alert actions can trigger again.
+
+**Proceed as follows:**
+
+- Upgrade the Add-on to the latest release 2.x available
+- Restart the Splunk search head (or automatic rolling restart in Search Head Cluster)
+- Access to the configuration page, and re-create your connection to JIRA (not that in version 2.x you can setup multiple accounts)
+- Verify that the connection is successful
+- Optionnally verify either that an existing alert can trigger a JIRA ticket, or create a temporary test alert

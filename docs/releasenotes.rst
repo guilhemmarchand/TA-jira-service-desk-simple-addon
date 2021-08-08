@@ -1,6 +1,29 @@
 Release notes
 #############
 
+Version 2.0.0
+=============
+
+.. warning:: **BREAKING CHANGES!**
+
+    - The new major release uses a new framework (add-on-ucc-framework) which changes the way accounts are handled by the application
+    - Post upgrade, **you need to setup the connectivity to your JIRA instance(s) again** before the Add-on can be used
+    - Existing alerts will not work anymore until you perform the account setup
+    - You do not need to update the alerts themselves as these remain compatible from version 1.x to version 2.x
+
+**What's new in the Add-on for JIRA version 2.0.0:**
+
+- Migration to ucc-gen (Splunk Add-on factory framework), refreshed modern configuration UI
+- Support for JIRA multi tenant accounts (Multiple JIRA accounts can now be set up targeting different JIRA instances)
+- Support for Personal Access Token (PAT) authentication (See: https://confluence.atlassian.com/enterprise/using-personal-access-tokens-1026032365.html)
+- Support for Proxy authentication
+- Python 3 only support (Splunk 7.x is not supported any longer)
+- Jquery migration
+- Improved distributed setup with bearer based remote KVstore feature relying on the replay KVstore (for setups where JIRA is not available from the main Splunk search heads)
+- Support for attachments in Excel (xlsx) format
+- Support for attachments with the issue dedup feature
+- Fix - Issue #102 - Issue in dedup behaviour when dedup is enabled but the issue was resolved, closed or cancelled
+
 Version 1.0.30
 ==============
 

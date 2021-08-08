@@ -1,6 +1,5 @@
-version: '3.7'
+version: "3.7"
 services:
-
   # JIRA Software
   # When the container is up, access using the SSL proxy (see bellow), this will bring you to an Atlasian page where you can enable a trial
   # When the trial end of life is reached, make sure to stop the container, purge the content of the jira-volume directory, start the container again and re-process the configuration
@@ -8,14 +7,14 @@ services:
     image: atlassian/jira-software
     hostname: jiraback
     restart: unless-stopped
-    user: 'root'
+    user: "root"
     environment:
       - ATL_PROXY_NAME=localhost
       - ATL_TOMCAT_SECURE=true
       - ATL_PROXY_PORT=8081
-      - ATL_TOMCAT_SCHEME=https      
+      - ATL_TOMCAT_SCHEME=https
     volumes:
-      - ./jira-volume:/var/atlassian/application-data/jira
+      - jiradata:/var/atlassian/application-data/jira
     ports:
       - "8080:8080"
 
@@ -34,18 +33,38 @@ services:
       - 8081:8081
       - 443:443
 
-  # To text and verify the TA capabilities with a proxy, in the TA configuration, you can configure the proxy with:
+  # To test and verify the TA capabilities with a proxy, in the TA configuration, you can configure the proxy with:
   # Enable: Yes
   # Host: proxy
   # Port: 3128
+  # User: proxy_user
+  # Password: ch@ngeM3
+  # Auth see: https://veesp.com/blog/squid-authentication/
   proxy:
     image: sameersbn/squid:3.5.27-2
     restart: unless-stopped
     hostname: proxy
     volumes:
       - ./squid/squid.conf:/etc/squid/squid.conf
+      - ./squid/squidusers:/etc/squid/squidusers
     ports:
-      - 3128:3128    
+      - 3128:3128
+
+  # Same, with a socks5 proxy
+  # Host: proxysocks
+  # Port: 1080
+  # User: proxy_user
+  # Password: proxy_password
+
+  proxysocks:
+    image: serjs/go-socks5-proxy
+    restart: unless-stopped
+    hostname: proxysocks
+    environment:
+      - PROXY_USER=proxy_user
+      - PROXY_PASSWORD=proxy_password
+    ports:
+      - 1080:1080
 
   # Splunk
   # Access Splunk on the Docker guest with: https://localhost:8000
@@ -64,3 +83,21 @@ services:
       - ./TA-config:/opt/splunk/etc/apps/TA-config
       - ./TA-jira-unit-tests:/opt/splunk/etc/apps/TA-jira-unit-tests
       - ./splunk-share-folder:/tmp/splunk-share-folder
+
+  # Splunk HF
+  # Access Splunk on the Docker guest with: https://localhost:8001
+  # Use to simulate a distributed setup where the JIRA actions are achieved via a different host
+  splunk_hf:
+    image: splunk/splunk:latest
+    hostname: splunk_hf
+    ports:
+      - "8001:8000"
+      - "8089"
+    environment:
+      SPLUNK_START_ARGS: "--accept-license"
+      SPLUNK_PASSWORD: "ch@ngeM3"
+    volumes:
+      - ./TA-config-hf:/opt/splunk/etc/apps/TA-config-hf
+
+volumes:
+  jiradata: {}

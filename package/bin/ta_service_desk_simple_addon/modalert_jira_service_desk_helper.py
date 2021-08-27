@@ -169,7 +169,7 @@ def attach_csv(helper, jira_url, jira_created_key, jira_attachment_token, jira_h
     import requests
 
     timestr = get_timestr()
-    results_csv = tempfile.NamedTemporaryFile(mode='w+t', prefix="splunk_alert_results_" + str(timestr) + "_", suffix='.csv')
+    results_csv = tempfile.NamedTemporaryFile(mode='w+t', prefix="splunk_alert_results_" + str(timestr) + "_", suffix='.csv', delete=False)
     jira_url = jira_url + "/" + jira_created_key + "/attachments"
 
     input_file = gzip.open(jira_attachment_token, 'rt')
@@ -212,9 +212,9 @@ def attach_json(helper, jira_url, jira_created_key, jira_attachment_token, jira_
 
     timestr = get_timestr()
     results_csv = tempfile.NamedTemporaryFile(mode='w+t', prefix="splunk_alert_results_" + str(timestr) + "_",
-                                            suffix='.csv')
+                                            suffix='.csv', delete=False)
     results_json = tempfile.NamedTemporaryFile(mode='w+t', prefix="splunk_alert_results_" + str(timestr) + "_",
-                                            suffix='.json')
+                                            suffix='.json', delete=False)
     jira_url = jira_url + "/" + jira_created_key + "/attachments"
 
     input_file = gzip.open(jira_attachment_token, 'rt')
@@ -265,8 +265,8 @@ def attach_xlsx(helper, jira_url, jira_created_key, jira_attachment_token, jira_
     from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
 
     timestr = get_timestr()
-    results_csv = tempfile.NamedTemporaryFile(mode='w+t', prefix="splunk_alert_results_" + str(timestr) + "_", suffix='.csv')
-    results_xlsx = tempfile.NamedTemporaryFile(mode='w+t', prefix="splunk_alert_results_" + str(timestr) + "_", suffix='.xlsx')
+    results_csv = tempfile.NamedTemporaryFile(mode='w+t', prefix="splunk_alert_results_" + str(timestr) + "_", suffix='.csv', delete=False)
+    results_xlsx = tempfile.NamedTemporaryFile(mode='w+t', prefix="splunk_alert_results_" + str(timestr) + "_", suffix='.xlsx', delete=False)
     jira_url = jira_url + "/" + jira_created_key + "/attachments"
 
     input_file = gzip.open(jira_attachment_token, 'rt')

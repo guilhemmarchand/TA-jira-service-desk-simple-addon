@@ -1,6 +1,20 @@
 Release notes
 #############
 
+Version 2.0.2
+=============
+
+.. warning:: **BREAKING CHANGES!**
+
+    - The new major release uses a new framework (add-on-ucc-framework) which changes the way accounts are handled by the application
+    - Post upgrade, **you need to setup the connectivity to your JIRA instance(s) again** before the Add-on can be used
+    - Existing alerts will not work anymore until you perform the account setup
+    - You do not need to update the alerts themselves as these remain compatible from version 1.x to version 2.x
+
+**What's new in the Add-on for JIRA version 2.0.x:**
+
+- Fix - Issue #106 - Windows specific - Addon writing output CSV into Windows\TEMP folder
+
 Version 2.0.1
 =============
 

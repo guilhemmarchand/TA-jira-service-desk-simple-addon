@@ -690,11 +690,10 @@
         }
     ],
     "meta": {
-        "apiVersion": "3.2.0",
         "name": "TA-jira-service-desk-simple-addon",
         "restRoot": "ta_service_desk_simple_addon",
-        "version": "2.0.1",
+        "version": "2.0.2",
         "displayName": "JIRA Service Desk simple addon",
-        "schemaVersion": "0.0.2"
+        "schemaVersion": "0.0.3"
     }
 }

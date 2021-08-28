@@ -186,17 +186,46 @@ def get_tempdir():
 
     return tempdir
 
+
+# This function is made necessary due to Windows incapability to purge temporary files properly, as other serious OS would
+def clean_tempdir():
+
+    import os
+    import glob
+    import time
+
+    # Get tempdir
+    tempdir = get_tempdir()
+
+    # Enter dir
+    if os.path.exists(tempdir):
+        # cd to directory
+        os.chdir(tempdir)
+        # loop and clean
+        for xfile in glob.glob('*'):
+            filemtime = os.path.getmtime(xfile)
+            if time.time() - filemtime > 300:
+                try:
+                    os.remove(xfile)
+                except Exception as e:
+                    helper.log_debug('Temporary file ' + str(xfile) + ' could not be removed, we will try another chance later on')
+
+
 def attach_csv(helper, jira_url, jira_created_key, jira_attachment_token, jira_headers_attachment, ssl_certificate_validation, proxy_dict, *args, **kwargs):
 
     import gzip
     import tempfile
     import requests
+    import os
 
     # Get tempdir
     tempdir = get_tempdir()
 
+    # Clean tempdir
+    clean_tempdir()
+
     timestr = get_timestr()
-    results_csv = tempfile.NamedTemporaryFile(mode='w+t', prefix="splunk_alert_results_" + str(timestr) + "_", suffix='.csv', dir=tempdir)
+    results_csv = tempfile.NamedTemporaryFile(mode='w+t', prefix="splunk_alert_results_" + str(timestr) + "_", suffix='.csv', dir=tempdir, delete=False)
     jira_url = jira_url + "/" + jira_created_key + "/attachments"
 
     input_file = gzip.open(jira_attachment_token, 'rt')
@@ -229,6 +258,13 @@ def attach_csv(helper, jira_url, jira_created_key, jira_attachment_token, jira_h
     finally:
         results_csv.close()
 
+        # try clean
+        try:
+            if os.path.isfile(results_csv.name):
+                os.remove(results_csv.name)
+        except Exception as e:
+            helper.log_debug('Temporary file ' + str(results_csv.name) + ' could not be removed, unfortunately this is expected under Windows host guests')
+
 def attach_json(helper, jira_url, jira_created_key, jira_attachment_token, jira_headers_attachment, ssl_certificate_validation, proxy_dict, *args, **kwargs):
 
     import gzip
@@ -236,15 +272,19 @@ def attach_json(helper, jira_url, jira_created_key, jira_attachment_token, jira_
     import csv
     import json
     import requests
+    import os
 
     # Get tempdir
     tempdir = get_tempdir()
 
+    # Clean tempdir
+    clean_tempdir()
+
     timestr = get_timestr()
     results_csv = tempfile.NamedTemporaryFile(mode='w+t', prefix="splunk_alert_results_" + str(timestr) + "_",
-                                            suffix='.csv', dir=tempdir)
+                                            suffix='.csv', dir=tempdir, delete=False)
     results_json = tempfile.NamedTemporaryFile(mode='w+t', prefix="splunk_alert_results_" + str(timestr) + "_",
-                                            suffix='.json', dir=tempdir)
+                                            suffix='.json', dir=tempdir, delete=False)
     jira_url = jira_url + "/" + jira_created_key + "/attachments"
 
     input_file = gzip.open(jira_attachment_token, 'rt')
@@ -284,6 +324,20 @@ def attach_json(helper, jira_url, jira_created_key, jira_attachment_token, jira_
         results_csv.close()
         results_json.close()
 
+        # try clean
+        try:
+            if os.path.isfile(results_csv.name):
+                os.remove(results_csv.name)
+        except Exception as e:
+            helper.log_debug('Temporary file ' + str(results_csv.name) + 'could not be removed, unfortunately this is expected under Windows host guests')
+
+        # try clean
+        try:
+            if os.path.isfile(results_json.name):
+                os.remove(results_json.name)
+        except Exception as e:
+            helper.log_debug('Temporary file ' + str(results_json.name) + ' could not be removed, unfortunately this is expected under Windows host guests')
+
 
 def attach_xlsx(helper, jira_url, jira_created_key, jira_attachment_token, jira_headers_attachment, ssl_certificate_validation, proxy_dict, *args, **kwargs):
 
@@ -293,13 +347,17 @@ def attach_xlsx(helper, jira_url, jira_created_key, jira_attachment_token, jira_
     import csv
     import openpyxl
     from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
+    import os
 
     # Get tempdir
     tempdir = get_tempdir()
 
+    # Clean tempdir
+    clean_tempdir()
+
     timestr = get_timestr()
-    results_csv = tempfile.NamedTemporaryFile(mode='w+t', prefix="splunk_alert_results_" + str(timestr) + "_", suffix='.csv', dir=tempdir)
-    results_xlsx = tempfile.NamedTemporaryFile(mode='w+t', prefix="splunk_alert_results_" + str(timestr) + "_", suffix='.xlsx', dir=tempdir)
+    results_csv = tempfile.NamedTemporaryFile(mode='w+t', prefix="splunk_alert_results_" + str(timestr) + "_", suffix='.csv', dir=tempdir, delete=False)
+    results_xlsx = tempfile.NamedTemporaryFile(mode='w+t', prefix="splunk_alert_results_" + str(timestr) + "_", suffix='.xlsx', dir=tempdir, delete=False)
     jira_url = jira_url + "/" + jira_created_key + "/attachments"
 
     input_file = gzip.open(jira_attachment_token, 'rt')
@@ -349,6 +407,20 @@ def attach_xlsx(helper, jira_url, jira_created_key, jira_attachment_token, jira_
     finally:
         results_csv.close()
         results_xlsx.close()
+
+        # try clean
+        try:
+            if os.path.isfile(results_csv.name):
+                os.remove(results_csv.name)
+        except Exception as e:
+            helper.log_debug('Temporary file ' + str(results_csv.name) + ' could not be removed, unfortunately this is expected under Windows host guests')
+
+        # try clean
+        try:
+            if os.path.isfile(results_xlsx.name):
+                os.remove(results_xlsx.name)
+        except Exception as e:
+            helper.log_debug('Temporary file ' + str(results_xlsx.name) + ' could not be removed, unfortunately this is expected under Windows host guests')
 
 
 def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_password, ssl_certificate_validation, passthrough_mode):

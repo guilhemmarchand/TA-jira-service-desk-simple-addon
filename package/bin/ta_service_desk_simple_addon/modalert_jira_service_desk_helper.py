@@ -161,6 +161,30 @@ def get_timestr():
 
     return timestr
 
+def get_tempdir():
+
+    import os
+    import re
+    import platform
+
+    # Guest Operation System type
+    ostype = platform.system().lower()
+
+    # If running Windows OS (used for directory identification)
+    is_windows = re.match(r'^win\w+', (platform.system().lower()))
+
+    # SPLUNK_HOME environment variable
+    SPLUNK_HOME = os.environ['SPLUNK_HOME']
+
+    # define the directory for temp files
+    if is_windows:
+        tempdir = SPLUNK_HOME + '\\etc\\apps\\TA-jira-service-desk-simple-addon\tmp'
+    else:
+        tempdir = SPLUNK_HOME + '/etc/apps/TA-jira-service-desk-simple-addon/tmp'
+    if not os.path.exists(tempdir):
+        os.mkdir(tempdir)
+
+    return tempdir
 
 def attach_csv(helper, jira_url, jira_created_key, jira_attachment_token, jira_headers_attachment, ssl_certificate_validation, proxy_dict, *args, **kwargs):
 
@@ -168,8 +192,11 @@ def attach_csv(helper, jira_url, jira_created_key, jira_attachment_token, jira_h
     import tempfile
     import requests
 
+    # Get tempdir
+    tempdir = get_tempdir()
+
     timestr = get_timestr()
-    results_csv = tempfile.NamedTemporaryFile(mode='w+t', prefix="splunk_alert_results_" + str(timestr) + "_", suffix='.csv', delete=False)
+    results_csv = tempfile.NamedTemporaryFile(mode='w+t', prefix="splunk_alert_results_" + str(timestr) + "_", suffix='.csv', dir=tempdir)
     jira_url = jira_url + "/" + jira_created_key + "/attachments"
 
     input_file = gzip.open(jira_attachment_token, 'rt')
@@ -210,11 +237,14 @@ def attach_json(helper, jira_url, jira_created_key, jira_attachment_token, jira_
     import json
     import requests
 
+    # Get tempdir
+    tempdir = get_tempdir()
+
     timestr = get_timestr()
     results_csv = tempfile.NamedTemporaryFile(mode='w+t', prefix="splunk_alert_results_" + str(timestr) + "_",
-                                            suffix='.csv', delete=False)
+                                            suffix='.csv', dir=tempdir)
     results_json = tempfile.NamedTemporaryFile(mode='w+t', prefix="splunk_alert_results_" + str(timestr) + "_",
-                                            suffix='.json', delete=False)
+                                            suffix='.json', dir=tempdir)
     jira_url = jira_url + "/" + jira_created_key + "/attachments"
 
     input_file = gzip.open(jira_attachment_token, 'rt')
@@ -264,9 +294,12 @@ def attach_xlsx(helper, jira_url, jira_created_key, jira_attachment_token, jira_
     import openpyxl
     from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
 
+    # Get tempdir
+    tempdir = get_tempdir()
+
     timestr = get_timestr()
-    results_csv = tempfile.NamedTemporaryFile(mode='w+t', prefix="splunk_alert_results_" + str(timestr) + "_", suffix='.csv', delete=False)
-    results_xlsx = tempfile.NamedTemporaryFile(mode='w+t', prefix="splunk_alert_results_" + str(timestr) + "_", suffix='.xlsx', delete=False)
+    results_csv = tempfile.NamedTemporaryFile(mode='w+t', prefix="splunk_alert_results_" + str(timestr) + "_", suffix='.csv', dir=tempdir)
+    results_xlsx = tempfile.NamedTemporaryFile(mode='w+t', prefix="splunk_alert_results_" + str(timestr) + "_", suffix='.xlsx', dir=tempdir)
     jira_url = jira_url + "/" + jira_created_key + "/attachments"
 
     input_file = gzip.open(jira_attachment_token, 'rt')

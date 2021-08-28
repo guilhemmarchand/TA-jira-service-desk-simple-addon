@@ -178,7 +178,7 @@ def get_tempdir():
 
     # define the directory for temp files
     if is_windows:
-        tempdir = SPLUNK_HOME + '\\etc\\apps\\TA-jira-service-desk-simple-addon\tmp'
+        tempdir = SPLUNK_HOME + '\\etc\\apps\\TA-jira-service-desk-simple-addon\\tmp'
     else:
         tempdir = SPLUNK_HOME + '/etc/apps/TA-jira-service-desk-simple-addon/tmp'
     if not os.path.exists(tempdir):

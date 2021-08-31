@@ -94,6 +94,46 @@ def checkstr(i):
         return i
 
 
+def get_bearer_token(helper, session_key, **kwargs):
+
+    import splunk
+    import splunk.entity
+    import splunklib.client as client
+    import re
+
+    # Get splunkd port
+    entity = splunk.entity.getEntity('/server', 'settings',
+                                        namespace='TA-jira-service-desk-simple-addon', sessionKey=session_key, owner='-')
+    splunkd_port = entity['mgmtHostPort']
+
+    service = client.connect(
+        owner="nobody",
+        app="TA-jira-service-desk-simple-addon",
+        port=splunkd_port,
+        token=session_key
+    )
+
+    # Cred store
+    storage_passwords = service.storage_passwords
+
+    # The bearer token is stored in the credential store
+    # However, likely due to the number of chars, the credential.content.get SDK command is unable to return its value in a single operation
+    # As a workaround, we concatenate the different values return to form a complete object, finally we use a regex approach to extract its clear text value
+    credential_realm = '__REST_CREDENTIAL__#TA-jira-service-desk-simple-addon#configs/conf-ta_service_desk_simple_addon_settings'
+    bearer_token_rawvalue = ""
+
+    for credential in storage_passwords:
+        if credential.content.get('realm') == str(credential_realm):
+            bearer_token_rawvalue = bearer_token_rawvalue + str(credential.content.clear_password)
+
+    # extract a clean json object
+    bearer_token_rawvalue_match = re.search('\{\"bearer_token\":\s*\"(.*)\"\}', bearer_token_rawvalue)
+    if bearer_token_rawvalue_match:
+        bearer_token = bearer_token_rawvalue_match.group(1)
+
+    return bearer_token
+
+
 def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_password, ssl_certificate_validation):
 
     import requests
@@ -200,8 +240,12 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
     kvstore_instance = helper.get_global_setting("kvstore_instance")
     helper.log_debug("kvstore_instance={}".format(kvstore_instance))
 
-    bearer_token = helper.get_global_setting("bearer_token")
-    helper.log_debug("bearer_token={}".format(bearer_token))
+    # Get the bearer_token if required (store in the credential store)
+    if (kvstore_instance and str(kvstore_instance) != 'null'):
+        bearer_token = get_bearer_token(helper, session_key)
+        # helper.log_debug("bearer_token={}".format(bearer_token))
+    else:
+        bearer_token = 'null'
 
     if (kvstore_instance and str(kvstore_instance) != 'null') and \
         (bearer_token and bearer_token != 'null'):

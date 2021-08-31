@@ -15,6 +15,8 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 import time
 import csv
+import json
+import re
 
 splunkhome = os.environ['SPLUNK_HOME']
 sys.path.append(os.path.join(splunkhome, 'etc', 'apps', 'TA-jira-service-desk-simple-addon', 'lib'))
@@ -47,6 +49,7 @@ class GetJiraKv(GeneratingCommand):
             # Get conf
             conf_file = "ta_service_desk_simple_addon_settings"
             confs = self.service.confs[str(conf_file)]
+            storage_passwords = self.service.storage_passwords
             kvstore_instance = None
             bearer_token = None
             for stanza in confs:
@@ -56,10 +59,27 @@ class GetJiraKv(GeneratingCommand):
                             jira_passthrough_mode = value
                         if key == "kvstore_instance":
                             kvstore_instance = value
-                        if key == "bearer_token":
-                            bearer_token = value
                         if key == "kvstore_search_filters":
                             kvstore_search_filters = value
+
+            if kvstore_instance:
+
+                # The bearer token is stored in the credential store
+                # However, likely due to the number of chars, the credential.content.get SDK command is unable to return its value in a single operation
+                # As a workaround, we concatenate the different values return to form a complete object, finally we use a regex approach to extract its clear text value
+                credential_realm = '__REST_CREDENTIAL__#TA-jira-service-desk-simple-addon#configs/conf-ta_service_desk_simple_addon_settings'
+                bearer_token_rawvalue = ""
+
+                for credential in storage_passwords:
+                    if credential.content.get('realm') == str(credential_realm):
+                        bearer_token_rawvalue = bearer_token_rawvalue + str(credential.content.clear_password)
+
+                # extract a clean json object
+                bearer_token_rawvalue_match = re.search('\{\"bearer_token\":\s*\"(.*)\"\}', bearer_token_rawvalue)
+                if bearer_token_rawvalue_match:
+                    bearer_token = bearer_token_rawvalue_match.group(1)
+                else:
+                    bearer_token = None
 
             # the root search
             search = "| inputlookup jira_failures_replay | eval uuid=_key, mtime=if(isnull(mtime), ctime, mtime)"

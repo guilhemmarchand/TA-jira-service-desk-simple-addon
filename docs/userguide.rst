@@ -38,7 +38,7 @@ The list of JIRA projects made available within the configuration screen is the 
 
 ::
 
-    | jirafill opt=1 | stats count by key, key_projects
+    | jirafill account=_all opt=1 | stats count by key, key_projects
 
 JIRA issue type
 ===============
@@ -51,7 +51,7 @@ The type of issue to be created is a dynamic list provided by JIRA based on the 
 
 ::
 
-    | jirafill opt=2 | stats count by issues
+    | jirafill account=_all opt=2 | stats count by issues
 
 JIRA issue priority
 ===================
@@ -64,7 +64,7 @@ The priority of the issue is dynamically retrieved from the JIRA project based o
 
 ::
 
-    | jirafill opt=3 | stats count by priorities
+    | jirafill account=_all opt=3 | stats count by priorities
 
 JIRA issue dynamic priority
 ===========================

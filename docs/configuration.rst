@@ -245,7 +245,7 @@ Shall the connectivity be effective and if you open the Get projects report, the
 
 ::
 
-   | jirafill opt=1 | stats count by key, key_projects
+   | jirafill account=_all opt=1 | stats count by key, key_projects
 
 If the command returns the list of your JIRA projects per account configured, then the connectivity is successful:
 

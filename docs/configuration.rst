@@ -25,7 +25,7 @@ The Add-on for JIRA supports multiple accounts to be configured, an account cons
 
 - **account name:** a name of your choice to represent this instance of JIRA
 - **JIRA URL:** the URL value which will be used for this instance, in the format ``<address>:<port>``
-- **Authentication type:** currently the Add-on supports ``basic authenticaton`` (user/password) and ``PAT`` (Personal Access Token)
+- **Authentication type:** currently the Add-on supports ``basic authenticaton`` (user/password), ``API token`` (user/API token), and ``PAT`` (Personal Access Token)
 - **SSL related configuration items:** SSL certificate verification and SSL certificate bundle
 
 .. image:: img/config2.png
@@ -34,8 +34,49 @@ The Add-on for JIRA supports multiple accounts to be configured, an account cons
    :width: 600px 
    :class: with-border   
 
-Configuring an account with Personal Access Token (PAT)
--------------------------------------------------------
+Configuring an account with API token for Atlassian Cloud
+---------------------------------------------------------
+
+**Atlassian Cloud requires you to setup an API token for the authentication, in a nutshell the API token replaces your password for enhanced security:**
+
+- https://support.atlassian.com/atlassian-account/docs/manage-api-tokens-for-your-atlassian-account/
+
+**To setup your API token, go to:**
+
+- https://id.atlassian.com/manage-profile/security
+
+**Then create an API token as following:**
+
+.. image:: img/cloud/config1.png
+   :alt: img/cloud/config1.png
+   :align: center
+   :width: 1200px
+   :class: with-border
+
+.. image:: img/cloud/config2.png
+   :alt: img/cloud/config2.png
+   :align: center
+   :width: 1200px
+   :class: with-border
+
+**This token is what you will use in replacement of the password for Cloud services:**
+
+.. image:: img/cloud/config3.png
+   :alt: img/cloud/config3.png
+   :align: center
+   :width: 600px
+   :class: with-border
+
+**When you enter the JIRA URL, make sure to sure the proper URL:**
+
+.. image:: img/cloud/config4.png
+   :alt: img/cloud/config4.png
+   :align: center
+   :width: 1200px
+   :class: with-border
+
+Configuring an account with Personal Access Token for JIRA on-premise (PAT)
+---------------------------------------------------------------------------
 
 The recommended way for the authentication to JIRA with the Add-on is to use Personal Access Tokens:
 
@@ -46,7 +87,7 @@ The recommended way for the authentication to JIRA with the Add-on is to use Per
 .. image:: img/jira_PAT.png
    :alt: jira_PAT.png
    :align: center
-   :width: 900px 
+   :width: 900px
    :class: with-border
 
 *Add-on PAT account configuration:*
@@ -58,8 +99,8 @@ The recommended way for the authentication to JIRA with the Add-on is to use Per
 .. image:: img/config_PAT.png
    :alt: config_PAT.png
    :align: center
-   :width: 600px 
-   :class: with-border   
+   :width: 600px
+   :class: with-border
 
 Configuring an account with basic authentication
 ------------------------------------------------

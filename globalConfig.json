@@ -75,9 +75,9 @@
                                     },
                                     {
                                         "oauth_field": "password",
-                                        "label": "Password or PAT",
+                                        "label": "Password, API token or PAT",
                                         "encrypted": true,
-                                        "help": "Enter the password for this account, or the Personal Access Token.",
+                                        "help": "Enter the password for this account, API token or Personal Access Token.",
                                         "field": "password"
                                     }
                                 ],
@@ -122,13 +122,13 @@
                             "label": "Authentication method",
                             "field": "jira_auth_mode",
                             "defaultValue": "basic",
-                            "help": "Use basic authentication with combo username/password or use Personal Access Token (PAT)",
+                            "help": "Use basic authentication with combo username/password, username/API token or Personal Access Token (PAT)",
                             "required": true,
                             "options": {
                                 "items": [
                                     {
                                         "value": "basic",
-                                        "label": "Basic"
+                                        "label": "Basic/API token"
                                     },
                                     {
                                         "value": "pat",
@@ -139,11 +139,20 @@
                             }
                         },
                         {
-                            "field": "using_pat_help_link",
-                            "label": " ",
+                            "field": "using_api_token_help_link",
+                            "label": "Help link JIRA Cloud",
                             "type": "helpLink",
                             "options": {
-                                "text": "Using Personal Access Tokens on Atlassian support",
+                                "text": "API token (JIRA Cloud)",
+                                "link": "https://support.atlassian.com/atlassian-account/docs/manage-api-tokens-for-your-atlassian-account/"
+                            }
+                        },
+                        {
+                            "field": "using_pat_help_link",
+                            "label": "Help link JIRA on-premise",
+                            "type": "helpLink",
+                            "options": {
+                                "text": "Personal Access Tokens (JIRA on-premise)",
                                 "link": "https://confluence.atlassian.com/enterprise/using-personal-access-tokens-1026032365.html"
                             }
                         },

@@ -13,6 +13,7 @@ Version 2.0.5
 
 **What's new in the Add-on for JIRA version 2.0.x:**
 
+- Enhancement: Issue #116 - Improve JIRA Cloud account configuration steps
 
 Version 2.0.4
 =============

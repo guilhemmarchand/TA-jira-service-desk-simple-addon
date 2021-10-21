@@ -100,23 +100,33 @@ These two fields define the title of the JIRA issue, and its main content visibl
 
 Both fields will automatically handle any dynamic value that are available from the results of your search, which requires to be defined as ``$result.myfield$`` to be automatically translated into the relevant value.
 
-JIRA assignee
-=============
+JIRA assignee & reporter
+========================
 
-.. image:: img/userguide7.png
-   :alt: userguide7.png
+**Both the assignee and the reporter can be defined in the alert action, to do so the follow these instructions:**
+
+- Retrieve the accountId value for the target JIRA user
+- This ID is the value you need to submit in both fields, in most JIRA configuration emails or usernames will be refused and ignored by JIRA
+- You can get retrieve easily the accountId value using any valid JIRA issue, as follows
+
+
+::
+
+   | jirarest account="<account>" target="rest/api/latest/issue/<issue key>" method="GET"
+
+*Then locate the accountId value, example:*
+
+.. image:: img/assignee_and_reporter.png
+   :alt: assignee_and_reporter.png
    :align: center
+   :width: 800px
 
-The JIRA assignee field is **optional**, and can be defined to a static or a dynamic value (using a token) to automatically assign the issue to a specific JIRA user.
+*Finally, assign the accountId value in your alert action, example:*
 
-JIRA reporter
-=============
-
-.. image:: img/jira_reporter.png
-   :alt: jira_reporter.png
+.. image:: img/assignee_and_reporter2.png
+   :alt: assignee_and_reporter2.png
    :align: center
-
-The JIRA reporter field is **optional**, and can be defined to a static or a dynamic value (using a token) to automatically assign the issue to a specific JIRA user.
+   :width: 500px
 
 JIRA labels
 ===========

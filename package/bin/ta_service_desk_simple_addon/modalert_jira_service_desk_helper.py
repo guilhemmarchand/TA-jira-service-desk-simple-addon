@@ -663,11 +663,11 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
 
         # JIRA assignee
         if jira_assignee not in ["", "None", None]:
-            data = data + ',\n "assignee" : {\n' + '"name": "' + jira_assignee + '"\n }'
+            data = data + ',\n "assignee" : {\n' + '"accountId": "' + jira_assignee + '"\n }'
 
         # JIRA reporter
         if jira_reporter not in ["", "None", None]:
-            data = data + ',\n "reporter" : {\n' + '"name": "' + jira_reporter + '"\n }'
+            data = data + ',\n "reporter" : {\n' + '"accountId": "' + jira_reporter + '"\n }'
 
         # Priority can be dynamically overridden by the text input dynamic priority, if set
         if jira_priority not in ["", "None", None]:

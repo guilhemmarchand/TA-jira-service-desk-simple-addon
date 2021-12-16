@@ -697,12 +697,50 @@
                     "required": false
                 }
             ]
+        },
+        {
+            "name": "jira_service_desk_test",
+            "label": "Troubleshoot and testing of the JIRA Service Desk",
+            "description": "JIRA Service Desk test",
+            "entity": [
+                {
+                    "type": "singleSelectSplunkSearch",
+                    "label": "Select Account",
+                    "field": "account",
+                    "search": "| rest splunk_server=local /servicesNS/nobody/TA-jira-service-desk-simple-addon/ta_service_desk_simple_addon_account | dedup title",
+                    "valueField": "title",
+                    "labelField": "title",
+                    "help": "Select the account from the dropdown",
+                    "required": true
+                },
+                {
+                    "type": "text",
+                    "label": "KVstore target",
+                    "help": "",
+                    "field": "test_kvstore_target",
+                    "required": false
+                },
+                {
+                    "type": "text",
+                    "label": "Ticket uuid to test",
+                    "help": "",
+                    "field": "test_record_key",
+                    "required": false
+                },
+                {
+                    "type": "text",
+                    "label": "Test data",
+                    "help": "",
+                    "field": "test_data",
+                    "required": false
+                }
+            ]
         }
     ],
     "meta": {
         "name": "TA-jira-service-desk-simple-addon",
         "restRoot": "ta_service_desk_simple_addon",
-        "version": "2.0.7",
+        "version": "2.0.8",
         "displayName": "JIRA Service Desk simple addon",
         "schemaVersion": "0.0.3"
     }

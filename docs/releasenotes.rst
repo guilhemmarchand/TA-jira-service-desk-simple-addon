@@ -1,7 +1,7 @@
 Release notes
 #############
 
-Version 2.0.8
+Version 2.0.9
 =============
 
 .. warning:: **BREAKING CHANGES!**

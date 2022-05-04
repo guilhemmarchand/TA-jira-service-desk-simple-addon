@@ -697,6 +697,9 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
         # Finally close
         data = data + '\n}\n}'
 
+        # Force encode UTF8
+        data = data.encode('utf-8')
+
         # log raw json in debug mode
         helper.log_debug("json raw data for final rest call before json.loads:={}".format(data))
 

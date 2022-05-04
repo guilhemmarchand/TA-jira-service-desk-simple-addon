@@ -1044,12 +1044,21 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
                                 + str(time.time()) + '", "status": "created", "jira_id": "' \
                                 + jira_created_id + '", "jira_key": "' \
                                 + jira_created_key + '", "jira_self": "' + jira_created_self + '"}'
+                        # Force encode UTF8
+                        record = record.encode('utf-8')
+
+                        # log debug
                         helper.log_debug('record={}'.format(record))
+
                     else:
                         record = '{"account": "' + str(account) + '", "_key": "' + jira_md5sum + '", "jira_md5": "' + jira_md5sum + '", "ctime": "' \
                                 + str(time.time()) + '", "mtime": "' + str(time.time()) \
                                 + '", "status": "created", "jira_id": "' + jira_created_id \
                                 + '", "jira_key": "' + jira_created_key + '", "jira_self": "' + jira_created_self + '"}'
+                        # Force encode UTF8
+                        record = record.encode('utf-8')
+
+                        # log debug
                         helper.log_debug('record={}'.format(record))
 
                     response = requests.post(record_url, headers=headers, data=record,

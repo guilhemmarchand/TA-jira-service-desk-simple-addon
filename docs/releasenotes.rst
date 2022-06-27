@@ -1,6 +1,12 @@
 Release notes
 #############
 
+Version 2.0.10
+=============
+
+- Safer and stronger approach at the Python level when builing the JSON data to be submitted to the JIRA API, this addresses risks of failures with massively complex contents
+- Deprecation of the custom_fields parsing option, due to the change in the backend, this option didn't make sense amy longer and became useless
+
 Version 2.0.9
 =============
 

@@ -411,17 +411,6 @@ To add a list of custom fields, make sure you add a comma after each custom fiel
     "customfield_10052": {"value": "$result.single_choice$"},
     "customfield_10053": [ {"value": "$result.multi_choice_grp1$" }, {"value": "$result.multi_choice_grp2" }]
 
-**Custom fields parsing:**
-
-By default, the content of the custom fields is parsed to escape and protect any special characters that would potentially lead the JSON data not to be parsed properly.
-
-In some circumstances, the built-in parser rules may fail to recognize an unexpected custom fields structure, the parsing can be disabled if required:
-
-.. image:: img/customfields_parsing.png
-   :alt: img/customfields_parsing.png
-   :align: center
-   :width: 800px   
-
 How to retrieve the IDs of the custom fields configured ?
 ---------------------------------------------------------
 

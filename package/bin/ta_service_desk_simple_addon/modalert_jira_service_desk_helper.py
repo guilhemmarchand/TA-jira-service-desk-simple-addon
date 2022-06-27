@@ -831,6 +831,16 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
                         data = '{"body": "New alert triggered: ' + jira_summary + '"}'
                     else:
                         data = jira_update_comment
+                    
+                    helper.log_debug("json raw data for final rest call before json.loads:={}".format(data))
+                    try:
+                        data = json.dumps(json.loads(data, strict=False), indent=4)
+                    except Exception as e:
+                        helper.log_error("json loads failed to accept some of the characters,"
+                                        " raw json data before json.loads:={}".format(data))
+                        raise e
+
+                    helper.log_debug("json data for final rest call:={}".format(data))
 
                 # dedup is enabled but the issue was resolved, closed or cancelled
                 elif jira_dedup_enabled and jira_issue_status_category in jira_dedup_exclude_statuses:

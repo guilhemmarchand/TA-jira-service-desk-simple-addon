@@ -749,17 +749,15 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
 
                     # Handle the JIRA comment to be added, if a field named jira_update_comment is part of the result,
                     # its content will used for the comment content.
-                    jira_update_comment = "null"
+                    jira_update_comment = { 'body': 'New alert triggered: ' + jira_summary }
+                    
                     for key, value in event.items():
                         if key in "jira_update_comment":
                             jira_update_comment = { 'body': value }
 
                     helper.log_debug("jira_update_comment:={}".format(jira_update_comment))
 
-                    if jira_update_comment in "null":
-                        data = { 'body': 'New alert triggered: ' + jira_summary }
-                    else:
-                        data = jira_update_comment
+                    data = jira_update_comment
 
                     helper.log_debug("JSON payload before submission={}".format(json.dumps(jira_update_comment)))
 

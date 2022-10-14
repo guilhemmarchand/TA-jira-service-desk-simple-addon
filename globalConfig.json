@@ -50,63 +50,25 @@
                             "label": "JIRA URL",
                             "help": "jira.atlassian.net (SSL is enforced and the URL submitted will be substituted with https://)",
                             "field": "jira_url",
-                            "required": false,
+                            "required": true,
                             "options": {
                                 "display": true
                             }
                         },
                         {
-                            "type": "oauth",
-                            "field": "oauth",
-                            "label": "Not used",
-                            "options": {
-                                "auth_type": [
-                                    "none",
-                                    "basic",
-                                    "oauth"
-                                ],
-                                "none": [],
-                                "basic": [
-                                    {
-                                        "oauth_field": "username",
-                                        "label": "Username or PAT ID",
-                                        "help": "Enter the username for this account, or the Personal Access Token ID.",
-                                        "field": "username"
-                                    },
-                                    {
-                                        "oauth_field": "password",
-                                        "label": "Password, API token or PAT",
-                                        "encrypted": true,
-                                        "help": "Enter the password for this account, API token or Personal Access Token.",
-                                        "field": "password"
-                                    }
-                                ],
-                                "oauth": [
-                                    {
-                                        "oauth_field": "client_id",
-                                        "label": "Client Id",
-                                        "field": "client_id",
-                                        "help": "Enter the Client Id for this account."
-                                    },
-                                    {
-                                        "oauth_field": "client_secret",
-                                        "label": "Client Secret",
-                                        "field": "client_secret",
-                                        "encrypted": true,
-                                        "help": "Enter the Client Secret key for this account."
-                                    },
-                                    {
-                                        "oauth_field": "redirect_url",
-                                        "label": "Redirect url",
-                                        "field": "redirect_url",
-                                        "help": "Copy and paste this URL into your app."
-                                    }
-                                ],
-                                "auth_code_endpoint": "/services/oauth2/authorize",
-                                "access_token_endpoint": "/services/oauth2/token",
-                                "oauth_timeout": 30,
-                                "oauth_state_enabled": false
-                            }
+                            "type": "text",
+                            "label": "Username or PAT ID",
+                            "help": "Enter the username for this account, or the Personal Access Token ID.",
+                            "field": "username",
+                            "required": true
+                        },
+                        {
+                            "type": "text",
+                            "label": "Password, API token or PAT",
+                            "encrypted": true,
+                            "help": "Enter the password for this account, API token or Personal Access Token.",
+                            "field": "password",
+                            "required": true
                         },
                         {
                             "field": "configuration_help_link",

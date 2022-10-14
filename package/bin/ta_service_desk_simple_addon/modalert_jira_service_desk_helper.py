@@ -1,5 +1,46 @@
 # encoding = utf-8
 
+# This function is required to reformat proper values in the custom fields
+def reformat_customfields(i):
+
+    import re
+
+    if i is not None:
+        i = re.sub(r'\\"customfield_(\d+)\\": \\"', r'"customfield_\1": "', i)
+        i = re.sub(r'\\"customfield_(\d+)\\": (\d)', r'"customfield_\1": \2', i)
+        i = re.sub(r'\\"customfield_(\d+)\\": {', r'"customfield_\1": {', i)
+        i = re.sub(r'\\"customfield_(\d+)\\": \[', r'"customfield_\1": \[', i)
+        i = re.sub(r'\\",\\n', '",\n', i)
+        i = re.sub(r'\{\\"value\\": \\"', '{"value": "', i)
+        i = re.sub(r'\\\[ {\\"value\\": "', '[ {"value": "', i)
+        i = re.sub(r'\\\[{\\"value\\": "', '[{"value": "', i)
+        i = re.sub(r'\\\[ {"value": "', '[ {"value": "', i)
+        i = re.sub(r'\\\[{"value": "', '[{"value": "', i)
+        i = re.sub(r'\\"}', '"}', i)
+        i = re.sub(r'\\" }', '" }', i)
+        i = re.sub(r'\\" }]', '" }]', i)
+        i = re.sub(r',\\n"customfield', ',\n"customfield', i)
+        i = re.sub(r"\\\"$", "\"", i)
+        i = re.sub(r"\\\"\,$", "\"", i)
+        i = re.sub(r"\\\"\\n$", "\"", i)
+        i = re.sub(r"\\\"\,\\n$", "\"", i)
+        i = re.sub(r"(\d*),$", r"\1", i)
+        i = re.sub(r"(\d*),\\n$", r"\1", i)
+        i = re.sub(r"(\d*)\\n$", r"\1", i)
+        # generic replacement
+        i = re.sub(r'\\\"(\w*)\\\":\s\\\"([^\"]*)\"', r'"\1": "\2"', i)
+        i = re.sub(r'\\\"(\w*)\\\":\s(\[{[^\}]*)', r'"\1": \2', i)
+        i = re.sub(r'\\\"(\w*)\\\":\s(\[\s{[^\}]*)', r'"\1": \2', i)
+
+        # any non escaped backslash
+        i = re.sub(r'\\([^\\])', r'\\\\\1', i)
+
+        # ending json with extra comma
+        i = re.sub(r'},$', '}', i)
+
+        return i
+
+
 # This function can optionnally be used to only remove the espaced double quotes and leave the custom fields with no parsing at all
 def reformat_customfields_minimal(i):
 
@@ -7,6 +48,9 @@ def reformat_customfields_minimal(i):
 
     if i is not None:
         i = re.sub(r'\\"', '"', i)
+        # any non escaped backslash
+        i = re.sub(r'\\([^\\])', r'\\\\\1', i)
+        # ending json with extra comma
         i = re.sub(r'},$', '}', i)
 
         return i
@@ -584,6 +628,15 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
         jira_customfields = helper.get_param("jira_customfields")
         helper.log_debug("jira_customfields={}".format(jira_customfields))
 
+        # custom fields parsing is function of the alert configuration and can be disabled on demand
+        if jira_customfields_parsing not in ("disabled"):
+            helper.log_info("jira_customfields_parsing={}".format(jira_customfields_parsing))
+            jira_customfields = reformat_customfields(jira_customfields)
+        else:
+            helper.log_info("jira_customfields_parsing={}".format(jira_customfields_parsing))
+            jira_customfields = reformat_customfields_minimal(jira_customfields)
+        helper.log_debug("jira_customfields={}".format(jira_customfields))
+
         # Manage custom fields properly
 
         data = {}
@@ -631,8 +684,7 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
 
         # JIRA custom fields structure
         if jira_customfields not in ["", "None", None]:
-            helper.log_debug("After format, jira_customfields=\"{}\"".format(reformat_customfields_minimal(jira_customfields)))
-            jira_customfields = "{" + reformat_customfields_minimal(jira_customfields) + "}"
+            jira_customfields = "{" + jira_customfields + "}"
             try:
                 jira_customfields_json = json.loads(jira_customfields)
 

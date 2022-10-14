@@ -360,4 +360,36 @@
       </span>
     </div>
   </div>
+
+  <div class="control-group">
+    <label
+      class="control-label"
+      for="jira_service_desk_jira_customfields_parsing"
+      >Custom fields parsing:
+    </label>
+    <div class="controls">
+      <select
+        name="action.jira_service_desk.param.jira_customfields_parsing"
+        id="jira_service_desk_jira_customfields_parsing"
+      >
+        <option value="enabled">Enabled</option>
+        <option value="disabled">Disabled</option>
+      </select>
+      <span class="help-block">
+        <br />This option performs parsing of the custom fields to prevent
+        failures that would be due to special characters in the content that
+        would need to be protected.<br />
+        <br />
+        However, in some cases where the sequence is not expected by the parsing
+        function, this can lead to a json parsing failure of the custom fields
+        structure.<br />
+        <br />
+        When the option is set to disabled, no parsing of the custom fields will
+        be performed and the alert needs to handle properly any special
+        character that would be need to be escaped, as a best practice you would
+        avoid any special characters.<br />
+        <br />
+      </span>
+    </div>
+  </div>
 </form>

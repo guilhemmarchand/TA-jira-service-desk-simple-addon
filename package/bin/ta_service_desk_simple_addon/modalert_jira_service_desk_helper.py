@@ -1,5 +1,61 @@
 # encoding = utf-8
 
+# This function is required to reformat proper values in the custom fields
+def reformat_customfields(i):
+
+    import re
+
+    if i is not None:
+        i = re.sub(r'\\"customfield_(\d+)\\": \\"', r'"customfield_\1": "', i)
+        i = re.sub(r'\\"customfield_(\d+)\\": (\d)', r'"customfield_\1": \2', i)
+        i = re.sub(r'\\"customfield_(\d+)\\": {', r'"customfield_\1": {', i)
+        i = re.sub(r'\\"customfield_(\d+)\\": \[', r'"customfield_\1": \[', i)
+        i = re.sub(r'\\",\\n', '",\n', i)
+        i = re.sub(r'\{\\"value\\": \\"', '{"value": "', i)
+        i = re.sub(r'\\\[ {\\"value\\": "', '[ {"value": "', i)
+        i = re.sub(r'\\\[{\\"value\\": "', '[{"value": "', i)
+        i = re.sub(r'\\\[ {"value": "', '[ {"value": "', i)
+        i = re.sub(r'\\\[{"value": "', '[{"value": "', i)
+        i = re.sub(r'\\"}', '"}', i)
+        i = re.sub(r'\\" }', '" }', i)
+        i = re.sub(r'\\" }]', '" }]', i)
+        i = re.sub(r',\\n"customfield', ',\n"customfield', i)
+        i = re.sub(r"\\\"$", "\"", i)
+        i = re.sub(r"\\\"\,$", "\"", i)
+        i = re.sub(r"\\\"\\n$", "\"", i)
+        i = re.sub(r"\\\"\,\\n$", "\"", i)
+        i = re.sub(r"(\d*),$", r"\1", i)
+        i = re.sub(r"(\d*),\\n$", r"\1", i)
+        i = re.sub(r"(\d*)\\n$", r"\1", i)
+        # generic replacement
+        i = re.sub(r'\\\"(\w*)\\\":\s\\\"([^\"]*)\"', r'"\1": "\2"', i)
+        i = re.sub(r'\\\"(\w*)\\\":\s(\[{[^\}]*)', r'"\1": \2', i)
+        i = re.sub(r'\\\"(\w*)\\\":\s(\[\s{[^\}]*)', r'"\1": \2', i)
+
+        # any non escaped backslash
+        i = re.sub(r'\\([^\\])', r'\\\\\1', i)
+
+        # ending json with extra comma
+        i = re.sub(r'},$', '}', i)
+
+        return i
+
+
+# This function can optionnally be used to only remove the espaced double quotes and leave the custom fields with no parsing at all
+def reformat_customfields_minimal(i):
+
+    import re
+
+    if i is not None:
+        i = re.sub(r'\\"', '"', i)
+        # any non escaped backslash
+        i = re.sub(r'\\([^\\])', r'\\\\\1', i)
+        # ending json with extra comma
+        i = re.sub(r'},$', '}', i)
+
+        return i
+
+
 def process_event(helper, *args, **kwargs):
 
     # Start
@@ -93,66 +149,6 @@ def process_event(helper, *args, **kwargs):
     return 0
 
 
-# This function is required to prevent any failure due to content which we have no control on
-def checkstr(i):
-
-    if i is not None:
-        i = i.replace("\\", "\\\\")
-        # Manage line breaks
-        i = i.replace("\n", "\\n")
-        i = i.replace("\r", "\\r")
-        # Manage tabs
-        i = i.replace("\t", "\\t")
-        # Manage breaking delimiters
-        i = i.replace("\"", "\\\"")
-        return i
-
-
-# This function is required to reformat proper values in the custom fields
-def reformat_customfields(i):
-
-    import re
-
-    if i is not None:
-        i = re.sub(r'\\"customfield_(\d+)\\": \\"', r'"customfield_\1": "', i)
-        i = re.sub(r'\\"customfield_(\d+)\\": (\d)', r'"customfield_\1": \2', i)
-        i = re.sub(r'\\"customfield_(\d+)\\": {', r'"customfield_\1": {', i)
-        i = re.sub(r'\\"customfield_(\d+)\\": \[', r'"customfield_\1": \[', i)
-        i = re.sub(r'\\",\\n', '",\n', i)
-        i = re.sub(r'\{\\"value\\": \\"', '{"value": "', i)
-        i = re.sub(r'\\\[ {\\"value\\": "', '[ {"value": "', i)
-        i = re.sub(r'\\\[{\\"value\\": "', '[{"value": "', i)
-        i = re.sub(r'\\\[ {"value": "', '[ {"value": "', i)
-        i = re.sub(r'\\\[{"value": "', '[{"value": "', i)
-        i = re.sub(r'\\"}', '"}', i)
-        i = re.sub(r'\\" }', '" }', i)
-        i = re.sub(r'\\" }]', '" }]', i)
-        i = re.sub(r',\\n"customfield', ',\n"customfield', i)
-        i = re.sub(r"\\\"$", "\"", i)
-        i = re.sub(r"\\\"\,$", "\"", i)
-        i = re.sub(r"\\\"\\n$", "\"", i)
-        i = re.sub(r"\\\"\,\\n$", "\"", i)
-        i = re.sub(r"(\d*),$", r"\1", i)
-        i = re.sub(r"(\d*),\\n$", r"\1", i)
-        i = re.sub(r"(\d*)\\n$", r"\1", i)
-        # generic replacement
-        i = re.sub(r'\\\"(\w*)\\\":\s\\\"([^\"]*)\"', r'"\1": "\2"', i)
-        i = re.sub(r'\\\"(\w*)\\\":\s(\[{[^\}]*)', r'"\1": \2', i)
-        i = re.sub(r'\\\"(\w*)\\\":\s(\[\s{[^\}]*)', r'"\1": \2', i)
-
-        return i
-
-# This function can optionnally be used to only remove the espaced double quotes and leave the custom fields with no parsing at all
-def reformat_customfields_minimal(i):
-
-    import re
-
-    if i is not None:
-        i = re.sub(r'\\"', '"', i)
-
-        return i
-
-
 # simple def to return current time for file naming
 def get_timestr():
 
@@ -166,9 +162,6 @@ def get_tempdir():
     import os
     import re
     import platform
-
-    # Guest Operation System type
-    ostype = platform.system().lower()
 
     # If running Windows OS (used for directory identification)
     is_windows = re.match(r'^win\w+', (platform.system().lower()))
@@ -532,15 +525,12 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
 
     # Retrieve parameters which are not event related
     jira_project = helper.get_param("jira_project")
-    jira_project = checkstr(jira_project)
     helper.log_debug("jira_project={}".format(jira_project))
 
     jira_issue_type = helper.get_param("jira_issue_type")
-    jira_issue_type = checkstr(jira_issue_type)
     helper.log_debug("jira_issue_type={}".format(jira_issue_type))
 
     jira_priority = helper.get_param("jira_priority")
-    jira_priority = checkstr(jira_priority)
     helper.log_debug("jira_priority={}".format(jira_priority))
 
     jira_dedup_enabled = False
@@ -568,7 +558,6 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
         helper.log_debug("jira_dedup_content={}".format(jira_dedup_content))
 
     jira_attachment = helper.get_param("jira_attachment")
-    jira_attachment = checkstr(jira_attachment)
     helper.log_debug("jira_attachment={}".format(jira_attachment))
 
     if jira_attachment in ["", "None", None]:
@@ -576,11 +565,9 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
     helper.log_debug("jira_attachment:={}".format(jira_attachment))
 
     jira_attachment_token = helper.get_param("jira_attachment_token")
-    jira_attachment_token = checkstr(jira_attachment_token)
     helper.log_debug("jira_attachment_token={}".format(jira_attachment_token))
 
     jira_customfields_parsing = helper.get_param("jira_customfields_parsing")
-    jira_customfields_parsing = checkstr(jira_customfields_parsing)
     helper.log_debug("jira_customfields_parsing={}".format(jira_customfields_parsing))
 
     if jira_customfields_parsing in ["", "None", None]:
@@ -617,114 +604,110 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
         helper.log_debug("event={}".format(event))
 
         jira_priority_dynamic = helper.get_param("jira_priority_dynamic")
-        jira_priority_dynamic = checkstr(jira_priority_dynamic)
         helper.log_debug("jira_priority_dynamic={}".format(jira_priority_dynamic))
 
         jira_summary = helper.get_param("jira_summary")
-        jira_summary = checkstr(jira_summary)
         helper.log_debug("jira_summary={}".format(jira_summary))
 
         jira_description = helper.get_param("jira_description")
-        jira_description = checkstr(jira_description)
         helper.log_debug("jira_description={}".format(jira_description))
 
         jira_assignee = helper.get_param("jira_assignee")
-        jira_assignee = checkstr(jira_assignee)
         helper.log_debug("jira_assignee={}".format(jira_assignee))
 
         jira_reporter = helper.get_param("jira_reporter")
-        jira_reporter = checkstr(jira_reporter)
         helper.log_debug("jira_reporter={}".format(jira_reporter))
 
         jira_labels = helper.get_param("jira_labels")
-        jira_labels = checkstr(jira_labels)
         helper.log_debug("jira_labels={}".format(jira_labels))
 
         jira_components = helper.get_param("jira_components")
-        jira_components = checkstr(jira_components)
         helper.log_debug("jira_components={}".format(jira_components))
 
         # Retrieve the custom fields
         jira_customfields = helper.get_param("jira_customfields")
-        jira_customfields = checkstr(jira_customfields)
+        helper.log_debug("jira_customfields={}".format(jira_customfields))
+
         # custom fields parsing is function of the alert configuration and can be disabled on demand
         if jira_customfields_parsing not in ("disabled"):
-            helper.log_debug("jira_customfields_parsing={}".format(jira_customfields_parsing))
+            helper.log_info("jira_customfields_parsing={}".format(jira_customfields_parsing))
             jira_customfields = reformat_customfields(jira_customfields)
         else:
-            helper.log_debug("jira_customfields_parsing={}".format(jira_customfields_parsing))
+            helper.log_info("jira_customfields_parsing={}".format(jira_customfields_parsing))
             jira_customfields = reformat_customfields_minimal(jira_customfields)
         helper.log_debug("jira_customfields={}".format(jira_customfields))
 
         # Manage custom fields properly
-        data = '{\n' + '"fields": {\n' + '"project":\n {\n"key": "' + jira_project + '"' + '\n },\n"summary": "' \
-               + jira_summary + '",\n"description": "' + jira_description + '",\n"issuetype": {\n"name": "' \
-               + jira_issue_type + '"\n}'
+
+        data = {}
+
+        # add project
+        data['fields'] = { 'project': { 'key' : jira_project } }
+
+        # add summary
+        data['fields']['summary'] = jira_summary
+
+        # add description
+        data['fields']['description'] = jira_description
+
+        # add issue type
+        data['fields']['issuetype'] = { 'name': jira_issue_type }
 
         # JIRA assignee
         if jira_assignee not in ["", "None", None]:
-            data = data + ',\n "assignee" : {\n' + '"accountId": "' + jira_assignee + '"\n }'
+            # add assignee
+            data['fields']['assignee'] = { 'accountId': jira_assignee }
 
         # JIRA reporter
         if jira_reporter not in ["", "None", None]:
-            data = data + ',\n "reporter" : {\n' + '"accountId": "' + jira_reporter + '"\n }'
+            data['fields']['reporter'] = { 'accountId': jira_reporter }
 
         # Priority can be dynamically overridden by the text input dynamic priority, if set
         if jira_priority not in ["", "None", None]:
             if jira_priority_dynamic not in ["", "None", None]:
                 helper.log_debug("jira priority is overridden by "
                                  "jira_priority_dynamic={}".format(jira_priority_dynamic))
-                data = data + ',\n "priority" : {\n' + '"name": "' + jira_priority_dynamic + '"\n }'
+                # add
+                data['fields']['priority'] = { 'name': jira_priority_dynamic }
+
             else:
-                data = data + ',\n "priority" : {\n' + '"name": "' + jira_priority + '"\n }'
+                # add
+                data['fields']['priority'] = { 'name': jira_priority }
 
+        # labels
         if jira_labels not in ["", "None", None]:
-            jira_labels = jira_labels.split(",")
-            altered = map(lambda x: '\"%s\"' % x, jira_labels)
-            jira_labels = " [ "+",".join(altered) + " ]"
-            data = data + ',\n "labels" :' + jira_labels
+            data['fields']['labels'] = jira_labels.split(",")
 
+        # components
         if jira_components not in ["", "None", None]:
-            jira_components = jira_components.split(",")
-            altered = map(lambda x: '{\"name\": \"%s\"' % x + '}', jira_components)
-            jira_components = " [ "+", ".join(altered) + " ]"
-            data = data + ',\n "components" :' + jira_components
+            data['fields']['components'] = jira_components.split(",")
 
         # JIRA custom fields structure
         if jira_customfields not in ["", "None", None]:
-            data = data + ',\n ' + jira_customfields + '\n'
+            jira_customfields = "{" + jira_customfields + "}"
+            try:
+                jira_customfields_json = json.loads(jira_customfields)
 
-        # Finally close
-        data = data + '\n}\n}'
+                # Loop
+                for jira_customfields_sub in jira_customfields_json:
+                    data['fields'][jira_customfields_sub] = jira_customfields_json[jira_customfields_sub]
+
+            except Exception as e:
+                helper.log_error("Failed to load jira_customfields=\"{}\" as a proper formated JSON object with exception=\"{}\"".format(jira_customfields, e))
 
         # log raw json in debug mode
-        helper.log_debug("json raw data for final rest call before json.loads:={}".format(data))
+        helper.log_debug("JSON payload before submission=\"{}\"".format(json.dumps(data)))
+        helper.log_debug("JSON pretty print before submission=\"{}\"".format(json.dumps(data, indent=4)))
 
         # Generate an md5 unique hash for this issue
         # If jira_dedup_full_mode is set to True, the entire json data is used
         # Otherwise, jira_dedup_content was detected as filled and its content is used to perform the md5 calculation
         if jira_dedup_full_mode:
-            jira_md5sum = hashlib.md5(data.encode())
+            jira_md5sum = hashlib.md5(json.dumps(data).encode())
         else:
             jira_md5sum = hashlib.md5(jira_dedup_content.encode())
         jira_md5sum = jira_md5sum.hexdigest()
         helper.log_debug("jira_md5sum:={}".format(jira_md5sum))
-
-        # Properly load json
-        try:
-            data = json.dumps(json.loads(data, strict=False), indent=4)
-        except Exception as e:
-            helper.log_error("json loads failed to accept some of the characters,"
-                             " raw json data before json.loads:={}".format(data))
-            raise e
-
-        # log json in debug mode
-        helper.log_debug("json data for final rest call:={}".format(data))
-
-        # Manage jira deduplication enablement
-        #if jira_dedup in ["", "None", None]:
-        #    jira_dedup = False
-       # helper.log_debug("jira_dedup:={}".format(jira_dedup))
 
         # Initiate default behaviour
         jira_dedup_md5_found = False
@@ -818,16 +801,17 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
 
                     # Handle the JIRA comment to be added, if a field named jira_update_comment is part of the result,
                     # its content will used for the comment content.
-                    jira_update_comment = "null"
+                    jira_update_comment = { 'body': 'New alert triggered: ' + jira_summary }
+                    
                     for key, value in event.items():
                         if key in "jira_update_comment":
-                            jira_update_comment = '{"body": "' + checkstr(value) + '"}'
+                            jira_update_comment = { 'body': value }
+
                     helper.log_debug("jira_update_comment:={}".format(jira_update_comment))
 
-                    if jira_update_comment in "null":
-                        data = '{"body": "New alert triggered: ' + jira_summary + '"}'
-                    else:
-                        data = jira_update_comment
+                    data = jira_update_comment
+
+                    helper.log_debug("JSON payload before submission={}".format(json.dumps(jira_update_comment)))
 
                 # dedup is enabled but the issue was resolved, closed or cancelled
                 elif jira_dedup_enabled and jira_issue_status_category in jira_dedup_exclude_statuses:
@@ -894,9 +878,16 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
                     'Authorization': 'Splunk %s' % session_key,
                     'Content-Type': 'application/json'}
 
-                record = '{"account": "' + str(account) + '", "_key": "' + record_uuid + '", "ctime": "' + str(time.time()) \
-                         + '", "status": "pending", "no_attempts": "0", "data": "' + checkstr(data) + '"}'
-                response = requests.post(record_url, headers=headers, data=record,
+                record = {
+                    'account': str(account),
+                    '_key': record_uuid,
+                    'ctime': str(time.time()),
+                    'status': 'pending',
+                    'no_attempts': 0,
+                    'data': data,
+                }
+
+                response = requests.post(record_url, headers=headers, data=json.dumps(record),
                                          verify=False)
                 if response.status_code not in (200, 201, 204):
                     helper.log_error(
@@ -933,9 +924,16 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
                             'Authorization': 'Splunk %s' % session_key,
                             'Content-Type': 'application/json'}
 
-                        record = '{"account": "' + str(account) + '", "_key": "' + record_uuid + '", "ctime": "' + str(time.time()) \
-                                + '", "status": "temporary_failure", "no_attempts": "1", "data": "' + checkstr(data) + '"}'
-                        response = requests.post(record_url, headers=headers, data=record,
+                        record = {
+                            'account': str(account),
+                            '_key': record_uuid,
+                            'ctime': str(time.time()),
+                            'status': 'temporary_failure',
+                            'no_attempts': 1,
+                            'data': data
+                        }
+
+                        response = requests.post(record_url, headers=headers, data=json.dumps(record),
                                                 verify=False)
                         if response.status_code not in (200, 201, 204):
                             helper.log_error(
@@ -964,9 +962,16 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
                         'Authorization': 'Splunk %s' % session_key,
                         'Content-Type': 'application/json'}
 
-                    record = '{"account": "' + str(account) + '", "_key": "' + record_uuid + '", "ctime": "' + str(time.time()) \
-                            + '", "status": "temporary_failure", "no_attempts": "1", "data": "' + checkstr(data) + '"}'
-                    response = requests.post(record_url, headers=headers, data=record,
+                    record = {
+                        'account': str(account),
+                        '_key': record_uuid,
+                        'ctime': str(time.time()),
+                        'status': 'temporary_failure',
+                        'no_attempts': 1,
+                        'data': data,
+                    }
+
+                    response = requests.post(record_url, headers=headers, data=json.dumps(record),
                                             verify=False)
                     if response.status_code not in (200, 201, 204):
                         helper.log_error(
@@ -1041,12 +1046,16 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
                                 + str(time.time()) + '", "status": "created", "jira_id": "' \
                                 + jira_created_id + '", "jira_key": "' \
                                 + jira_created_key + '", "jira_self": "' + jira_created_self + '"}'
+                        # Force encode UTF8
+                        record = record.encode('utf-8')
                         helper.log_debug('record={}'.format(record))
                     else:
                         record = '{"account": "' + str(account) + '", "_key": "' + jira_md5sum + '", "jira_md5": "' + jira_md5sum + '", "ctime": "' \
                                 + str(time.time()) + '", "mtime": "' + str(time.time()) \
                                 + '", "status": "created", "jira_id": "' + jira_created_id \
                                 + '", "jira_key": "' + jira_created_key + '", "jira_self": "' + jira_created_self + '"}'
+                        # Force encode UTF8
+                        record = record.encode('utf-8')
                         helper.log_debug('record={}'.format(record))
 
                     response = requests.post(record_url, headers=headers, data=record,

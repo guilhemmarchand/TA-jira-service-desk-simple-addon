@@ -80,20 +80,6 @@ def process_event(helper, *args, **kwargs):
     return 0
 
 
-def checkstr(i):
-
-    if i is not None:
-        i = i.replace("\\", "\\\\")
-        # Manage line breaks
-        i = i.replace("\n", "\\n")
-        i = i.replace("\r", "\\r")
-        # Manage tabs
-        i = i.replace("\t", "\\t")
-        # Manage breaking delimiters
-        i = i.replace("\"", "\\\"")
-        return i
-
-
 def get_bearer_token(helper, session_key, **kwargs):
 
     import splunk
@@ -179,7 +165,6 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
 
     ticket_data = helper.get_param("ticket_data")
     helper.log_debug("ticket_data={}".format(ticket_data))
-    #ticket_data = checkstr(ticket_data)
 
     ticket_status = helper.get_param("ticket_status")
     helper.log_debug("ticket_status={}".format(ticket_status))
@@ -291,11 +276,17 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
                 ticket_no_attempts = int(ticket_no_attempts) + 1
 
                 # Update the KVstore record with the increment, and the new mtime
-                record = '{"account": "' + str(account) + '", "_key": "' + str(ticket_uuid) + '", "ctime": "' + str(ticket_ctime) \
-                        + '", "mtime": "' + str(time.time()) \
-                        + '", "status": "temporary_failure", "no_attempts": "' + str(ticket_no_attempts) \
-                        + '", "data": "' + checkstr(ticket_data) + '"}'
-                response = requests.post(record_url, headers=splunk_headers, data=record,
+                record = {
+                            'account': str(account),
+                            '_key': str(ticket_uuid),
+                            'ctime': str(ticket_ctime),
+                            'mtime': str(time.time()),
+                            'status': 'temporary_failure',
+                            'no_attempts': str(ticket_no_attempts),
+                            'data': ticket_data,
+                        }
+
+                response = requests.post(record_url, headers=splunk_headers, data=json.dumps(record),
                                         verify=False)
                 if response.status_code not in (200, 201, 204):
                     helper.log_error(
@@ -337,11 +328,16 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
             ticket_no_attempts = int(ticket_no_attempts) + 1
 
             # Update the KVstore record with the increment, and the new mtime
-            record =  '{"account": "' + str(account) + '", "_key": "' + str(ticket_uuid) + '", "ctime": "' + str(ticket_ctime) + '", "mtime": "' + str(
-                time.time()) \
-                    + '", "status": "temporary_failure", "no_attempts": "' + str(ticket_no_attempts) \
-                    + '", "data": "' + checkstr(ticket_data) + '"}'
-            response = requests.post(record_url, headers=splunk_headers, data=record,
+            record = {
+                        'account': str(account),
+                        '_key': str(ticket_uuid),
+                        'ctime': str(ticket_ctime),
+                        'mtime': str(time.time()),
+                        'no_attempts': str(ticket_no_attempts),
+                        'data': ticket_data,
+                    }
+
+            response = requests.post(record_url, headers=splunk_headers, data=json.dumps(record),
                                     verify=False)
             if response.status_code not in (200, 201, 204):
                 helper.log_error(
@@ -359,11 +355,17 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
                     + ticket_uuid
 
         # Update the KVstore record with the increment, and the new mtime
-        record = '{"account": "' + str(account) +  + '", "_key": "' + str(ticket_uuid) + '", "ctime": "' + str(ticket_ctime) + '", "mtime": "' \
-                + str(time.time()) \
-                + '", "status": "permanent_failure", "no_attempts": "' + str(ticket_no_attempts) \
-                + '", "data": "' + checkstr(ticket_data) + '"}'
-        response = requests.post(record_url, headers=splunk_headers, data=record,
+        record = {
+                    'account': str(account),
+                    '_key': str(ticket_uuid),
+                    'ctime': str(ticket_ctime),
+                    'mtime': str(time.time()),
+                    'status': 'permanent_failure',
+                    'no_attempts': str(ticket_no_attempts),
+                    'data': ticket_data,
+        }
+
+        response = requests.post(record_url, headers=splunk_headers, data=json.dumps(record),
                                 verify=False)
         if response.status_code not in (200, 201, 204):
             helper.log_error(

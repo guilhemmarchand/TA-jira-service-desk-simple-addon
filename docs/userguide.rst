@@ -420,7 +420,7 @@ In some circumstances, the built-in parser rules may fail to recognize an unexpe
 .. image:: img/customfields_parsing.png
    :alt: img/customfields_parsing.png
    :align: center
-   :width: 800px   
+   :width: 800px    
 
 How to retrieve the IDs of the custom fields configured ?
 ---------------------------------------------------------

@@ -6,6 +6,7 @@ Version 2.0.11
 
 - Enhancement: Add a connectivity verification (network, settings and authentication) in custom commands, as well as an option that can be triggered from the jirafill command (| )
 - Enhancement: Logging enhancements, custom command now log to their own dedicated log file, available in the _internal, configurable via the logging level in the configuration UI, and easily accessible from the navigation menu
+- Enhancement: Introducing a new custom command "| jiraoverview" which loads at scale all main KPIs for all projects for configured accounts, and replaces the previous heavy and slow logic in the JIRA analytic dashboard. In Addition, this addresses some reported issues where not all projects could be loaded
 - Fix: Regression with version 2.10 regarding issues calling components #146
 
 Version 2.0.10

@@ -262,9 +262,17 @@ class GenerateTextCommand(GeneratingCommand):
 
                 if self.opt:
 
+                    # Check the connectivity, fails and raise an exception accordingly
                     try:
                         connectivity_check = self.test_jira_connect(account, jira_headers, jira_url, ssl_verify, proxy_dict ,'myself')
                         logging.debug('account=\"{}\", connectivity_check=\"{}\"'.format(account, connectivity_check))
+
+                    except Exception as e:
+                        logging.error(str(e))
+                        raise Exception(str(e))
+
+                    # Loop depending on the action, but do not fail here
+                    try:
 
                         if self.opt == 1:
                             for project in self.get_jira_info(jira_headers, jira_url, ssl_verify, proxy_dict ,'project'):
@@ -288,7 +296,6 @@ class GenerateTextCommand(GeneratingCommand):
 
                     except Exception as e:
                         logging.error(str(e))
-                        raise Exception(str(e))
 
         else:
 

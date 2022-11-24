@@ -1,8 +1,14 @@
 Release notes
 #############
 
+Version 2.0.11
+==============
+
+- Enhancement: Add a connectivity verification (network, settings and authentication) in custom commands, as well as an option that can be triggered from the jirafill command (| )
+- Enhancement: Logging enhancements, custom command now log to their own dedicated log file, available in the _internal, configurable via the logging level in the configuration UI, and easily accessible from the navigation menu
+
 Version 2.0.10
-=============
+==============
 
 - Python code level enhancements for a more robust approach when builing the JSON data to be submitted to the JIRA API, this addresses risks of failures with very complex contents
 - Remove useless references to oauth in account configuration

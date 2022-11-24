@@ -275,7 +275,20 @@ In normal circumstances, the logging level should be defined to INFO, required l
 Validating the connectivity
 ===========================
 
-**You can validate the connectivity very easily by opening any of the JIRA Get information reports, which achieve rest calls to the JIRA API to retrieve different information such as the list of projects available:**
+**Run the following command to verify the connectivity for each configured Jira accounts, also available as a report in the menu Get JIRA Info:**
+
+::
+
+    | jirafill account=_all opt=0
+
+.. image:: img/config_check_connectivity.png
+   :alt: config_check_connectivity.png
+   :align: center
+   :width: 1200px   
+
+If the connectivity fails for an account, for instance due to an authentication failure or due to network connectivity issues, the command returns the reason and response.    
+
+**You can use the JIRA Get information reports, which achieve rest calls to the JIRA API to retrieve different information such as the list of projects available:**
 
 .. image:: img/config_getprojects.png
    :alt: config_getprojects.png

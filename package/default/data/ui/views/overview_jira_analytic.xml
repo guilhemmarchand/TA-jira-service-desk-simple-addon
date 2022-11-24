@@ -6,49 +6,36 @@
       <selectFirstChoice>true</selectFirstChoice>
       <prefix>account="</prefix>
       <suffix>"</suffix>
-      <search>
-      <query>| rest splunk_server=local /servicesNS/nobody/TA-jira-service-desk-simple-addon/ta_service_desk_simple_addon_account | dedup title</query>
+      <search base="mainSearch">
+      <query>stats count by account | sort 0 account</query>
       </search>
-      <fieldForLabel>title</fieldForLabel>
-      <fieldForValue>title</fieldForValue>
+      <fieldForLabel>account</fieldForLabel>
+      <fieldForValue>account</fieldForValue>
     </input>
   </fieldset>
-  <search id="base_get_projects">
-    <query>| jirarest $tk_account$ target="rest/api/2/project" | spath | rename "{}.key" as key | table key | rename key as projects | eval projects_csv=mvjoin(projects, ",")</query>
-    <progress>
-      <condition>
-        <set token="tk_csv_projects">$result.projects_csv$</set>
-      </condition>
-    </progress>
+
+  <search id="mainSearch">
+    <query>| jiraoverview</query>
+    <earliest>-5m</earliest>
+    <latest>now</latest>
   </search>
-  <search id="base_projects_stats" depends="$tk_csv_projects$">
-    <query>| makeresults | eval projects_csv="$tk_csv_projects$" | makemv delim="," projects_csv | rename projects_csv as key | mvexpand key | streamstats count as project_no
+  
+  <search id="base_projects_stats" base="mainSearch">
+    <query>| search $tk_account$
 
-| map [ | jirarest $tk_account$ target="rest/api/2/search?jql=project=$$key$$&amp;maxResults=0" ] | streamstats count as result_no | rex field=_raw "\"total\":\s(?&lt;total_issues&gt;\d*)"
-| append [ 
-| makeresults | eval projects_csv="$tk_csv_projects$" | makemv delim="," projects_csv | rename projects_csv as key | mvexpand key | streamstats count as project_no
-| map [ | jirarest $tk_account$ target="rest/api/2/search?jql=project=$$key$$%20AND%20statuscategory%20IN%20%28%22Done%22%29&amp;maxResults=0" ] | streamstats count as result_no | rex field=_raw "\"total\":\s(?&lt;total_done&gt;\d*)"
-]
-| append [ 
-| makeresults | eval projects_csv="$tk_csv_projects$" | makemv delim="," projects_csv | rename projects_csv as key | mvexpand key | streamstats count as project_no
-| map [ | jirarest $tk_account$ target="rest/api/2/search?jql=project=$$key$$%20AND%20statuscategory%20IN%20%28%22To%20Do%22%29&amp;maxResults=0" ] | streamstats count as result_no | rex field=_raw "\"total\":\s(?&lt;total_to_do&gt;\d*)"
-]
-| append [ 
-| makeresults | eval projects_csv="$tk_csv_projects$" | makemv delim="," projects_csv | rename projects_csv as key | mvexpand key | streamstats count as project_no
-| map [ | jirarest $tk_account$ target="rest/api/2/search?jql=project=$$key$$%20AND%20statuscategory%20IN%20%28%22In%20Progress%22%29&amp;maxResults=0" ] | streamstats count as result_no | rex field=_raw "\"total\":\s(?&lt;total_in_progress&gt;\d*)"
-]
-| append [ | makeresults | eval projects_csv="$tk_csv_projects$" | makemv delim="," projects_csv | rename projects_csv as key | mvexpand key | streamstats count as project_no ]
-| eval line_merge=case(isnum(project_no), project_no, isnum(result_no), result_no)
-| stats first(key) as project, first(total_*) as "total_*" by line_merge | fields - line_merge
+| table account project type value
+| eval {type} = value
+| stats first(total_*) as "total_*" by account, project
 
-| appendpipe [ stats sum(total_done) as total_done, sum(total_in_progress) as total_in_progress, sum(total_issues) as total_issues, sum(total_to_do) as total_to_do ]
-| fillnull value="TOTAL" project
+| appendpipe [ stats sum(total_issues) as total_issues, sum(total_to_do) as total_to_do, sum(total_done) as total_done, sum(pct_total_in_progress) as pct_total_in_progress | eval project="TOTAL" ]
+| fillnull value=0
 
 | eval pct_total_done="% " . round(total_done/total_issues*100, 2), pct_total_to_do="% " . round(total_to_do/total_issues*100, 2), pct_total_in_progress="% " . round(total_in_progress/total_issues*100, 2)
 | foreach pct_* [ eval &lt;&lt;FIELD&gt;&gt; = if(isnull('&lt;&lt;FIELD&gt;&gt;'), "% 0.00", '&lt;&lt;FIELD&gt;&gt;' ) ]
 
 | eval _time=now() | fields _time, project, pct_*, total_*</query>
   </search>
+
   <row>
     <panel depends="$alwaysHideCSS$">
       <html>
@@ -64,8 +51,8 @@
     </panel>
     <panel>
       <single>
-        <search base="base_get_projects">
-          <query>stats dc(projects) as dcount</query>
+        <search base="base_projects_stats">
+          <query>stats dc(project) as dcount</query>
         </search>
         <option name="colorMode">none</option>
         <option name="drilldown">none</option>

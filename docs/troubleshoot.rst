@@ -4,6 +4,19 @@ Trouble shooting
 Connectivity to JIRA issues
 ===========================
 
+**Run the following command to verify the connectivity for each configured Jira accounts, also available as a report in the menu Get JIRA Info:**
+
+::
+
+    | jirafill account=_all opt=0
+
+.. image:: img/config_check_connectivity.png
+   :alt: config_check_connectivity.png
+   :align: center
+   :width: 1200px   
+
+If the connectivity fails for an account, for instance due to an authentication failure or due to network connectivity issues, the command returns the reason and response.    
+
 If the connectivity to JIRA is not valid for some reasons (bad credentials, network connecttivity, etc), this will result in different Python error messages when attempting to load any of the report, load the alert action page or execute an alert action.
 
 In such as case, the easiest way is to validate the connectivity by achieving a rest cal using the curl command in CLI, ideally in any of the search head supposed to be using the alert action. (note: this step is valid for Linux only)
@@ -29,6 +42,20 @@ Overview dashboard and Add-on logs
 
 The dashboard exposes the JIRA issue workflow and direct links to access the Add-on logs.
 
+Custom command logs
+-------------------
+
+**All custom commands generate logs into their own dedicated log files, which are indexed automatically in Splunk:**
+
+::
+
+    index=_internal sourcetype=jira:custom_commands:*
+
+.. image:: img/troubleshoot_custom_commands.png
+   :alt: troubleshoot_custom_commands.png
+   :align: center
+   :width: 1200px   
+
 Add-on logs for first REST call attempts
 ----------------------------------------
 
@@ -36,7 +63,7 @@ Add-on logs for first REST call attempts
 
 ::
 
-(index="_internal" OR index="cim_modactions") (source="*jira_service_desk_modalert.log")
+    (index="_internal" OR index="cim_modactions") (source="*jira_service_desk_modalert.log")
 
 When the JIRA issue is successfully achieved, the key sentence ``JIRA Service Desk ticket successfully created`` is logged.
 

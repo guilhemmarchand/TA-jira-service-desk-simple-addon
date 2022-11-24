@@ -440,7 +440,7 @@ How to retrieve the IDs of the custom fields configured ?
    :width: 1200px   
 
 JIRA REST API wrapper
-=========================
+=====================
 
 **A custom command is provided as a generic API wrapper which can be used to get information from JIRA by calling any REST endpoint available:**  
 By default, it uses method GET. Additional methods are supported DELETE, POST, PUT.
@@ -466,6 +466,22 @@ By default, it uses method GET. Additional methods are supported DELETE, POST, P
    :alt: jirarest_002.png
    :align: center
    :width: 1200px   
+
+JIRA Overview custom command
+============================
+
+**A custom command is provided which retrieves Jira projects issues main KPIs for all configured Jira accounts:**
+
+::
+
+   | jiraoverview
+
+This command is used by the Overview JIRA Projects dashboards.
+
+.. image:: img/jiraoverview.png
+   :alt: jirarest_002.png
+   :align: center
+   :width: 1200px
 
 Indexing JIRA statistics for reporting purposes
 -----------------------------------------------

@@ -680,7 +680,17 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
 
         # components
         if jira_components not in ["", "None", None]:
-            data['fields']['components'] = jira_components.split(",")
+
+            # set as a list
+            jira_components_list = jira_components.split(",")
+            jira_subcomponents_list = []
+
+            # loop and format as a list of objects
+            for sub_jira_component in jira_components_list:
+                jira_subcomponents_list.append({'name': sub_jira_component})
+                
+            # finally add to the json data
+            data['fields']['components'] = jira_subcomponents_list
 
         # JIRA custom fields structure
         if jira_customfields not in ["", "None", None]:

@@ -15,10 +15,23 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 import time
 import csv
-import json
+import logging
 import re
 
 splunkhome = os.environ['SPLUNK_HOME']
+
+# set logging
+filehandler = logging.FileHandler(splunkhome + "/var/log/splunk/ta_jira_getjirakv.log", 'a')
+formatter = logging.Formatter('%(asctime)s %(levelname)s %(filename)s %(funcName)s %(lineno)d %(message)s')
+filehandler.setFormatter(formatter)
+log = logging.getLogger()  # root logger - Good to get it only once.
+for hdlr in log.handlers[:]:  # remove the existing file handlers
+    if isinstance(hdlr,logging.FileHandler):
+        log.removeHandler(hdlr)
+log.addHandler(filehandler)      # set the new handler
+# set the log level to INFO, DEBUG as the default is ERROR
+log.setLevel(logging.INFO)
+
 sys.path.append(os.path.join(splunkhome, 'etc', 'apps', 'TA-jira-service-desk-simple-addon', 'lib'))
 
 from splunklib.searchcommands import dispatch, GeneratingCommand, Configuration, Option, validators
@@ -49,6 +62,18 @@ class GetJiraKv(GeneratingCommand):
             # Get conf
             conf_file = "ta_service_desk_simple_addon_settings"
             confs = self.service.confs[str(conf_file)]
+
+            # set loglevel
+            loglevel = 'INFO'
+            for stanza in confs:
+                if stanza.name == 'logging':
+                    for stanzakey, stanzavalue in stanza.content.items():
+                        if stanzakey == "loglevel":
+                            loglevel = stanzavalue
+            logginglevel = logging.getLevelName(loglevel)
+            log.setLevel(logginglevel)
+
+            # init
             storage_passwords = self.service.storage_passwords
             kvstore_instance = None
             bearer_token = None

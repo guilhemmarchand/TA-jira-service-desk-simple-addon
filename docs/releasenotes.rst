@@ -1,6 +1,12 @@
 Release notes
 #############
 
+Version 2.0.12
+==============
+
+- Fix Issue #148: Accounts are not synchronised among members of the SHC
+- Fix Issue #149: jiraoverview should verify the HTTPS protocol
+
 Version 2.0.11
 ==============
 

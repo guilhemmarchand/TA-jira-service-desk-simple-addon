@@ -145,6 +145,10 @@ class GenerateTextCommand(GeneratingCommand):
                         if key == 'username':
                             username = value
 
+            # verify the url
+            if not jira_url.startswith("https://"):
+                jira_url = "https://" + str(jira_url)
+
             # end of get configuration
 
             credential_username = str(account) + '``splunk_cred_sep``1'

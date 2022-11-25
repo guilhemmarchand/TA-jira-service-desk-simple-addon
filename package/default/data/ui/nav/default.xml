@@ -22,6 +22,7 @@
 		<a href="search?q=index%3D_internal%20sourcetype%3Djira%3Acustom_commands%3A*">ALL - search all custom command logs</a>
 		<a href="search?q=index%3D_internal%20sourcetype%3Djira%3Acustom_commands%3Ajirafill">jirafill - custom command</a>
 		<a href="search?q=index%3D_internal%20sourcetype%3Djira%3Acustom_commands%3Ajirarest">jirarest - custom command</a>
+		<a href="search?q=index%3D_internal%20sourcetype%3Djira%3Acustom_commands%3Ajiraoverview">jiraoverview - custom command</a>
 		<a href="search?q=index%3D_internal%20sourcetype%3Djira%3Acustom_commands%3Agetjirakv">getjirakv - custom command</a>
 		<saved name="JIRA Service Desk - modular action logs" />
 		<saved name="JIRA Service Desk - modular resilient store action logs" />

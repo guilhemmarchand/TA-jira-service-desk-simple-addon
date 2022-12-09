@@ -1,6 +1,11 @@
 Release notes
 #############
 
+Version 2.0.13
+==============
+
+- FIx Issue #151: Proxy account configuration is not synced in a SHC
+
 Version 2.0.12
 ==============
 

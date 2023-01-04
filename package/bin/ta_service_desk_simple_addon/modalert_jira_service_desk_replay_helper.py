@@ -250,7 +250,27 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
     # There is no need to verify for the connectivity to the KVstore instance, even if remote
     # Indeed, if we cannot access, there will be no content submitted to this handler
 
-    if int(ticket_no_attempts) < int(ticket_max_attempts):
+    if str(ticket_status) in "tagged_for_removal":
+
+        helper.log_info("Ticket in KVstore with uuid=" + ticket_uuid
+                        + " has reached the maximal number of attempts and is tagged for removal,"
+                        " purging the record from the KVstore:={}".format(ticket_data))
+
+        # The JIRA ticket has been successfully created, and be safety removed from the KVstore
+        record_url = str(kvstore_instance) + '/servicesNS/nobody/' \
+                            'TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_failures_replay/' \
+                    + ticket_uuid
+
+        response = requests.delete(record_url, headers=splunk_headers, verify=False)
+        if response.status_code not in (200, 201, 204):
+            helper.log_error(
+                'KVstore delete operation has failed!. url={}, HTTP Error={}, '
+                'content={}'.format(record_url, response.status_code, response.text))
+            return response.status_code
+        else:
+            return 0
+
+    elif int(ticket_no_attempts) < int(ticket_max_attempts):
 
         helper.log_info('JIRA ticket creation attempting for record with uuid=' + ticket_uuid)
 
@@ -333,6 +353,7 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
                         '_key': str(ticket_uuid),
                         'ctime': str(ticket_ctime),
                         'mtime': str(time.time()),
+                        'status': 'temporary_failure',
                         'no_attempts': str(ticket_no_attempts),
                         'data': ticket_data,
                     }
@@ -371,26 +392,6 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
             helper.log_error(
                 'KVstore saving has failed!. url={}, data={}, HTTP Error={}, '
                 'content={}'.format(record_url, record, response.status_code, response.text))
-            return response.status_code
-        else:
-            return 0
-
-    elif int(ticket_no_attempts) >= int(ticket_max_attempts) and str(ticket_status) in "tagged_for_removal":
-
-        helper.log_info("Ticket in KVstore with uuid=" + ticket_uuid
-                        + " has reached the maximal number of attempts and is tagged for removal,"
-                        " purging the record from the KVstore:={}".format(ticket_data))
-
-        # The JIRA ticket has been successfully created, and be safety removed from the KVstore
-        record_url = str(kvstore_instance) + '/servicesNS/nobody/' \
-                            'TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_failures_replay/' \
-                    + ticket_uuid
-
-        response = requests.delete(record_url, headers=splunk_headers, verify=False)
-        if response.status_code not in (200, 201, 204):
-            helper.log_error(
-                'KVstore delete operation has failed!. url={}, HTTP Error={}, '
-                'content={}'.format(record_url, response.status_code, response.text))
             return response.status_code
         else:
             return 0

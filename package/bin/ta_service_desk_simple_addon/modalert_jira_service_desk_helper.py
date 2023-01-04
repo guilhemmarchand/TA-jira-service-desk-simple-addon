@@ -894,7 +894,7 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
                     'ctime': str(time.time()),
                     'status': 'pending',
                     'no_attempts': 0,
-                    'data': data,
+                    'data': json.dumps(data, indent=2),
                 }
 
                 response = requests.post(record_url, headers=headers, data=json.dumps(record),
@@ -940,7 +940,7 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
                             'ctime': str(time.time()),
                             'status': 'temporary_failure',
                             'no_attempts': 1,
-                            'data': data
+                            'data': json.dumps(data, indent=2)
                         }
 
                         response = requests.post(record_url, headers=headers, data=json.dumps(record),
@@ -978,7 +978,7 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
                         'ctime': str(time.time()),
                         'status': 'temporary_failure',
                         'no_attempts': 1,
-                        'data': data,
+                        'data': json.dumps(data, indent=2),
                     }
 
                     response = requests.post(record_url, headers=headers, data=json.dumps(record),

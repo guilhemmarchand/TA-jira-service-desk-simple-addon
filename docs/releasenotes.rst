@@ -4,6 +4,15 @@ Release notes
 Version 2.0.14
 ==============
 
+- Fix Issue #155: Regression with the resilient store tracker
+
+If post-upgrade and after at leat one execution you are still experiencing issues with the reslient tracker, please purge the KVstore collection:
+
+::
+
+    | outputlookup jira_failures_replay
+
+Any temporary failure will be stored properly for replay purposes.
 
 Version 2.0.13
 ==============

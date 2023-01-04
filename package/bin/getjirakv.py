@@ -107,7 +107,7 @@ class GetJiraKv(GeneratingCommand):
                     bearer_token = None
 
             # the root search
-            search = "| inputlookup jira_failures_replay | eval uuid=_key, mtime=if(isnull(mtime), ctime, mtime)"
+            search = "| inputlookup jira_failures_replay | eval uuid=_key, mtime=if(isnull(mtime), ctime, mtime), status=case(isnull(status), \"tempoary_failure\", isnull(data), \"tagged_for_removal\", 1=1, status), data=if(isnull(data), \"null\", data), no_attempts=if(isnull(no_attempts), 0, no_attempts)"
 
             # If the passthrough mode is disabled, there is no distributed setup
             # and the instance is the localhost

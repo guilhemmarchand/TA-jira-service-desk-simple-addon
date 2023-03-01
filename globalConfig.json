@@ -643,7 +643,7 @@
     "meta": {
         "name": "TA-jira-service-desk-simple-addon",
         "restRoot": "ta_service_desk_simple_addon",
-        "version": "2.0.14",
+        "version": "2.0.15",
         "displayName": "JIRA Service Desk simple addon",
         "schemaVersion": "0.0.3"
     }

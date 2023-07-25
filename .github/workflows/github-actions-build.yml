@@ -1,0 +1,79 @@
+name: Python package
+
+on: [push]
+
+jobs:
+  build_release:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10"]
+
+    steps:
+      - run: echo "job automatically triggered by a ${{ github.event_name }} event."
+
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Python requirements
+        run: |
+          pip install -r requirements.txt
+
+      #
+      # Build release and run Appinspect
+      #
+
+      - name: Build the release and submit to Splunk Appinspect vetting
+        env:
+          SPLUNK_BASE_LOGIN: ${{ vars.SPLUNK_BASE_LOGIN }}
+          SPLUNK_BASE_PASSWD: ${{ secrets.SPLUNK_BASE_PASSWD }}
+        run: |
+          cd build; python3 build.py --keep --submitappinspect --userappinspect "$SPLUNK_BASE_LOGIN" --passappinspect "$SPLUNK_BASE_PASSWD"
+        id: build_and_submit_appinspect
+
+      #
+      # Archive artifacts
+      #
+
+      - name: Archive Appinspect html report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: appinspect-report-html
+          path: output/report_appinspect.html
+
+      - name: Archive Appinspect json report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: appinspect-report-json
+          path: output/report_appinspect.json
+
+      - name: Show output directory content
+        run: |
+          ls -ltr output/
+
+      - name: Retrieve version number
+        run: |
+          echo "VERSION_NUMBER=$(cat output/version.txt)" >> $GITHUB_ENV
+
+      - name: Show version number
+        run: |
+          echo "Version number is ${{ env.VERSION_NUMBER }}"
+
+      - name: Retrieve build number
+        run: |
+          echo "BUILD_NUMBER=$(cat output/build.txt)" >> $GITHUB_ENV
+
+      - name: Show build number
+        run: |
+          echo "Build number is ${{ env.BUILD_NUMBER }}"
+
+      #
+      #
+      #
+
+      - run: echo "End of process, job status ${{ job.status }}."

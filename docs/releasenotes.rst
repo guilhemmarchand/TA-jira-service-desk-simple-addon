@@ -1,6 +1,11 @@
 Release notes
 #############
 
+Version 2.0.16
+==============
+
+- enhancement - Remove __mv_ fields from export as JSON/XLSX/CSV when attaching results #170
+
 Version 2.0.14
 ==============
 

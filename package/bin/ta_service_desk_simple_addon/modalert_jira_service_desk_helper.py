@@ -210,6 +210,7 @@ def attach_csv(helper, jira_url, jira_created_key, jira_attachment_token, jira_h
     import tempfile
     import requests
     import os
+    import csv
 
     # Get tempdir
     tempdir = get_tempdir()
@@ -222,8 +223,19 @@ def attach_csv(helper, jira_url, jira_created_key, jira_attachment_token, jira_h
     jira_url = jira_url + "/" + jira_created_key + "/attachments"
 
     input_file = gzip.open(jira_attachment_token, 'rt')
-    all_data = input_file.read()
-    results_csv.writelines(str(all_data))
+    reader = csv.DictReader(input_file)
+
+    # filter fields (headers) starting with "__mv_"
+    fieldnames = [name for name in reader.fieldnames if not name.startswith('__mv_')]
+
+    writer = csv.DictWriter(results_csv, fieldnames=fieldnames)
+    writer.writeheader()
+
+    # filter out "__mv_" fields in rows
+    for row in reader:
+        row = {k: v for k, v in row.items() if not k.startswith('__mv_')}
+        writer.writerow(row)
+    
     results_csv.seek(0)
 
     try:
@@ -258,6 +270,7 @@ def attach_csv(helper, jira_url, jira_created_key, jira_attachment_token, jira_h
         except Exception as e:
             helper.log_debug('Temporary file ' + str(results_csv.name) + ' could not be removed, unfortunately this is expected under Windows host guests')
 
+
 def attach_json(helper, jira_url, jira_created_key, jira_attachment_token, jira_headers_attachment, ssl_certificate_validation, proxy_dict, *args, **kwargs):
 
     import gzip
@@ -287,7 +300,9 @@ def attach_json(helper, jira_url, jira_created_key, jira_attachment_token, jira_
 
     # Convert CSV to JSON
     reader = csv.DictReader(open(results_csv.name))
-    results_json.writelines(str(json.dumps([row for row in reader], indent=2)))
+    # filter out "__mv_" fields in rows
+    data = [ {k: v for k, v in row.items() if not k.startswith('__mv_')} for row in reader]
+    results_json.writelines(json.dumps(data, indent=2))
     results_json.seek(0)
 
     try:
@@ -364,13 +379,19 @@ def attach_xlsx(helper, jira_url, jira_created_key, jira_attachment_token, jira_
 
     reader = csv.reader(open(results_csv.name), delimiter=',')
     count = 0
+    excluded_indices = []
     for row in reader:
-        count+=1
-        if count ==1:
-            # to allow column names starting with _
-            ws.append([ILLEGAL_CHARACTERS_RE.sub('', _i) for _i in row])
+        count += 1
+        if count == 1:
+            # check for columns starting with "__mv_"
+            for i, cell in enumerate(row):
+                if cell.startswith("__mv_"):
+                    excluded_indices.append(i)
+            # only append non-excluded cells
+            ws.append([ILLEGAL_CHARACTERS_RE.sub('', cell) for i, cell in enumerate(row) if i not in excluded_indices])
         else:
-            ws.append(row)
+            # only append non-excluded cells
+            ws.append([cell for i, cell in enumerate(row) if i not in excluded_indices])
 
     wb.save(results_xlsx.name)
     results_xlsx.seek(0)

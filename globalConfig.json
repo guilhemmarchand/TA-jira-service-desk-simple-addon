@@ -16,8 +16,8 @@
                                 "field": "name"
                             },
                             {
-                                "label": "Auth Type",
-                                "field": "auth_type"
+                                "label": "Jira URL",
+                                "field": "jira_url"
                             }
                         ]
                     },

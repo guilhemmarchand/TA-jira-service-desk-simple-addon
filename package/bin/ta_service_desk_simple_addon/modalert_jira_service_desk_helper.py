@@ -913,11 +913,17 @@ def query_url(
 
         # JIRA custom fields structure
         if jira_customfields not in ["", "None", None]:
-            if not jira_customfields.startswith('"'):
-                jira_customfields = '"' + jira_customfields
-            if not jira_customfields.endswith('"'):
-                jira_customfields = jira_customfields + '"'
+            # Add a double quote at the start if it doesn't start with {
+            if not jira_customfields.startswith("{"):
+                if not jira_customfields.startswith('"'):
+                    jira_customfields = '"' + jira_customfields
 
+            # Add a double quote at the end if it doesn't end with }
+            if not jira_customfields.endswith("}"):
+                if not jira_customfields.endswith('"'):
+                    jira_customfields = jira_customfields + '"'
+
+            # set as json
             jira_customfields = "{" + jira_customfields + "}"
 
             try:

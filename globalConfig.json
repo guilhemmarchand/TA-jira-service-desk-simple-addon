@@ -558,6 +558,31 @@
                     }
                 },
                 {
+                    "type": "singleSelect",
+                    "label": "Add results to description:",
+                    "field": "jira_results_description",
+                    "defaultValue": "disabled",
+                    "help": "Enable this option to automatically attach the Splunk results in the description field of the JIRA issue.",
+                    "required": true,
+                    "options": {
+                        "items": [
+                            {
+                                "value": "disabled",
+                                "label": "Disabled"
+                            },
+                            {
+                                "value": "enabled_csv",
+                                "label": "Enabled (CSV format)"
+                            },
+                            {
+                                "value": "enabled_json",
+                                "label": "Enabled (JSON format)"
+                            }
+                        ],
+                        "display": true
+                    }
+                },
+                {
                     "type": "text",
                     "label": "Attachment token",
                     "help": "hidden system used",

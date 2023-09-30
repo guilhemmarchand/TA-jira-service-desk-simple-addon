@@ -238,7 +238,7 @@ def attach_csv(
     ssl_certificate_validation,
     proxy_dict,
     *args,
-    **kwargs
+    **kwargs,
 ):
     import gzip
     import tempfile
@@ -334,7 +334,7 @@ def attach_json(
     ssl_certificate_validation,
     proxy_dict,
     *args,
-    **kwargs
+    **kwargs,
 ):
     import gzip
     import tempfile
@@ -449,7 +449,7 @@ def attach_xlsx(
     ssl_certificate_validation,
     proxy_dict,
     *args,
-    **kwargs
+    **kwargs,
 ):
     import gzip
     import tempfile
@@ -573,6 +573,107 @@ def attach_xlsx(
                 + str(results_xlsx.name)
                 + " could not be removed, unfortunately this is expected under Windows host guests"
             )
+
+
+def get_results_json(helper, jira_attachment_token, *args, **kwargs):
+    import gzip
+    import tempfile
+    import csv
+    import json
+
+    try:
+        # Get tempdir
+        tempdir = get_tempdir()
+
+        # Clean tempdir
+        clean_tempdir(helper)
+
+        timestr = get_timestr()
+        results_csv = tempfile.NamedTemporaryFile(
+            mode="w+t",
+            prefix="splunk_alert_results_" + str(timestr) + "_",
+            suffix=".csv",
+            dir=tempdir,
+            delete=False,
+        )
+        results_json = tempfile.NamedTemporaryFile(
+            mode="w+t",
+            prefix="splunk_alert_results_" + str(timestr) + "_",
+            suffix=".json",
+            dir=tempdir,
+            delete=False,
+        )
+
+        input_file = gzip.open(jira_attachment_token, "rt")
+        all_data = input_file.read()
+        results_csv.writelines(str(all_data))
+        results_csv.seek(0)
+
+        # Convert CSV to JSON
+        reader = csv.DictReader(open(results_csv.name))
+        # filter out "__mv_" fields in rows
+        data = [
+            {k: v for k, v in row.items() if not k.startswith("__mv_")}
+            for row in reader
+        ]
+        results_json.writelines(json.dumps(data, indent=2))
+        results_json.seek(0)
+
+        return results_json.read()
+
+    except Exception as e:
+        helper.log_error(
+            f'function get_results_json has failed with exception="{str(e)}"'
+        )
+        return None
+
+
+def get_results_csv(helper, jira_attachment_token, *args, **kwargs):
+    import gzip
+    import tempfile
+    import csv
+
+    try:
+        # Get tempdir
+        tempdir = get_tempdir()
+
+        # Clean tempdir
+        clean_tempdir(helper)
+
+        timestr = get_timestr()
+        results_csv = tempfile.NamedTemporaryFile(
+            mode="w+t",
+            prefix="splunk_alert_results_" + str(timestr) + "_",
+            suffix=".csv",
+            dir=tempdir,
+            delete=False,
+        )
+
+        input_file = gzip.open(jira_attachment_token, "rt")
+        reader = csv.DictReader(input_file)
+
+        # filter fields (headers) starting with "__mv_"
+        fieldnames = [
+            name for name in reader.fieldnames if not name.startswith("__mv_")
+        ]
+
+        writer = csv.DictWriter(results_csv, fieldnames=fieldnames)
+        writer.writeheader()
+
+        # filter out "__mv_" fields in rows
+        for row in reader:
+            row = {k: v for k, v in row.items() if not k.startswith("__mv_")}
+            writer.writerow(row)
+
+        results_csv.seek(0)
+
+        return results_csv.read()
+
+    except Exception as e:
+        helper.log_error(
+            f'function get_results_csv has failed with exception="{str(e)}"'
+        )
+        return None
 
 
 def query_url(
@@ -781,6 +882,13 @@ def query_url(
     jira_attachment_token = helper.get_param("jira_attachment_token")
     helper.log_debug("jira_attachment_token={}".format(jira_attachment_token))
 
+    jira_results_description = helper.get_param("jira_results_description")
+    helper.log_debug("jira_results_description={}".format(jira_results_description))
+
+    if jira_results_description in ["", "None", None]:
+        jira_results_description = "disabled"
+    helper.log_debug("jira_results_description:={}".format(jira_results_description))
+
     jira_customfields_parsing = helper.get_param("jira_customfields_parsing")
     helper.log_debug("jira_customfields_parsing={}".format(jira_customfields_parsing))
 
@@ -866,6 +974,28 @@ def query_url(
         data["fields"]["summary"] = jira_summary
 
         # add description
+
+        # if user requested, add the results
+        if jira_results_description in ("enabled_json"):
+            search_results_json = get_results_json(helper, jira_attachment_token)
+            if search_results_json:
+                jira_description = (
+                    jira_description
+                    + "\nSplunk search results:\n{code:json}"
+                    + search_results_json
+                    + "\n{code}"
+                )
+
+        elif jira_results_description in ("enabled_csv"):
+            search_results_csv = get_results_csv(helper, jira_attachment_token)
+            if search_results_csv:
+                jira_description = (
+                    jira_description
+                    + "\nSplunk search results:\n{code:csv}"
+                    + search_results_csv
+                    + "\n{code}"
+                )
+
         data["fields"]["description"] = jira_description
 
         # add issue type

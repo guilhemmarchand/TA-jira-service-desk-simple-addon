@@ -119,6 +119,30 @@
     </div>
   </div>
   <div class="control-group">
+    <label
+      class="control-label"
+      for="jira_service_desk_jira_results_description"
+      >Add Results to Description:
+    </label>
+    <div class="controls">
+      <select
+        name="action.jira_service_desk.param.jira_results_description"
+        id="jira_service_desk_jira_results_description"
+      >
+        <option value="disabled">Disabled</option>
+        <option value="enabled_json">Enabled (JSON format)</option>
+        <option value="enabled_csv">Enabled (CSV format)</option>
+      </select>
+      <span class="help-block">
+        <br />Enable this option to automatically add the Splunk results as
+        parts of the JIRA Description field after the sentence "Splunk search results:".<br />
+        <br />
+        Results can be added in CSV or JSON format.<br />
+        <br />
+      </span>
+    </div>
+  </div>  
+  <div class="control-group">
     <label class="control-label" for="jira_service_desk_jira_assignee"
       >Assignee
     </label>

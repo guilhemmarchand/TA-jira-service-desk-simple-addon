@@ -16,8 +16,8 @@
                                 "field": "name"
                             },
                             {
-                                "label": "Auth Type",
-                                "field": "auth_type"
+                                "label": "Jira URL",
+                                "field": "jira_url"
                             }
                         ]
                     },
@@ -558,6 +558,31 @@
                     }
                 },
                 {
+                    "type": "singleSelect",
+                    "label": "Add results to description:",
+                    "field": "jira_results_description",
+                    "defaultValue": "disabled",
+                    "help": "Enable this option to automatically attach the Splunk results in the description field of the JIRA issue.",
+                    "required": true,
+                    "options": {
+                        "items": [
+                            {
+                                "value": "disabled",
+                                "label": "Disabled"
+                            },
+                            {
+                                "value": "enabled_csv",
+                                "label": "Enabled (CSV format)"
+                            },
+                            {
+                                "value": "enabled_json",
+                                "label": "Enabled (JSON format)"
+                            }
+                        ],
+                        "display": true
+                    }
+                },
+                {
                     "type": "text",
                     "label": "Attachment token",
                     "help": "hidden system used",
@@ -643,7 +668,7 @@
     "meta": {
         "name": "TA-jira-service-desk-simple-addon",
         "restRoot": "ta_service_desk_simple_addon",
-        "version": "2.0.16",
+        "version": "2.0.17",
         "displayName": "JIRA Service Desk simple addon",
         "schemaVersion": "0.0.3"
     }

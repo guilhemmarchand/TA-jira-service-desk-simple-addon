@@ -1,8 +1,8 @@
 # encoding = utf-8
 
+
 # This function is required to reformat proper values in the custom fields
 def reformat_customfields(i):
-
     import re
 
     if i is not None:
@@ -20,44 +20,42 @@ def reformat_customfields(i):
         i = re.sub(r'\\" }', '" }', i)
         i = re.sub(r'\\" }]', '" }]', i)
         i = re.sub(r',\\n"customfield', ',\n"customfield', i)
-        i = re.sub(r"\\\"$", "\"", i)
-        i = re.sub(r"\\\"\,$", "\"", i)
-        i = re.sub(r"\\\"\\n$", "\"", i)
-        i = re.sub(r"\\\"\,\\n$", "\"", i)
+        i = re.sub(r"\\\"$", '"', i)
+        i = re.sub(r"\\\"\,$", '"', i)
+        i = re.sub(r"\\\"\\n$", '"', i)
+        i = re.sub(r"\\\"\,\\n$", '"', i)
         i = re.sub(r"(\d*),$", r"\1", i)
         i = re.sub(r"(\d*),\\n$", r"\1", i)
         i = re.sub(r"(\d*)\\n$", r"\1", i)
         # generic replacement
-        i = re.sub(r'\\\"(\w*)\\\":\s\\\"([^\"]*)\"', r'"\1": "\2"', i)
-        i = re.sub(r'\\\"(\w*)\\\":\s(\[{[^\}]*)', r'"\1": \2', i)
-        i = re.sub(r'\\\"(\w*)\\\":\s(\[\s{[^\}]*)', r'"\1": \2', i)
+        i = re.sub(r"\\\"(\w*)\\\":\s\\\"([^\"]*)\"", r'"\1": "\2"', i)
+        i = re.sub(r"\\\"(\w*)\\\":\s(\[{[^\}]*)", r'"\1": \2', i)
+        i = re.sub(r"\\\"(\w*)\\\":\s(\[\s{[^\}]*)", r'"\1": \2', i)
 
         # any non escaped backslash
-        i = re.sub(r'\\([^\\])', r'\\\\\1', i)
+        i = re.sub(r"\\([^\\])", r"\\\\\1", i)
 
         # ending json with extra comma
-        i = re.sub(r'},$', '}', i)
+        i = re.sub(r"},$", "}", i)
 
         return i
 
 
 # This function can optionnally be used to only remove the espaced double quotes and leave the custom fields with no parsing at all
 def reformat_customfields_minimal(i):
-
     import re
 
     if i is not None:
         i = re.sub(r'\\"', '"', i)
         # any non escaped backslash
-        i = re.sub(r'\\([^\\])', r'\\\\\1', i)
+        i = re.sub(r"\\([^\\])", r"\\\\\1", i)
         # ending json with extra comma
-        i = re.sub(r'},$', '}', i)
+        i = re.sub(r"},$", "}", i)
 
         return i
 
 
 def process_event(helper, *args, **kwargs):
-
     # Start
     helper.set_log_level(helper.log_level)
     helper.log_info("Alert action jira_service_desk started.")
@@ -71,12 +69,18 @@ def process_event(helper, *args, **kwargs):
 
     # configuration manager
     import solnlib
-    app = 'TA-jira-service-desk-simple-addon'
+
+    app = "TA-jira-service-desk-simple-addon"
     account_cfm = solnlib.conf_manager.ConfManager(
         session_key,
         app,
-        realm="__REST_CREDENTIAL__#{}#configs/conf-ta_service_desk_simple_addon_account".format(app))
-    splunk_ta_account_conf = account_cfm.get_conf("ta_service_desk_simple_addon_account").get_all()
+        realm="__REST_CREDENTIAL__#{}#configs/conf-ta_service_desk_simple_addon_account".format(
+            app
+        ),
+    )
+    splunk_ta_account_conf = account_cfm.get_conf(
+        "ta_service_desk_simple_addon_account"
+    ).get_all()
 
     # account details
     account_details = splunk_ta_account_conf[account]
@@ -106,8 +110,12 @@ def process_event(helper, *args, **kwargs):
     helper.log_debug("jira_url={}".format(jira_url))
 
     # Get jira_ssl_certificate_validation
-    jira_ssl_certificate_validation = int(account_details.get("jira_ssl_certificate_validation", 0))
-    helper.log_debug("jira_ssl_certificate_validation={}".format(jira_ssl_certificate_validation))
+    jira_ssl_certificate_validation = int(
+        account_details.get("jira_ssl_certificate_validation", 0)
+    )
+    helper.log_debug(
+        "jira_ssl_certificate_validation={}".format(jira_ssl_certificate_validation)
+    )
     ssl_certificate_validation = True
     if jira_ssl_certificate_validation == 0:
         ssl_certificate_validation = False
@@ -116,13 +124,16 @@ def process_event(helper, *args, **kwargs):
     # Get jira_ssl_certificate_path
     # SSL certificate path - customers using an internal PKI can use this option to verify the certificate bundle
     # See: https://docs.python-requests.org/en/stable/user/advanced/#ssl-cert-verification
-    # If it is set, and the SSL verification is enabled, and the file exists, the file path replaces the boolean in the requests calls    
+    # If it is set, and the SSL verification is enabled, and the file exists, the file path replaces the boolean in the requests calls
     jira_ssl_certificate_path = account_details.get("jira_ssl_certificate_path", 0)
     helper.log_debug("jira_ssl_certificate_path={}".format(jira_ssl_certificate_path))
     if jira_ssl_certificate_path not in ["", "None", None]:
-        helper.log_debug("jira_ssl_certificate_path={}".format(jira_ssl_certificate_path))
+        helper.log_debug(
+            "jira_ssl_certificate_path={}".format(jira_ssl_certificate_path)
+        )
         # replace the ssl_certificate_validation boolean by the SSL certiticate path if the file exists
         import os
+
         if ssl_certificate_validation and jira_ssl_certificate_path:
             if os.path.isfile(jira_ssl_certificate_path):
                 ssl_certificate_validation = str(jira_ssl_certificate_path)
@@ -140,40 +151,51 @@ def process_event(helper, *args, **kwargs):
     helper.log_debug("jira_passthrough_mode={}".format(jira_passthrough_mode))
     if jira_passthrough_mode == 1:
         passthrough_mode = True
-        helper.log_info("passthrough_mode: Jira passthrough mode is enabled, this instance will not attempt to contact Jira, issues will be written to the replay KVstore.")
+        helper.log_info(
+            "passthrough_mode: Jira passthrough mode is enabled, this instance will not attempt to contact Jira, issues will be written to the replay KVstore."
+        )
     helper.log_debug("passthrough_mode={}".format(passthrough_mode))
 
-    #call the query URL REST Endpoint and pass the url and API token
-    content = query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_password, ssl_certificate_validation, passthrough_mode)  
+    # call the query URL REST Endpoint and pass the url and API token
+    content = query_url(
+        helper,
+        account,
+        jira_auth_mode,
+        jira_url,
+        jira_username,
+        jira_password,
+        ssl_certificate_validation,
+        passthrough_mode,
+    )
 
     return 0
 
 
 # simple def to return current time for file naming
 def get_timestr():
-
     from time import localtime, strftime
+
     timestr = strftime("%Y-%m-%d-%H%M%S", localtime())
 
     return timestr
 
-def get_tempdir():
 
+def get_tempdir():
     import os
     import re
     import platform
 
     # If running Windows OS (used for directory identification)
-    is_windows = re.match(r'^win\w+', (platform.system().lower()))
+    is_windows = re.match(r"^win\w+", (platform.system().lower()))
 
     # SPLUNK_HOME environment variable
-    SPLUNK_HOME = os.environ['SPLUNK_HOME']
+    SPLUNK_HOME = os.environ["SPLUNK_HOME"]
 
     # define the directory for temp files
     if is_windows:
-        tempdir = SPLUNK_HOME + '\\etc\\apps\\TA-jira-service-desk-simple-addon\\tmp'
+        tempdir = SPLUNK_HOME + "\\etc\\apps\\TA-jira-service-desk-simple-addon\\tmp"
     else:
-        tempdir = SPLUNK_HOME + '/etc/apps/TA-jira-service-desk-simple-addon/tmp'
+        tempdir = SPLUNK_HOME + "/etc/apps/TA-jira-service-desk-simple-addon/tmp"
     if not os.path.exists(tempdir):
         os.mkdir(tempdir)
 
@@ -181,8 +203,7 @@ def get_tempdir():
 
 
 # This function is made necessary due to Windows incapability to purge temporary files properly, as other serious OS would
-def clean_tempdir():
-
+def clean_tempdir(helper):
     import os
     import glob
     import time
@@ -195,17 +216,30 @@ def clean_tempdir():
         # cd to directory
         os.chdir(tempdir)
         # loop and clean
-        for xfile in glob.glob('*'):
+        for xfile in glob.glob("*"):
             filemtime = os.path.getmtime(xfile)
             if time.time() - filemtime > 300:
                 try:
                     os.remove(xfile)
                 except Exception as e:
-                    helper.log_debug('Temporary file ' + str(xfile) + ' could not be removed, we will try another chance later on')
+                    helper.log_debug(
+                        "Temporary file "
+                        + str(xfile)
+                        + " could not be removed, we will try another chance later on"
+                    )
 
 
-def attach_csv(helper, jira_url, jira_created_key, jira_attachment_token, jira_headers_attachment, ssl_certificate_validation, proxy_dict, *args, **kwargs):
-
+def attach_csv(
+    helper,
+    jira_url,
+    jira_created_key,
+    jira_attachment_token,
+    jira_headers_attachment,
+    ssl_certificate_validation,
+    proxy_dict,
+    *args,
+    **kwargs,
+):
     import gzip
     import tempfile
     import requests
@@ -216,49 +250,65 @@ def attach_csv(helper, jira_url, jira_created_key, jira_attachment_token, jira_h
     tempdir = get_tempdir()
 
     # Clean tempdir
-    clean_tempdir()
+    clean_tempdir(helper)
 
     timestr = get_timestr()
-    results_csv = tempfile.NamedTemporaryFile(mode='w+t', prefix="splunk_alert_results_" + str(timestr) + "_", suffix='.csv', dir=tempdir, delete=False)
+    results_csv = tempfile.NamedTemporaryFile(
+        mode="w+t",
+        prefix="splunk_alert_results_" + str(timestr) + "_",
+        suffix=".csv",
+        dir=tempdir,
+        delete=False,
+    )
     jira_url = jira_url + "/" + jira_created_key + "/attachments"
 
-    input_file = gzip.open(jira_attachment_token, 'rt')
+    input_file = gzip.open(jira_attachment_token, "rt")
     reader = csv.DictReader(input_file)
 
     # filter fields (headers) starting with "__mv_"
-    fieldnames = [name for name in reader.fieldnames if not name.startswith('__mv_')]
+    fieldnames = [name for name in reader.fieldnames if not name.startswith("__mv_")]
 
     writer = csv.DictWriter(results_csv, fieldnames=fieldnames)
     writer.writeheader()
 
     # filter out "__mv_" fields in rows
     for row in reader:
-        row = {k: v for k, v in row.items() if not k.startswith('__mv_')}
+        row = {k: v for k, v in row.items() if not k.startswith("__mv_")}
         writer.writerow(row)
-    
+
     results_csv.seek(0)
 
     try:
-
-        files = {'file': open(results_csv.name, 'rb')}
-        response = requests.post(jira_url, files=files, headers=jira_headers_attachment,
-                                verify=ssl_certificate_validation, proxies=proxy_dict)
+        files = {"file": open(results_csv.name, "rb")}
+        response = requests.post(
+            jira_url,
+            files=files,
+            headers=jira_headers_attachment,
+            verify=ssl_certificate_validation,
+            proxies=proxy_dict,
+        )
         helper.log_debug("response status_code:={}".format(response.status_code))
 
         if response.status_code not in (200, 201, 204):
             helper.log_error(
-                'JIRA Service Desk ticket attachment file upload has failed!. url={}, '
-                'jira_attachment_token={}, HTTP Error={}, '
-                'content={}'.format(jira_url, jira_attachment_token, response.status_code,
-                                    response.text))
+                "JIRA Service Desk ticket attachment file upload has failed!. url={}, "
+                "jira_attachment_token={}, HTTP Error={}, "
+                "content={}".format(
+                    jira_url, jira_attachment_token, response.status_code, response.text
+                )
+            )
         else:
-            helper.log_info('JIRA Service Desk ticket attachment file uploaded successfully. {},'
-                        ' content={}'.format(jira_url, response.text))
+            helper.log_info(
+                "JIRA Service Desk ticket attachment file uploaded successfully. {},"
+                " content={}".format(jira_url, response.text)
+            )
 
     # any exception such as proxy error, dns failure etc. will be catch here
     except Exception as e:
-        helper.log_error("JIRA Service Desk ticket attachment file "
-                        "upload has failed!:{}".format(str(e)))
+        helper.log_error(
+            "JIRA Service Desk ticket attachment file "
+            "upload has failed!:{}".format(str(e))
+        )
 
     finally:
         results_csv.close()
@@ -268,11 +318,24 @@ def attach_csv(helper, jira_url, jira_created_key, jira_attachment_token, jira_h
             if os.path.isfile(results_csv.name):
                 os.remove(results_csv.name)
         except Exception as e:
-            helper.log_debug('Temporary file ' + str(results_csv.name) + ' could not be removed, unfortunately this is expected under Windows host guests')
+            helper.log_debug(
+                "Temporary file "
+                + str(results_csv.name)
+                + " could not be removed, unfortunately this is expected under Windows host guests"
+            )
 
 
-def attach_json(helper, jira_url, jira_created_key, jira_attachment_token, jira_headers_attachment, ssl_certificate_validation, proxy_dict, *args, **kwargs):
-
+def attach_json(
+    helper,
+    jira_url,
+    jira_created_key,
+    jira_attachment_token,
+    jira_headers_attachment,
+    ssl_certificate_validation,
+    proxy_dict,
+    *args,
+    **kwargs,
+):
     import gzip
     import tempfile
     import csv
@@ -284,16 +347,26 @@ def attach_json(helper, jira_url, jira_created_key, jira_attachment_token, jira_
     tempdir = get_tempdir()
 
     # Clean tempdir
-    clean_tempdir()
+    clean_tempdir(helper)
 
     timestr = get_timestr()
-    results_csv = tempfile.NamedTemporaryFile(mode='w+t', prefix="splunk_alert_results_" + str(timestr) + "_",
-                                            suffix='.csv', dir=tempdir, delete=False)
-    results_json = tempfile.NamedTemporaryFile(mode='w+t', prefix="splunk_alert_results_" + str(timestr) + "_",
-                                            suffix='.json', dir=tempdir, delete=False)
+    results_csv = tempfile.NamedTemporaryFile(
+        mode="w+t",
+        prefix="splunk_alert_results_" + str(timestr) + "_",
+        suffix=".csv",
+        dir=tempdir,
+        delete=False,
+    )
+    results_json = tempfile.NamedTemporaryFile(
+        mode="w+t",
+        prefix="splunk_alert_results_" + str(timestr) + "_",
+        suffix=".json",
+        dir=tempdir,
+        delete=False,
+    )
     jira_url = jira_url + "/" + jira_created_key + "/attachments"
 
-    input_file = gzip.open(jira_attachment_token, 'rt')
+    input_file = gzip.open(jira_attachment_token, "rt")
     all_data = input_file.read()
     results_csv.writelines(str(all_data))
     results_csv.seek(0)
@@ -301,32 +374,44 @@ def attach_json(helper, jira_url, jira_created_key, jira_attachment_token, jira_
     # Convert CSV to JSON
     reader = csv.DictReader(open(results_csv.name))
     # filter out "__mv_" fields in rows
-    data = [ {k: v for k, v in row.items() if not k.startswith('__mv_')} for row in reader]
+    data = [
+        {k: v for k, v in row.items() if not k.startswith("__mv_")} for row in reader
+    ]
     results_json.writelines(json.dumps(data, indent=2))
     results_json.seek(0)
 
     try:
-
-        files = {'file': open(results_json.name, 'rb')}
-        response = requests.post(jira_url, files=files, headers=jira_headers_attachment,
-                                verify=ssl_certificate_validation, proxies=proxy_dict)
+        files = {"file": open(results_json.name, "rb")}
+        response = requests.post(
+            jira_url,
+            files=files,
+            headers=jira_headers_attachment,
+            verify=ssl_certificate_validation,
+            proxies=proxy_dict,
+        )
 
         helper.log_debug("response status_code:={}".format(response.status_code))
 
         if response.status_code not in (200, 201, 204):
             helper.log_error(
-                'JIRA Service Desk ticket attachment file upload has failed!. url={}, '
-                'jira_attachment_token={}, HTTP Error={}, '
-                'content={}'.format(jira_url, jira_attachment_token, response.status_code,
-                                    response.text))
+                "JIRA Service Desk ticket attachment file upload has failed!. url={}, "
+                "jira_attachment_token={}, HTTP Error={}, "
+                "content={}".format(
+                    jira_url, jira_attachment_token, response.status_code, response.text
+                )
+            )
         else:
-            helper.log_info('JIRA Service Desk ticket attachment file uploaded successfully. {},'
-                        ' content={}'.format(jira_url, response.text))
+            helper.log_info(
+                "JIRA Service Desk ticket attachment file uploaded successfully. {},"
+                " content={}".format(jira_url, response.text)
+            )
 
     # any exception such as proxy error, dns failure etc. will be catch here
     except Exception as e:
-        helper.log_error("JIRA Service Desk ticket attachment file upload "
-                        "has failed!:{}".format(str(e)))
+        helper.log_error(
+            "JIRA Service Desk ticket attachment file upload "
+            "has failed!:{}".format(str(e))
+        )
 
     finally:
         results_csv.close()
@@ -337,18 +422,35 @@ def attach_json(helper, jira_url, jira_created_key, jira_attachment_token, jira_
             if os.path.isfile(results_csv.name):
                 os.remove(results_csv.name)
         except Exception as e:
-            helper.log_debug('Temporary file ' + str(results_csv.name) + 'could not be removed, unfortunately this is expected under Windows host guests')
+            helper.log_debug(
+                "Temporary file "
+                + str(results_csv.name)
+                + "could not be removed, unfortunately this is expected under Windows host guests"
+            )
 
         # try clean
         try:
             if os.path.isfile(results_json.name):
                 os.remove(results_json.name)
         except Exception as e:
-            helper.log_debug('Temporary file ' + str(results_json.name) + ' could not be removed, unfortunately this is expected under Windows host guests')
+            helper.log_debug(
+                "Temporary file "
+                + str(results_json.name)
+                + " could not be removed, unfortunately this is expected under Windows host guests"
+            )
 
 
-def attach_xlsx(helper, jira_url, jira_created_key, jira_attachment_token, jira_headers_attachment, ssl_certificate_validation, proxy_dict, *args, **kwargs):
-
+def attach_xlsx(
+    helper,
+    jira_url,
+    jira_created_key,
+    jira_attachment_token,
+    jira_headers_attachment,
+    ssl_certificate_validation,
+    proxy_dict,
+    *args,
+    **kwargs,
+):
     import gzip
     import tempfile
     import requests
@@ -361,23 +463,35 @@ def attach_xlsx(helper, jira_url, jira_created_key, jira_attachment_token, jira_
     tempdir = get_tempdir()
 
     # Clean tempdir
-    clean_tempdir()
+    clean_tempdir(helper)
 
     timestr = get_timestr()
-    results_csv = tempfile.NamedTemporaryFile(mode='w+t', prefix="splunk_alert_results_" + str(timestr) + "_", suffix='.csv', dir=tempdir, delete=False)
-    results_xlsx = tempfile.NamedTemporaryFile(mode='w+t', prefix="splunk_alert_results_" + str(timestr) + "_", suffix='.xlsx', dir=tempdir, delete=False)
+    results_csv = tempfile.NamedTemporaryFile(
+        mode="w+t",
+        prefix="splunk_alert_results_" + str(timestr) + "_",
+        suffix=".csv",
+        dir=tempdir,
+        delete=False,
+    )
+    results_xlsx = tempfile.NamedTemporaryFile(
+        mode="w+t",
+        prefix="splunk_alert_results_" + str(timestr) + "_",
+        suffix=".xlsx",
+        dir=tempdir,
+        delete=False,
+    )
     jira_url = jira_url + "/" + jira_created_key + "/attachments"
 
-    input_file = gzip.open(jira_attachment_token, 'rt')
+    input_file = gzip.open(jira_attachment_token, "rt")
     all_data = input_file.read()
     results_csv.writelines(str(all_data))
     results_csv.seek(0)
-    
+
     # convert csv to xlsx
     wb = openpyxl.Workbook()
     ws = wb.active
 
-    reader = csv.reader(open(results_csv.name), delimiter=',')
+    reader = csv.reader(open(results_csv.name), delimiter=",")
     count = 0
     excluded_indices = []
     for row in reader:
@@ -388,7 +502,13 @@ def attach_xlsx(helper, jira_url, jira_created_key, jira_attachment_token, jira_
                 if cell.startswith("__mv_"):
                     excluded_indices.append(i)
             # only append non-excluded cells
-            ws.append([ILLEGAL_CHARACTERS_RE.sub('', cell) for i, cell in enumerate(row) if i not in excluded_indices])
+            ws.append(
+                [
+                    ILLEGAL_CHARACTERS_RE.sub("", cell)
+                    for i, cell in enumerate(row)
+                    if i not in excluded_indices
+                ]
+            )
         else:
             # only append non-excluded cells
             ws.append([cell for i, cell in enumerate(row) if i not in excluded_indices])
@@ -397,26 +517,36 @@ def attach_xlsx(helper, jira_url, jira_created_key, jira_attachment_token, jira_
     results_xlsx.seek(0)
 
     try:
-
-        files = {'file': open(results_xlsx.name, 'rb')}
-        response = requests.post(jira_url, files=files, headers=jira_headers_attachment,
-                                verify=ssl_certificate_validation, proxies=proxy_dict)
+        files = {"file": open(results_xlsx.name, "rb")}
+        response = requests.post(
+            jira_url,
+            files=files,
+            headers=jira_headers_attachment,
+            verify=ssl_certificate_validation,
+            proxies=proxy_dict,
+        )
         helper.log_debug("response status_code:={}".format(response.status_code))
 
         if response.status_code not in (200, 201, 204):
             helper.log_error(
-                'JIRA Service Desk ticket attachment file upload has failed!. url={}, '
-                'jira_attachment_token={}, HTTP Error={}, '
-                'content={}'.format(jira_url, jira_attachment_token, response.status_code,
-                                    response.text))
+                "JIRA Service Desk ticket attachment file upload has failed!. url={}, "
+                "jira_attachment_token={}, HTTP Error={}, "
+                "content={}".format(
+                    jira_url, jira_attachment_token, response.status_code, response.text
+                )
+            )
         else:
-            helper.log_info('JIRA Service Desk ticket attachment file uploaded successfully. {},'
-                        ' content={}'.format(jira_url, response.text))
+            helper.log_info(
+                "JIRA Service Desk ticket attachment file uploaded successfully. {},"
+                " content={}".format(jira_url, response.text)
+            )
 
     # any exception such as proxy error, dns failure etc. will be catch here
     except Exception as e:
-        helper.log_error("JIRA Service Desk ticket attachment file "
-                        "upload has failed!:{}".format(str(e)))
+        helper.log_error(
+            "JIRA Service Desk ticket attachment file "
+            "upload has failed!:{}".format(str(e))
+        )
 
     finally:
         results_csv.close()
@@ -427,18 +557,135 @@ def attach_xlsx(helper, jira_url, jira_created_key, jira_attachment_token, jira_
             if os.path.isfile(results_csv.name):
                 os.remove(results_csv.name)
         except Exception as e:
-            helper.log_debug('Temporary file ' + str(results_csv.name) + ' could not be removed, unfortunately this is expected under Windows host guests')
+            helper.log_debug(
+                "Temporary file "
+                + str(results_csv.name)
+                + " could not be removed, unfortunately this is expected under Windows host guests"
+            )
 
         # try clean
         try:
             if os.path.isfile(results_xlsx.name):
                 os.remove(results_xlsx.name)
         except Exception as e:
-            helper.log_debug('Temporary file ' + str(results_xlsx.name) + ' could not be removed, unfortunately this is expected under Windows host guests')
+            helper.log_debug(
+                "Temporary file "
+                + str(results_xlsx.name)
+                + " could not be removed, unfortunately this is expected under Windows host guests"
+            )
 
 
-def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_password, ssl_certificate_validation, passthrough_mode):
+def get_results_json(helper, jira_attachment_token, *args, **kwargs):
+    import gzip
+    import tempfile
+    import csv
+    import json
 
+    try:
+        # Get tempdir
+        tempdir = get_tempdir()
+
+        # Clean tempdir
+        clean_tempdir(helper)
+
+        timestr = get_timestr()
+        results_csv = tempfile.NamedTemporaryFile(
+            mode="w+t",
+            prefix="splunk_alert_results_" + str(timestr) + "_",
+            suffix=".csv",
+            dir=tempdir,
+            delete=False,
+        )
+        results_json = tempfile.NamedTemporaryFile(
+            mode="w+t",
+            prefix="splunk_alert_results_" + str(timestr) + "_",
+            suffix=".json",
+            dir=tempdir,
+            delete=False,
+        )
+
+        input_file = gzip.open(jira_attachment_token, "rt")
+        all_data = input_file.read()
+        results_csv.writelines(str(all_data))
+        results_csv.seek(0)
+
+        # Convert CSV to JSON
+        reader = csv.DictReader(open(results_csv.name))
+        # filter out "__mv_" fields in rows
+        data = [
+            {k: v for k, v in row.items() if not k.startswith("__mv_")}
+            for row in reader
+        ]
+        results_json.writelines(json.dumps(data, indent=2))
+        results_json.seek(0)
+
+        return results_json.read()
+
+    except Exception as e:
+        helper.log_error(
+            f'function get_results_json has failed with exception="{str(e)}"'
+        )
+        return None
+
+
+def get_results_csv(helper, jira_attachment_token, *args, **kwargs):
+    import gzip
+    import tempfile
+    import csv
+
+    try:
+        # Get tempdir
+        tempdir = get_tempdir()
+
+        # Clean tempdir
+        clean_tempdir(helper)
+
+        timestr = get_timestr()
+        results_csv = tempfile.NamedTemporaryFile(
+            mode="w+t",
+            prefix="splunk_alert_results_" + str(timestr) + "_",
+            suffix=".csv",
+            dir=tempdir,
+            delete=False,
+        )
+
+        input_file = gzip.open(jira_attachment_token, "rt")
+        reader = csv.DictReader(input_file)
+
+        # filter fields (headers) starting with "__mv_"
+        fieldnames = [
+            name for name in reader.fieldnames if not name.startswith("__mv_")
+        ]
+
+        writer = csv.DictWriter(results_csv, fieldnames=fieldnames)
+        writer.writeheader()
+
+        # filter out "__mv_" fields in rows
+        for row in reader:
+            row = {k: v for k, v in row.items() if not k.startswith("__mv_")}
+            writer.writerow(row)
+
+        results_csv.seek(0)
+
+        return results_csv.read()
+
+    except Exception as e:
+        helper.log_error(
+            f'function get_results_csv has failed with exception="{str(e)}"'
+        )
+        return None
+
+
+def query_url(
+    helper,
+    account,
+    jira_auth_mode,
+    jira_url,
+    jira_username,
+    jira_password,
+    ssl_certificate_validation,
+    passthrough_mode,
+):
     import requests
     import json
     import uuid
@@ -455,25 +702,30 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
     session_key = helper.session_key
 
     # Get splunkd port
-    entity = splunk.entity.getEntity('/server', 'settings',
-                                     namespace='TA-jira-service-desk-simple-addon', sessionKey=session_key, owner='-')
+    entity = splunk.entity.getEntity(
+        "/server",
+        "settings",
+        namespace="TA-jira-service-desk-simple-addon",
+        sessionKey=session_key,
+        owner="-",
+    )
     mydict = entity
-    splunkd_port = mydict['mgmtHostPort']
+    splunkd_port = mydict["mgmtHostPort"]
     helper.log_debug("splunkd_port={}".format(splunkd_port))
 
     service = client.connect(
         owner="nobody",
         app="TA-jira-service-desk-simple-addon",
         port=splunkd_port,
-        token=session_key
+        token=session_key,
     )
     storage_passwords = service.storage_passwords
 
     # For Splunk Cloud vetting, the URL must start with https://
     if not jira_url.startswith("https://"):
-        jira_url = 'https://' + jira_url + '/rest/api/latest/issue'
+        jira_url = "https://" + jira_url + "/rest/api/latest/issue"
     else:
-        jira_url = jira_url + '/rest/api/latest/issue'
+        jira_url = jira_url + "/rest/api/latest/issue"
     # keep this url as a super url
     jira_root_url = jira_url
 
@@ -510,35 +762,71 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
                         proxy_username = value
 
         if proxy_enabled == "1":
-
             # get proxy password
             if proxy_username:
                 proxy_password = None
 
                 # get proxy password, if any
-                credential_realm = '__REST_CREDENTIAL__#TA-jira-service-desk-simple-addon#configs/conf-ta_service_desk_simple_addon_settings'
+                credential_realm = "__REST_CREDENTIAL__#TA-jira-service-desk-simple-addon#configs/conf-ta_service_desk_simple_addon_settings"
                 for credential in storage_passwords:
-                    if credential.content.get('realm') == str(credential_realm) \
-                        and credential.content.get('clear_password').find('proxy_password') > 0:
-                        proxy_password = json.loads(credential.content.get('clear_password')).get('proxy_password')
+                    if (
+                        credential.content.get("realm") == str(credential_realm)
+                        and credential.content.get("clear_password").find(
+                            "proxy_password"
+                        )
+                        > 0
+                    ):
+                        proxy_password = json.loads(
+                            credential.content.get("clear_password")
+                        ).get("proxy_password")
                         break
 
-                if proxy_type == 'http':
-                    proxy_dict= {
-                        "http" : "http://" + proxy_username + ":" + proxy_password + "@" + proxy_url + ":" + proxy_port,
-                        "https" : "https://" + proxy_username + ":" + proxy_password + "@" + proxy_url + ":" + proxy_port
-                        }
+                if proxy_type == "http":
+                    proxy_dict = {
+                        "http": "http://"
+                        + proxy_username
+                        + ":"
+                        + proxy_password
+                        + "@"
+                        + proxy_url
+                        + ":"
+                        + proxy_port,
+                        "https": "https://"
+                        + proxy_username
+                        + ":"
+                        + proxy_password
+                        + "@"
+                        + proxy_url
+                        + ":"
+                        + proxy_port,
+                    }
                 else:
-                    proxy_dict= {
-                        "http" : str(proxy_type) + "://" + proxy_username + ":" + proxy_password + "@" + proxy_url + ":" + proxy_port,
-                        "https" : str(proxy_type) + "://" + proxy_username + ":" + proxy_password + "@" + proxy_url + ":" + proxy_port
-                        }
+                    proxy_dict = {
+                        "http": str(proxy_type)
+                        + "://"
+                        + proxy_username
+                        + ":"
+                        + proxy_password
+                        + "@"
+                        + proxy_url
+                        + ":"
+                        + proxy_port,
+                        "https": str(proxy_type)
+                        + "://"
+                        + proxy_username
+                        + ":"
+                        + proxy_password
+                        + "@"
+                        + proxy_url
+                        + ":"
+                        + proxy_port,
+                    }
 
             else:
-                proxy_dict= {
-                    "http" : proxy_url + ":" + proxy_port,
-                    "https" : proxy_url + ":" + proxy_port
-                    }
+                proxy_dict = {
+                    "http": proxy_url + ":" + proxy_port,
+                    "https": proxy_url + ":" + proxy_port,
+                }
 
     else:
         opt_use_proxy = False
@@ -556,26 +844,32 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
 
     jira_dedup_enabled = False
     jira_dedup = helper.get_param("jira_dedup")
-    if jira_dedup == 'enabled':
+    if jira_dedup == "enabled":
         jira_dedup_enabled = True
     helper.log_debug("jira_dedup_enabled={}".format(jira_dedup_enabled))
 
     jira_dedup_exclude_statuses = helper.get_param("jira_dedup_exclude_statuses")
     if jira_dedup_exclude_statuses in ["", "None", None]:
         jira_dedup_exclude_statuses = "Done"
-    helper.log_debug("jira_dedup_exclude_statuses={}".format(jira_dedup_exclude_statuses))
+    helper.log_debug(
+        "jira_dedup_exclude_statuses={}".format(jira_dedup_exclude_statuses)
+    )
     # needs to be converted to an array for later processing
     jira_dedup_exclude_statuses = jira_dedup_exclude_statuses.split(",")
 
     jira_dedup_content = helper.get_param("jira_dedup_content")
     if jira_dedup_content in ["", "None", None]:
         jira_dedup_full_mode = True
-        helper.log_debug("jira_dedup: jira_dedup_full_mode is set to True, the full issue data will be used"
-                        " for the md5 calculation.")
+        helper.log_debug(
+            "jira_dedup: jira_dedup_full_mode is set to True, the full issue data will be used"
+            " for the md5 calculation."
+        )
     else:
         jira_dedup_full_mode = False
-        helper.log_debug("jira_dedup: jira_dedup_full_mode is set to False, the md5 calculation scope will be restricted"
-                         " to the content of the jira_dedup_content.")
+        helper.log_debug(
+            "jira_dedup: jira_dedup_full_mode is set to False, the md5 calculation scope will be restricted"
+            " to the content of the jira_dedup_content."
+        )
         helper.log_debug("jira_dedup_content={}".format(jira_dedup_content))
 
     jira_attachment = helper.get_param("jira_attachment")
@@ -588,6 +882,13 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
     jira_attachment_token = helper.get_param("jira_attachment_token")
     helper.log_debug("jira_attachment_token={}".format(jira_attachment_token))
 
+    jira_results_description = helper.get_param("jira_results_description")
+    helper.log_debug("jira_results_description={}".format(jira_results_description))
+
+    if jira_results_description in ["", "None", None]:
+        jira_results_description = "disabled"
+    helper.log_debug("jira_results_description:={}".format(jira_results_description))
+
     jira_customfields_parsing = helper.get_param("jira_customfields_parsing")
     helper.log_debug("jira_customfields_parsing={}".format(jira_customfields_parsing))
 
@@ -596,27 +897,27 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
     helper.log_debug("jira_customfields_parsing:={}".format(jira_customfields_parsing))
 
     # Build the authentication header for JIRA
-    if str(jira_auth_mode) == 'basic':
-        authorization = jira_username + ':' + jira_password
+    if str(jira_auth_mode) == "basic":
+        authorization = jira_username + ":" + jira_password
         b64_auth = base64.b64encode(authorization.encode()).decode()
         jira_headers = {
-            'Authorization': 'Basic %s' % b64_auth,
-            'Content-Type': 'application/json',
+            "Authorization": "Basic %s" % b64_auth,
+            "Content-Type": "application/json",
         }
         # required when uploading attachments
         jira_headers_attachment = {
-            'Authorization': 'Basic %s' % b64_auth,
-            'X-Atlassian-Token': 'no-check'
+            "Authorization": "Basic %s" % b64_auth,
+            "X-Atlassian-Token": "no-check",
         }
-    elif str(jira_auth_mode) == 'pat':
+    elif str(jira_auth_mode) == "pat":
         jira_headers = {
-            'Authorization': 'Bearer %s' % str(jira_password),
-            'Content-Type': 'application/json',
+            "Authorization": "Bearer %s" % str(jira_password),
+            "Content-Type": "application/json",
         }
         # required when uploading attachments
         jira_headers_attachment = {
-            'Authorization': 'Bearer %s' % str(jira_password),
-            'X-Atlassian-Token': 'no-check'
+            "Authorization": "Bearer %s" % str(jira_password),
+            "X-Atlassian-Token": "no-check",
         }
 
     # Loop within events and proceed
@@ -651,10 +952,14 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
 
         # custom fields parsing is function of the alert configuration and can be disabled on demand
         if jira_customfields_parsing not in ("disabled"):
-            helper.log_info("jira_customfields_parsing={}".format(jira_customfields_parsing))
+            helper.log_info(
+                "jira_customfields_parsing={}".format(jira_customfields_parsing)
+            )
             jira_customfields = reformat_customfields(jira_customfields)
         else:
-            helper.log_info("jira_customfields_parsing={}".format(jira_customfields_parsing))
+            helper.log_info(
+                "jira_customfields_parsing={}".format(jira_customfields_parsing)
+            )
             jira_customfields = reformat_customfields_minimal(jira_customfields)
         helper.log_debug("jira_customfields={}".format(jira_customfields))
 
@@ -663,72 +968,117 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
         data = {}
 
         # add project
-        data['fields'] = { 'project': { 'key' : jira_project } }
+        data["fields"] = {"project": {"key": jira_project}}
 
         # add summary
-        data['fields']['summary'] = jira_summary
+        data["fields"]["summary"] = jira_summary
 
         # add description
-        data['fields']['description'] = jira_description
+
+        # if user requested, add the results
+        if jira_results_description in ("enabled_json"):
+            search_results_json = get_results_json(helper, jira_attachment_token)
+            if search_results_json:
+                jira_description = (
+                    jira_description
+                    + "\nSplunk search results:\n{code:json}"
+                    + search_results_json
+                    + "\n{code}"
+                )
+
+        elif jira_results_description in ("enabled_csv"):
+            search_results_csv = get_results_csv(helper, jira_attachment_token)
+            if search_results_csv:
+                jira_description = (
+                    jira_description
+                    + "\nSplunk search results:\n{code:csv}"
+                    + search_results_csv
+                    + "\n{code}"
+                )
+
+        data["fields"]["description"] = jira_description
 
         # add issue type
-        data['fields']['issuetype'] = { 'name': jira_issue_type }
+        data["fields"]["issuetype"] = {"name": jira_issue_type}
 
         # JIRA assignee
         if jira_assignee not in ["", "None", None]:
             # add assignee
-            data['fields']['assignee'] = { 'accountId': jira_assignee }
+            data["fields"]["assignee"] = {"accountId": jira_assignee}
 
         # JIRA reporter
         if jira_reporter not in ["", "None", None]:
-            data['fields']['reporter'] = { 'accountId': jira_reporter }
+            data["fields"]["reporter"] = {"accountId": jira_reporter}
 
         # Priority can be dynamically overridden by the text input dynamic priority, if set
         if jira_priority not in ["", "None", None]:
             if jira_priority_dynamic not in ["", "None", None]:
-                helper.log_debug("jira priority is overridden by "
-                                 "jira_priority_dynamic={}".format(jira_priority_dynamic))
+                helper.log_debug(
+                    "jira priority is overridden by "
+                    "jira_priority_dynamic={}".format(jira_priority_dynamic)
+                )
                 # add
-                data['fields']['priority'] = { 'name': jira_priority_dynamic }
+                data["fields"]["priority"] = {"name": jira_priority_dynamic}
 
             else:
                 # add
-                data['fields']['priority'] = { 'name': jira_priority }
+                data["fields"]["priority"] = {"name": jira_priority}
 
         # labels
         if jira_labels not in ["", "None", None]:
-            data['fields']['labels'] = jira_labels.split(",")
+            data["fields"]["labels"] = jira_labels.split(",")
 
         # components
         if jira_components not in ["", "None", None]:
-
             # set as a list
             jira_components_list = jira_components.split(",")
             jira_subcomponents_list = []
 
             # loop and format as a list of objects
             for sub_jira_component in jira_components_list:
-                jira_subcomponents_list.append({'name': sub_jira_component})
-                
+                jira_subcomponents_list.append({"name": sub_jira_component})
+
             # finally add to the json data
-            data['fields']['components'] = jira_subcomponents_list
+            data["fields"]["components"] = jira_subcomponents_list
 
         # JIRA custom fields structure
         if jira_customfields not in ["", "None", None]:
+            # Add a double quote at the start if it doesn't start with {
+            if not jira_customfields.startswith("{"):
+                if not jira_customfields.startswith('"'):
+                    jira_customfields = '"' + jira_customfields
+
+            # Add a double quote at the end if it doesn't end with }
+            if not jira_customfields.endswith("}"):
+                if not jira_customfields.endswith('"'):
+                    jira_customfields = jira_customfields + '"'
+
+            # set as json
             jira_customfields = "{" + jira_customfields + "}"
+
             try:
                 jira_customfields_json = json.loads(jira_customfields)
 
                 # Loop
                 for jira_customfields_sub in jira_customfields_json:
-                    data['fields'][jira_customfields_sub] = jira_customfields_json[jira_customfields_sub]
+                    data["fields"][jira_customfields_sub] = jira_customfields_json[
+                        jira_customfields_sub
+                    ]
 
             except Exception as e:
-                helper.log_error("Failed to load jira_customfields=\"{}\" as a proper formated JSON object with exception=\"{}\"".format(jira_customfields, e))
+                helper.log_error(
+                    'Failed to load jira_customfields="{}" as a proper formated JSON object with exception="{}"'.format(
+                        jira_customfields, e
+                    )
+                )
 
         # log raw json in debug mode
-        helper.log_debug("JSON payload before submission=\"{}\"".format(json.dumps(data)))
-        helper.log_debug("JSON pretty print before submission=\"{}\"".format(json.dumps(data, indent=4)))
+        helper.log_debug('JSON payload before submission="{}"'.format(json.dumps(data)))
+        helper.log_debug(
+            'JSON pretty print before submission="{}"'.format(
+                json.dumps(data, indent=4)
+            )
+        )
 
         # Generate an md5 unique hash for this issue
         # If jira_dedup_full_mode is set to True, the entire json data is used
@@ -746,13 +1096,15 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
 
         # Verify the collection, if the collection returns a result for this md5 as the _key, this issue
         # is a duplicate (http 200)
-        record_url = 'https://localhost:' + str(splunkd_port) \
-                     + '/servicesNS/nobody/' \
-                       'TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_issues_backlog/' \
-                     + str(jira_md5sum)
+        record_url = "https://localhost:" + str(
+            splunkd_port
+        ) + "/servicesNS/nobody/" "TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_issues_backlog/" + str(
+            jira_md5sum
+        )
         headers = {
-            'Authorization': 'Splunk %s' % session_key,
-            'Content-Type': 'application/json'}
+            "Authorization": "Splunk %s" % session_key,
+            "Content-Type": "application/json",
+        }
 
         response = requests.get(record_url, headers=headers, verify=False)
         helper.log_debug("response status_code:={}".format(response.status_code))
@@ -760,19 +1112,26 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
         if response.status_code == 200:
             if jira_dedup_enabled:
                 helper.log_info(
-                    'jira_dedup: An issue with same md5 hash (' + str(jira_md5sum) + ') was found in the backlog '
-                    'collection, as jira_dedup is enabled a new comment '
-                    'will be added if the issue is active. (status is not resolved or any other done status), entry:={}'.format(response.text))
+                    "jira_dedup: An issue with same md5 hash ("
+                    + str(jira_md5sum)
+                    + ") was found in the backlog "
+                    "collection, as jira_dedup is enabled a new comment "
+                    "will be added if the issue is active. (status is not resolved or any other done status), entry:={}".format(
+                        response.text
+                    )
+                )
                 jira_backlog_response = response.text
                 jira_backlog_response_json = json.loads(jira_backlog_response)
-                helper.log_debug("jira_backlog_response_json:={}".format(jira_backlog_response_json))
+                helper.log_debug(
+                    "jira_backlog_response_json:={}".format(jira_backlog_response_json)
+                )
 
-                jira_backlog_id = jira_backlog_response_json['jira_id']
-                jira_backlog_key = jira_backlog_response_json['jira_key']
-                jira_backlog_kvkey = jira_backlog_response_json['_key']
-                jira_backlog_self = jira_backlog_response_json['jira_self']
-                jira_backlog_md5 = jira_backlog_response_json['jira_md5']
-                jira_backlog_ctime = jira_backlog_response_json['ctime']
+                jira_backlog_id = jira_backlog_response_json["jira_id"]
+                jira_backlog_key = jira_backlog_response_json["jira_key"]
+                jira_backlog_kvkey = jira_backlog_response_json["_key"]
+                jira_backlog_self = jira_backlog_response_json["jira_self"]
+                jira_backlog_md5 = jira_backlog_response_json["jira_md5"]
+                jira_backlog_ctime = jira_backlog_response_json["ctime"]
 
                 helper.log_debug("jira_backlog_key:={}".format(jira_backlog_key))
 
@@ -781,50 +1140,86 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
 
                 # Define first the status to unknown, if the status is Closed a new issue will be created
                 # if dedup is enabled
-                jira_issue_status = 'Unknown'
-                jira_issue_status_category = 'Unknown'
-                jira_url_status = jira_url + '/' + str(jira_backlog_key)
+                jira_issue_status = "Unknown"
+                jira_issue_status_category = "Unknown"
+                jira_url_status = jira_url + "/" + str(jira_backlog_key)
                 helper.log_debug("jira_url_status:={}".format(jira_url_status))
 
                 # Try http get, catch exceptions and incorrect http return codes
                 try:
-                    response = helper.send_http_request(jira_url_status, "GET", parameters=None, payload=data,
-                                                        headers=jira_headers, cookies=None,
-                                                        verify=ssl_certificate_validation,
-                                                        cert=None, timeout=120, use_proxy=opt_use_proxy)
-                    helper.log_debug("response status_code:={}".format(response.status_code))
+                    response = helper.send_http_request(
+                        jira_url_status,
+                        "GET",
+                        parameters=None,
+                        payload=data,
+                        headers=jira_headers,
+                        cookies=None,
+                        verify=ssl_certificate_validation,
+                        cert=None,
+                        timeout=120,
+                        use_proxy=opt_use_proxy,
+                    )
+                    helper.log_debug(
+                        "response status_code:={}".format(response.status_code)
+                    )
 
                     # No http exception, but http post was not successful
                     if response.status_code not in (200, 201, 204):
                         helper.log_error(
-                            'JIRA Service Desk get ticket status has failed!. url={}, data={}, HTTP Error={}, '
-                            'content={}'.format(jira_url_status, data, response.status_code, response.text))
+                            "JIRA Service Desk get ticket status has failed!. url={}, data={}, HTTP Error={}, "
+                            "content={}".format(
+                                jira_url_status,
+                                data,
+                                response.status_code,
+                                response.text,
+                            )
+                        )
 
                     else:
-
                         jira_get_response = response.text
                         jira_get_response_json = json.loads(jira_get_response)
-                        jira_issue_status = jira_get_response_json['fields']['status']['name']
-                        jira_issue_status_category = jira_get_response_json['fields']['status']['statusCategory']['name']
-                        helper.log_debug("jira_issue_status:={}".format(jira_issue_status))
-                        helper.log_debug("jira_issue_status_category:={}".format(jira_issue_status_category))
+                        jira_issue_status = jira_get_response_json["fields"]["status"][
+                            "name"
+                        ]
+                        jira_issue_status_category = jira_get_response_json["fields"][
+                            "status"
+                        ]["statusCategory"]["name"]
+                        helper.log_debug(
+                            "jira_issue_status:={}".format(jira_issue_status)
+                        )
+                        helper.log_debug(
+                            "jira_issue_status_category:={}".format(
+                                jira_issue_status_category
+                            )
+                        )
 
                 # any exception such as proxy error, dns failure etc. will be catch here
                 except Exception as e:
-                    helper.log_error("JIRA Service Desk get ticket status has failed!:{}".format(str(e)))
                     helper.log_error(
-                        'message content={}'.format(data))
-                    jira_issue_status = 'Unknown'
+                        "JIRA Service Desk get ticket status has failed!:{}".format(
+                            str(e)
+                        )
+                    )
+                    helper.log_error("message content={}".format(data))
+                    jira_issue_status = "Unknown"
 
                 # If dedup is enabled and the issue status is not closed
-                if jira_dedup_enabled and jira_issue_status_category not in jira_dedup_exclude_statuses:
-                    
+                if (
+                    jira_dedup_enabled
+                    and jira_issue_status_category not in jira_dedup_exclude_statuses
+                ):
                     # Log a message
                     helper.log_info(
-                    'jira_dedup: The issue with key ' + str(jira_backlog_key) + ' was set to status: \"'
-                    + jira_issue_status + '\" (status category: \"' + jira_issue_status_category + '\"), '
-                    'therefore, a new comment will be added to this issue.')
-                    
+                        "jira_dedup: The issue with key "
+                        + str(jira_backlog_key)
+                        + ' was set to status: "'
+                        + jira_issue_status
+                        + '" (status category: "'
+                        + jira_issue_status_category
+                        + '"), '
+                        "therefore, a new comment will be added to this issue."
+                    )
+
                     # generate a new jira_url, and the comment
                     jira_dedup_comment_issue = True
                     jira_url = jira_url + "/" + str(jira_backlog_key) + "/comment"
@@ -832,58 +1227,89 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
 
                     # Handle the JIRA comment to be added, if a field named jira_update_comment is part of the result,
                     # its content will used for the comment content.
-                    jira_update_comment = { 'body': 'New alert triggered: ' + jira_summary }
-                    
+                    jira_update_comment = {
+                        "body": "New alert triggered: " + jira_summary
+                    }
+
                     for key, value in event.items():
                         if key in "jira_update_comment":
-                            jira_update_comment = { 'body': value }
+                            jira_update_comment = {"body": value}
 
-                    helper.log_debug("jira_update_comment:={}".format(jira_update_comment))
+                    helper.log_debug(
+                        "jira_update_comment:={}".format(jira_update_comment)
+                    )
 
                     data = jira_update_comment
 
-                    helper.log_debug("JSON payload before submission={}".format(json.dumps(jira_update_comment)))
+                    helper.log_debug(
+                        "JSON payload before submission={}".format(
+                            json.dumps(jira_update_comment)
+                        )
+                    )
 
                 # dedup is enabled but the issue was resolved, closed or cancelled
-                elif jira_dedup_enabled and jira_issue_status_category in jira_dedup_exclude_statuses:
+                elif (
+                    jira_dedup_enabled
+                    and jira_issue_status_category in jira_dedup_exclude_statuses
+                ):
                     helper.log_info(
-                    'jira_dedup: The issue with key ' + str(jira_backlog_key) + ' has the same MD5 hash: '
-                    + jira_backlog_md5
-                    + ' and its status was set to: \"' + jira_issue_status + '\" (status category: \"' + jira_issue_status_category +
-                    '\"), a new comment will not be added to an issue in this status, therefore a new issue '
-                                                                          'will be created.')
+                        "jira_dedup: The issue with key "
+                        + str(jira_backlog_key)
+                        + " has the same MD5 hash: "
+                        + jira_backlog_md5
+                        + ' and its status was set to: "'
+                        + jira_issue_status
+                        + '" (status category: "'
+                        + jira_issue_status_category
+                        + '"), a new comment will not be added to an issue in this status, therefore a new issue '
+                        "will be created."
+                    )
 
                     # Remove this issue from the backlog collection
-                    record_url = 'https://localhost:' + str(splunkd_port) \
-                                + '/servicesNS/nobody/' \
-                                'TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_issues_backlog'
+                    record_url = (
+                        "https://localhost:" + str(splunkd_port) + "/servicesNS/nobody/"
+                        "TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_issues_backlog"
+                    )
                     headers = {
-                        'Authorization': 'Splunk %s' % session_key,
-                        'Content-Type': 'application/json'}
+                        "Authorization": "Splunk %s" % session_key,
+                        "Content-Type": "application/json",
+                    }
 
-                    response = requests.delete(record_url + '/' + jira_md5sum, headers=headers, verify=False)
+                    response = requests.delete(
+                        record_url + "/" + jira_md5sum, headers=headers, verify=False
+                    )
 
                     if response.status_code not in (200, 201, 204):
                         helper.log_error(
-                            'KVstore saving has failed!. url={}, data={}, HTTP Error={}, '
-                            'content={}'.format(record_url, record, response.status_code, response.text))
+                            "KVstore saving has failed!. url={}, data={}, HTTP Error={}, "
+                            "content={}".format(
+                                record_url, record, response.status_code, response.text
+                            )
+                        )
                     else:
-                        helper.log_debug('JIRA issue record in the backlog collection was successfully delete. '
-                                    'content={}'.format(response.text))
+                        helper.log_debug(
+                            "JIRA issue record in the backlog collection was successfully delete. "
+                            "content={}".format(response.text)
+                        )
 
                     jira_dedup_md5_found = False
 
             else:
                 helper.log_info(
-                    'jira_dedup: An issue with same md5 hash (' + str(jira_md5sum) + ') was found in the backlog '
-                    'collection, as jira_dedup is not enabled a new issue '
-                    'will be created, entry:={}'.format(response.text))
+                    "jira_dedup: An issue with same md5 hash ("
+                    + str(jira_md5sum)
+                    + ") was found in the backlog "
+                    "collection, as jira_dedup is not enabled a new issue "
+                    "will be created, entry:={}".format(response.text)
+                )
                 jira_dedup_md5_found = True
 
         else:
             helper.log_debug(
-                'jira_dedup: The calculated md5 hash for this issue creation request (' + str(jira_md5sum) +
-                ') was not found in the backlog collection, a new issue will be created')
+                "jira_dedup: The calculated md5 hash for this issue creation request ("
+                + str(jira_md5sum)
+                + ") was not found in the backlog collection, a new issue will be created"
+            )
             jira_dedup_md5_found = False
 
         # Try http post, catch exceptions and incorrect http return codes
@@ -896,219 +1322,375 @@ def query_url(helper, account, jira_auth_mode, jira_url, jira_username, jira_pas
         #
 
         if passthrough_mode:
-
             # For issue creation only
             if not jira_dedup_comment_issue:
-
                 # Store the failed publication in the replay KVstore
-                record_url = 'https://localhost:' + str(
-                    splunkd_port) + '/servicesNS/nobody/' \
-                                    'TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_failures_replay'
+                record_url = (
+                    "https://localhost:" + str(splunkd_port) + "/servicesNS/nobody/"
+                    "TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_failures_replay"
+                )
                 record_uuid = str(uuid.uuid1())
                 headers = {
-                    'Authorization': 'Splunk %s' % session_key,
-                    'Content-Type': 'application/json'}
-
-                record = {
-                    'account': str(account),
-                    '_key': record_uuid,
-                    'ctime': str(time.time()),
-                    'status': 'pending',
-                    'no_attempts': 0,
-                    'data': json.dumps(data, indent=2),
+                    "Authorization": "Splunk %s" % session_key,
+                    "Content-Type": "application/json",
                 }
 
-                response = requests.post(record_url, headers=headers, data=json.dumps(record),
-                                         verify=False)
+                record = {
+                    "account": str(account),
+                    "_key": record_uuid,
+                    "ctime": str(time.time()),
+                    "status": "pending",
+                    "no_attempts": 0,
+                    "data": json.dumps(data, indent=2),
+                }
+
+                response = requests.post(
+                    record_url, headers=headers, data=json.dumps(record), verify=False
+                )
                 if response.status_code not in (200, 201, 204):
                     helper.log_error(
-                        'KVstore saving has failed!. url={}, data={}, HTTP Error={}, '
-                        'content={}'.format(record_url, record, response.status_code, response.text))
+                        "KVstore saving has failed!. url={}, data={}, HTTP Error={}, "
+                        "content={}".format(
+                            record_url, record, response.status_code, response.text
+                        )
+                    )
                 else:
-                    helper.log_info('JIRA Service Desk is running in passthrough mode, the ticket data was stored in the '
-                                    'replay KVstore with uuid: ' + record_uuid)                    
+                    helper.log_info(
+                        "JIRA Service Desk is running in passthrough mode, the ticket data was stored in the "
+                        "replay KVstore with uuid: " + record_uuid
+                    )
 
         else:
-
-
             try:
-                response = helper.send_http_request(jira_url, "POST", parameters=None, payload=data,
-                                                    headers=jira_headers, cookies=None, verify=ssl_certificate_validation,
-                                                    cert=None, timeout=120, use_proxy=opt_use_proxy)
-                helper.log_debug("response status_code:={}".format(response.status_code))
+                response = helper.send_http_request(
+                    jira_url,
+                    "POST",
+                    parameters=None,
+                    payload=data,
+                    headers=jira_headers,
+                    cookies=None,
+                    verify=ssl_certificate_validation,
+                    cert=None,
+                    timeout=120,
+                    use_proxy=opt_use_proxy,
+                )
+                helper.log_debug(
+                    "response status_code:={}".format(response.status_code)
+                )
 
                 # No http exception, but http post was not successful
                 if response.status_code not in (200, 201, 204):
                     helper.log_error(
-                        'JIRA Service Desk ticket creation has failed!. url={}, data={}, HTTP Error={}, '
-                        'content={}'.format(jira_url, data, response.status_code, response.text))
+                        "JIRA Service Desk ticket creation has failed!. url={}, data={}, HTTP Error={}, "
+                        "content={}".format(
+                            jira_url, data, response.status_code, response.text
+                        )
+                    )
 
                     # For issue creation only
                     if not jira_dedup_comment_issue:
-                        record_url = 'https://localhost:' + str(splunkd_port) \
-                                    + '/servicesNS/nobody/' \
-                                    'TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_failures_replay'
+                        record_url = (
+                            "https://localhost:"
+                            + str(splunkd_port)
+                            + "/servicesNS/nobody/"
+                            "TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_failures_replay"
+                        )
                         record_uuid = str(uuid.uuid1())
-                        helper.log_error('JIRA Service Desk failed ticket stored for next chance replay purposes in the '
-                                        'replay KVstore with uuid: ' + record_uuid)
+                        helper.log_error(
+                            "JIRA Service Desk failed ticket stored for next chance replay purposes in the "
+                            "replay KVstore with uuid: " + record_uuid
+                        )
                         headers = {
-                            'Authorization': 'Splunk %s' % session_key,
-                            'Content-Type': 'application/json'}
-
-                        record = {
-                            'account': str(account),
-                            '_key': record_uuid,
-                            'ctime': str(time.time()),
-                            'status': 'temporary_failure',
-                            'no_attempts': 1,
-                            'data': json.dumps(data, indent=2)
+                            "Authorization": "Splunk %s" % session_key,
+                            "Content-Type": "application/json",
                         }
 
-                        response = requests.post(record_url, headers=headers, data=json.dumps(record),
-                                                verify=False)
+                        record = {
+                            "account": str(account),
+                            "_key": record_uuid,
+                            "ctime": str(time.time()),
+                            "status": "temporary_failure",
+                            "no_attempts": 1,
+                            "data": json.dumps(data, indent=2),
+                        }
+
+                        response = requests.post(
+                            record_url,
+                            headers=headers,
+                            data=json.dumps(record),
+                            verify=False,
+                        )
                         if response.status_code not in (200, 201, 204):
                             helper.log_error(
-                                'KVstore saving has failed!. url={}, data={}, HTTP Error={}, '
-                                'content={}'.format(record_url, record, response.status_code, response.text))
+                                "KVstore saving has failed!. url={}, data={}, HTTP Error={}, "
+                                "content={}".format(
+                                    record_url,
+                                    record,
+                                    response.status_code,
+                                    response.text,
+                                )
+                            )
 
                     return 0
 
             # any exception such as proxy error, dns failure etc. will be catch here
             except Exception as e:
-                helper.log_error("JIRA Service Desk ticket creation has failed!:{}".format(str(e)))
                 helper.log_error(
-                    'message content={}'.format(data))
+                    "JIRA Service Desk ticket creation has failed!:{}".format(str(e))
+                )
+                helper.log_error("message content={}".format(data))
 
                 # For issue creation only
                 if not jira_dedup_comment_issue:
-
                     # Store the failed publication in the replay KVstore
-                    record_url = 'https://localhost:' + str(
-                        splunkd_port) + '/servicesNS/nobody/' \
-                                        'TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_failures_replay'
+                    record_url = (
+                        "https://localhost:" + str(splunkd_port) + "/servicesNS/nobody/"
+                        "TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_failures_replay"
+                    )
                     record_uuid = str(uuid.uuid1())
-                    helper.log_error('JIRA Service Desk failed ticket stored for next chance replay purposes in the '
-                                    'replay KVstore with uuid: ' + record_uuid)
+                    helper.log_error(
+                        "JIRA Service Desk failed ticket stored for next chance replay purposes in the "
+                        "replay KVstore with uuid: " + record_uuid
+                    )
                     headers = {
-                        'Authorization': 'Splunk %s' % session_key,
-                        'Content-Type': 'application/json'}
-
-                    record = {
-                        'account': str(account),
-                        '_key': record_uuid,
-                        'ctime': str(time.time()),
-                        'status': 'temporary_failure',
-                        'no_attempts': 1,
-                        'data': json.dumps(data, indent=2),
+                        "Authorization": "Splunk %s" % session_key,
+                        "Content-Type": "application/json",
                     }
 
-                    response = requests.post(record_url, headers=headers, data=json.dumps(record),
-                                            verify=False)
+                    record = {
+                        "account": str(account),
+                        "_key": record_uuid,
+                        "ctime": str(time.time()),
+                        "status": "temporary_failure",
+                        "no_attempts": 1,
+                        "data": json.dumps(data, indent=2),
+                    }
+
+                    response = requests.post(
+                        record_url,
+                        headers=headers,
+                        data=json.dumps(record),
+                        verify=False,
+                    )
                     if response.status_code not in (200, 201, 204):
                         helper.log_error(
-                            'KVstore saving has failed!. url={}, data={}, HTTP Error={}, '
-                            'content={}'.format(record_url, record, response.status_code, response.text))
+                            "KVstore saving has failed!. url={}, data={}, HTTP Error={}, "
+                            "content={}".format(
+                                record_url, record, response.status_code, response.text
+                            )
+                        )
 
                 return 0
 
             else:
                 if jira_dedup_comment_issue:
-                    helper.log_info('JIRA Service Desk ticket successfully updated. {},'
-                                    ' content={}'.format(jira_url, response.text))
+                    helper.log_info(
+                        "JIRA Service Desk ticket successfully updated. {},"
+                        " content={}".format(jira_url, response.text)
+                    )
                     jira_creation_response = response.text
 
                     # Update the backlog collection entry
-                    record_url = 'https://localhost:' + str(splunkd_port) \
-                                + '/servicesNS/nobody/' \
-                                'TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_issues_backlog/' \
-                                + jira_backlog_kvkey
+                    record_url = (
+                        "https://localhost:" + str(splunkd_port) + "/servicesNS/nobody/"
+                        "TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_issues_backlog/"
+                        + jira_backlog_kvkey
+                    )
                     headers = {
-                        'Authorization': 'Splunk %s' % session_key,
-                        'Content-Type': 'application/json'}
+                        "Authorization": "Splunk %s" % session_key,
+                        "Content-Type": "application/json",
+                    }
 
-                    record = '{"account": "' + str(account) + '", "jira_md5": "' + jira_backlog_md5 + '", "ctime": "' + jira_backlog_ctime + '", "mtime": "' \
-                            + str(time.time()) + '", "status": "updated", "jira_id": "' \
-                            + jira_backlog_id + '", "jira_key": "' \
-                            + jira_backlog_key + '", "jira_self": "' + jira_backlog_self + '"}'
-                    helper.log_debug('record={}'.format(record))
+                    record = (
+                        '{"account": "'
+                        + str(account)
+                        + '", "jira_md5": "'
+                        + jira_backlog_md5
+                        + '", "ctime": "'
+                        + jira_backlog_ctime
+                        + '", "mtime": "'
+                        + str(time.time())
+                        + '", "status": "updated", "jira_id": "'
+                        + jira_backlog_id
+                        + '", "jira_key": "'
+                        + jira_backlog_key
+                        + '", "jira_self": "'
+                        + jira_backlog_self
+                        + '"}'
+                    )
+                    helper.log_debug("record={}".format(record))
 
-                    response = requests.post(record_url, headers=headers, data=record,
-                                            verify=False)
+                    response = requests.post(
+                        record_url, headers=headers, data=record, verify=False
+                    )
                     if response.status_code not in (200, 201, 204):
                         helper.log_error(
-                            'Backlog KVstore saving has failed!. url={}, data={}, HTTP Error={}, '
-                            'content={}'.format(record_url, record, response.status_code, response.text))
+                            "Backlog KVstore saving has failed!. url={}, data={}, HTTP Error={}, "
+                            "content={}".format(
+                                record_url, record, response.status_code, response.text
+                            )
+                        )
                     else:
-                        helper.log_debug('JIRA issue record in the backlog collection was successfully updated. '
-                                        'content={}'.format(response.text))
+                        helper.log_debug(
+                            "JIRA issue record in the backlog collection was successfully updated. "
+                            "content={}".format(response.text)
+                        )
 
                     # Manage attachment
                     if jira_attachment in ("enabled_csv"):
-                        attach_csv(helper, jira_root_url, jira_backlog_key, jira_attachment_token, jira_headers_attachment, ssl_certificate_validation, proxy_dict)
+                        attach_csv(
+                            helper,
+                            jira_root_url,
+                            jira_backlog_key,
+                            jira_attachment_token,
+                            jira_headers_attachment,
+                            ssl_certificate_validation,
+                            proxy_dict,
+                        )
 
                     elif jira_attachment in ("enabled_json"):
-                        attach_json(helper, jira_root_url, jira_backlog_key, jira_attachment_token, jira_headers_attachment, ssl_certificate_validation, proxy_dict)
+                        attach_json(
+                            helper,
+                            jira_root_url,
+                            jira_backlog_key,
+                            jira_attachment_token,
+                            jira_headers_attachment,
+                            ssl_certificate_validation,
+                            proxy_dict,
+                        )
 
                     elif jira_attachment in ("enabled_xlsx"):
-                        attach_xlsx(helper, jira_root_url, jira_backlog_key, jira_attachment_token, jira_headers_attachment, ssl_certificate_validation, proxy_dict)
+                        attach_xlsx(
+                            helper,
+                            jira_root_url,
+                            jira_backlog_key,
+                            jira_attachment_token,
+                            jira_headers_attachment,
+                            ssl_certificate_validation,
+                            proxy_dict,
+                        )
 
                 else:
-                    helper.log_info('JIRA Service Desk ticket successfully created. {},'
-                                    ' content={}'.format(jira_url, response.text))
+                    helper.log_info(
+                        "JIRA Service Desk ticket successfully created. {},"
+                        " content={}".format(jira_url, response.text)
+                    )
                     jira_creation_response = response.text
 
                     # Store the md5 hash of the JIRA issue in the backlog KVstore with the key values returned by JIRA
                     jira_creation_response_json = json.loads(jira_creation_response)
-                    jira_created_id = jira_creation_response_json['id']
-                    jira_created_key = jira_creation_response_json['key']
-                    jira_created_self = jira_creation_response_json['self']
-                    helper.log_debug("jira_creation_response_json:={}".format(jira_creation_response_json))
+                    jira_created_id = jira_creation_response_json["id"]
+                    jira_created_key = jira_creation_response_json["key"]
+                    jira_created_self = jira_creation_response_json["self"]
+                    helper.log_debug(
+                        "jira_creation_response_json:={}".format(
+                            jira_creation_response_json
+                        )
+                    )
 
-                    record_url = 'https://localhost:' + str(splunkd_port) \
-                                + '/servicesNS/nobody/' \
-                                'TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_issues_backlog'
+                    record_url = (
+                        "https://localhost:" + str(splunkd_port) + "/servicesNS/nobody/"
+                        "TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_issues_backlog"
+                    )
                     headers = {
-                        'Authorization': 'Splunk %s' % session_key,
-                        'Content-Type': 'application/json'}
+                        "Authorization": "Splunk %s" % session_key,
+                        "Content-Type": "application/json",
+                    }
 
                     if jira_dedup_md5_found:
-                        record = '{"account": "' + str(account) + '", "jira_md5": "' + jira_md5sum + '", "ctime": "' \
-                                + str(time.time()) + '", "mtime": "' \
-                                + str(time.time()) + '", "status": "created", "jira_id": "' \
-                                + jira_created_id + '", "jira_key": "' \
-                                + jira_created_key + '", "jira_self": "' + jira_created_self + '"}'
+                        record = (
+                            '{"account": "'
+                            + str(account)
+                            + '", "jira_md5": "'
+                            + jira_md5sum
+                            + '", "ctime": "'
+                            + str(time.time())
+                            + '", "mtime": "'
+                            + str(time.time())
+                            + '", "status": "created", "jira_id": "'
+                            + jira_created_id
+                            + '", "jira_key": "'
+                            + jira_created_key
+                            + '", "jira_self": "'
+                            + jira_created_self
+                            + '"}'
+                        )
                         # Force encode UTF8
-                        record = record.encode('utf-8')
-                        helper.log_debug('record={}'.format(record))
+                        record = record.encode("utf-8")
+                        helper.log_debug("record={}".format(record))
                     else:
-                        record = '{"account": "' + str(account) + '", "_key": "' + jira_md5sum + '", "jira_md5": "' + jira_md5sum + '", "ctime": "' \
-                                + str(time.time()) + '", "mtime": "' + str(time.time()) \
-                                + '", "status": "created", "jira_id": "' + jira_created_id \
-                                + '", "jira_key": "' + jira_created_key + '", "jira_self": "' + jira_created_self + '"}'
+                        record = (
+                            '{"account": "'
+                            + str(account)
+                            + '", "_key": "'
+                            + jira_md5sum
+                            + '", "jira_md5": "'
+                            + jira_md5sum
+                            + '", "ctime": "'
+                            + str(time.time())
+                            + '", "mtime": "'
+                            + str(time.time())
+                            + '", "status": "created", "jira_id": "'
+                            + jira_created_id
+                            + '", "jira_key": "'
+                            + jira_created_key
+                            + '", "jira_self": "'
+                            + jira_created_self
+                            + '"}'
+                        )
                         # Force encode UTF8
-                        record = record.encode('utf-8')
-                        helper.log_debug('record={}'.format(record))
+                        record = record.encode("utf-8")
+                        helper.log_debug("record={}".format(record))
 
-                    response = requests.post(record_url, headers=headers, data=record,
-                                            verify=False)
+                    response = requests.post(
+                        record_url, headers=headers, data=record, verify=False
+                    )
                     if response.status_code not in (200, 201, 204):
                         helper.log_error(
-                            'Backlog KVstore saving has failed!. url={}, data={}, HTTP Error={}, '
-                            'content={}'.format(record_url, record, response.status_code, response.text))
+                            "Backlog KVstore saving has failed!. url={}, data={}, HTTP Error={}, "
+                            "content={}".format(
+                                record_url, record, response.status_code, response.text
+                            )
+                        )
                     else:
-                        helper.log_debug('JIRA issue successfully added to the backlog collection. '
-                                        'content={}'.format(response.text))
+                        helper.log_debug(
+                            "JIRA issue successfully added to the backlog collection. "
+                            "content={}".format(response.text)
+                        )
 
                     # Manage attachment
                     if jira_attachment in ("enabled_csv"):
-                        attach_csv(helper, jira_root_url, jira_created_key, jira_attachment_token, jira_headers_attachment, ssl_certificate_validation, proxy_dict)
+                        attach_csv(
+                            helper,
+                            jira_root_url,
+                            jira_created_key,
+                            jira_attachment_token,
+                            jira_headers_attachment,
+                            ssl_certificate_validation,
+                            proxy_dict,
+                        )
 
                     elif jira_attachment in ("enabled_json"):
-                        attach_json(helper, jira_root_url, jira_created_key, jira_attachment_token, jira_headers_attachment, ssl_certificate_validation, proxy_dict)
+                        attach_json(
+                            helper,
+                            jira_root_url,
+                            jira_created_key,
+                            jira_attachment_token,
+                            jira_headers_attachment,
+                            ssl_certificate_validation,
+                            proxy_dict,
+                        )
 
                     elif jira_attachment in ("enabled_xlsx"):
-                        attach_xlsx(helper, jira_root_url, jira_created_key, jira_attachment_token, jira_headers_attachment, ssl_certificate_validation, proxy_dict)
-
+                        attach_xlsx(
+                            helper,
+                            jira_root_url,
+                            jira_created_key,
+                            jira_attachment_token,
+                            jira_headers_attachment,
+                            ssl_certificate_validation,
+                            proxy_dict,
+                        )
 
                 # Return the JIRA response as final word
                 return jira_creation_response

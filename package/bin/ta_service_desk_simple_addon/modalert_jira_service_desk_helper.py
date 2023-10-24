@@ -1011,18 +1011,17 @@ def query_url(
             data["fields"]["reporter"] = {"accountId": jira_reporter}
 
         # Priority can be dynamically overridden by the text input dynamic priority, if set
-        if jira_priority not in ["", "None", None]:
-            if jira_priority_dynamic not in ["", "None", None]:
-                helper.log_debug(
-                    "jira priority is overridden by "
-                    "jira_priority_dynamic={}".format(jira_priority_dynamic)
-                )
-                # add
-                data["fields"]["priority"] = {"name": jira_priority_dynamic}
+        if jira_priority_dynamic not in ["", "None", None]:
+            helper.log_debug(
+                "jira priority is overridden by "
+                "jira_priority_dynamic={}".format(jira_priority_dynamic)
+            )
+            # add
+            data["fields"]["priority"] = {"name": jira_priority_dynamic}
 
-            else:
-                # add
-                data["fields"]["priority"] = {"name": jira_priority}
+        else:
+            # add
+            data["fields"]["priority"] = {"name": jira_priority}
 
         # labels
         if jira_labels not in ["", "None", None]:

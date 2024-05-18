@@ -119,27 +119,6 @@
                             }
                         },
                         {
-                            "type": "radio",
-                            "label": "SSL certificate validation",
-                            "field": "jira_ssl_certificate_validation",
-                            "defaultValue": "1",
-                            "help": "Verify that the SSL certificate is a valid certificate provided by a trusted entity",
-                            "required": true,
-                            "options": {
-                                "items": [
-                                    {
-                                        "value": "1",
-                                        "label": "Yes"
-                                    },
-                                    {
-                                        "value": "0",
-                                        "label": "No"
-                                    }
-                                ],
-                                "display": true
-                            }
-                        },
-                        {
                             "type": "text",
                             "label": "SSL certificate path",
                             "help": "To verify a self-signed or internal PKI certificate, you can specifify the local path to the PEM file",

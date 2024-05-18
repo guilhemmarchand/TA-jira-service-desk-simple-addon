@@ -121,7 +121,7 @@
                         {
                             "type": "text",
                             "label": "SSL certificate path",
-                            "help": "To verify a self-signed or internal PKI certificate, you can specifify the local path to the PEM file",
+                            "help": "SSL certificate verication is mandatory, to verify a self-signed or internal PKI certificate, you must specify the local path to the certificate PEM file or bundle",
                             "validators": [
                                 {
                                     "type": "string",
@@ -649,6 +649,7 @@
         "restRoot": "ta_service_desk_simple_addon",
         "version": "2.0.18",
         "displayName": "JIRA Service Desk simple addon",
-        "schemaVersion": "0.0.3"
+        "schemaVersion": "0.0.3",
+        "_uccVersion": "5.39.1"
     }
 }

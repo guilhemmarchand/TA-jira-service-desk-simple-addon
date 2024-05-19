@@ -255,6 +255,8 @@ About SSL certificate validation
 
 SSL usage is enforced, this means you cannot access to a JIRA instance if it is not using SSL.
 
+**Since the version 2.0.18, SSL certificate verification is mandatory due to Splunk Cloud vetting requirements.**
+
 **When using SSL, there might be different conditions:**
 
 - The SSL certificate is from an official third party certificate authority and it is valid, you normally can tick the SSL validation box which enforces the fact that we expect the certificate to be valid. If the certificate is not valid, we will not allow any action to be performed.

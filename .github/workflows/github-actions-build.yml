@@ -52,6 +52,19 @@ jobs:
           name: appinspect-report-json
           path: output/report_appinspect.json
 
+      - name: Archive tgz application
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          path: output/*.tgz
+
+      - name: Archive sha256sum
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: release-sha256.txt
+          path: output/release-sha256.txt
+
       - name: Show output directory content
         run: |
           ls -ltr output/

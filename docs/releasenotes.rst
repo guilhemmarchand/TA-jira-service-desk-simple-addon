@@ -1,6 +1,22 @@
 Release notes
 #############
 
+Version 2.0.18
+==============
+
+- Fix Issue#184 - Fix - Splunk Cloud vetting - Force SSL Verification or the use of a CA bundle to validate the SSL verification #184
+- Fix Issue#185 - Build - Prevents pyc, hidden files or directory to be part of the release #185
+- Fix Issue#186 - Pypi requirements libs refresh #186
+- Fix Issue#188 - Number of projects count in Overview - JIRA Projects is wrong #188
+- Fix Issue#189 - Avoid app nav bar ending in multiple lines #189
+
+Version 2.0.17
+==============
+
+- enhancement - Custom fields - Add additional protection against badly parsed custom fields #174
+- enhancement - Allows adding the Splunk search results in the JIRA Description field (in CSV or JSON format) #173
+- bug - Splunk Cloud Classic - ensures that indexed time parsing is partioned on the Search Heads properly (SLIM) #176
+
 Version 2.0.16
 ==============
 

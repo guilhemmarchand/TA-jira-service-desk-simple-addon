@@ -9,15 +9,14 @@
 		<view name="analysis_workspace" />
 	</collection>
 	<collection label="Get JIRA info">
-		<saved name="JIRA Service Desk - Check connection" />	
+		<saved name="JIRA Service Desk - Check connection" />
 		<saved name="JIRA Service Desk - Get projects" />
 		<saved name="JIRA Service Desk - Get issue types" />
 		<saved name="JIRA Service Desk - Get issue priorities" />
 		<saved name="JIRA Service Desk - Get status categories" />
 		<saved name="JIRA Service Desk - Get fields description per project" />
-		<saved name="JIRA Service Desk - Get fields description for all projects" />		
+		<saved name="JIRA Service Desk - Get fields description for all projects" />
 	</collection>
-	<view name="rest_api_explore" />
 	<collection label="Logging reports">
 		<a href="search?q=index%3D_internal%20sourcetype%3Djira%3Acustom_commands%3A*">ALL - search all custom command logs</a>
 		<a href="search?q=index%3D_internal%20sourcetype%3Djira%3Acustom_commands%3Ajirafill">jirafill - custom command</a>
@@ -38,7 +37,8 @@
 		<saved name="JIRA Service Desk - detection of permanent issue creation failure" />
 		<saved name="JIRA Service Desk - Resilient store Tracker" />
 	</collection>
-	<collection label="KVstore collections">
+	<collection label="REST API &amp; KVstore collections">
+		<view name="rest_api_explore" />
 		<saved name="JIRA Service Desk - Replay collection" />
 		<saved name="JIRA Service Desk - Issues backlog collection" />
 	</collection>

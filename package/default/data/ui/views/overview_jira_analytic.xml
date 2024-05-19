@@ -7,7 +7,7 @@
       <prefix>account="</prefix>
       <suffix>"</suffix>
       <search base="mainSearch">
-      <query>stats count by account | sort 0 account</query>
+        <query>stats count by account | sort 0 account</query>
       </search>
       <fieldForLabel>account</fieldForLabel>
       <fieldForValue>account</fieldForValue>
@@ -19,7 +19,7 @@
     <earliest>-5m</earliest>
     <latest>now</latest>
   </search>
-  
+
   <search id="base_projects_stats" base="mainSearch">
     <query>| search $tk_account$
 
@@ -52,7 +52,7 @@
     <panel>
       <single>
         <search base="base_projects_stats">
-          <query>stats dc(project) as dcount</query>
+          <query>stats count(eval(project!="TOTAL")) as count</query>
         </search>
         <option name="colorMode">none</option>
         <option name="drilldown">none</option>

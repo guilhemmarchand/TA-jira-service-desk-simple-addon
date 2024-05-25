@@ -422,6 +422,33 @@ In some circumstances, the built-in parser rules may fail to recognize an unexpe
    :align: center
    :width: 800px    
 
+Datetime picker example:
+------------------------
+
+See:
+https://github.com/guilhemmarchand/TA-jira-service-desk-simple-addon/issues/191
+
+Expected format:
+
+::
+
+   "customfield_10003": "2011-10-19T10:29:29.908+1100"
+   This format is ISO 8601: YYYY-MM-DDThh:mm:ss.sTZD   
+
+Example Splunk SPL search:
+
+::
+
+   | makeresults
+   | eval user=md5(_time), action="failed", message="Test custom field"
+   | eval issue_created=strftime(_time, "%Y-%m-%dT%H:%M:%S.%3N%z")
+
+Example custom field definition:
+
+::
+
+   "customfield_10039": "$result.issue_created$"   
+
 How to retrieve the IDs of the custom fields configured ?
 ---------------------------------------------------------
 

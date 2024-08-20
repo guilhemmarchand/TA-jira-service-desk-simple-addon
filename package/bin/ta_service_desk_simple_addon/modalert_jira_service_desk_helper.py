@@ -1026,8 +1026,8 @@ def query_url(
             search_results_json = get_results_json(helper, jira_attachment_token)
             if search_results_json:
                 search_result_table = json_to_jira_table(json.loads(search_results_json))
-                jira_description = ( jira_description 
-                    + "\nSplunk search results:\n" 
+                jira_description = ( jira_description
+                    + "\nSplunk search results:\n"
                     + search_result_table )
 
         data["fields"]["description"] = jira_description

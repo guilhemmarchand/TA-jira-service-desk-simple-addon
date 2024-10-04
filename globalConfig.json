@@ -38,9 +38,6 @@
                                     "pattern": "^[a-zA-Z]\\w*$"
                                 }
                             ],
-                            "options": {
-                                "placeholder": "Required"
-                            },
                             "field": "name",
                             "help": "Enter a unique name for this JIRA account.",
                             "required": true
@@ -241,41 +238,7 @@
                     "title": "JIRA Proxy Setup"
                 },
                 {
-                    "name": "logging",
-                    "entity": [
-                        {
-                            "type": "singleSelect",
-                            "label": "Log level",
-                            "options": {
-                                "disableSearch": true,
-                                "autoCompleteFields": [
-                                    {
-                                        "value": "DEBUG",
-                                        "label": "DEBUG"
-                                    },
-                                    {
-                                        "value": "INFO",
-                                        "label": "INFO"
-                                    },
-                                    {
-                                        "value": "WARNING",
-                                        "label": "WARNING"
-                                    },
-                                    {
-                                        "value": "ERROR",
-                                        "label": "ERROR"
-                                    },
-                                    {
-                                        "value": "CRITICAL",
-                                        "label": "CRITICAL"
-                                    }
-                                ]
-                            },
-                            "defaultValue": "INFO",
-                            "field": "loglevel"
-                        }
-                    ],
-                    "title": "Logging"
+                    "type": "loggingTab"
                 },
                 {
                     "name": "advanced_configuration",
@@ -357,7 +320,7 @@
             "name": "jira_service_desk",
             "label": "Open an issue in JIRA Service Desk",
             "description": "JIRA Service Desk",
-            "activeResponse": {
+            "adaptiveResponse": {
                 "task": [
                     "Create",
                     "Update"
@@ -380,7 +343,8 @@
                     }
                 ],
                 "drilldownUri": "search?q=search%20index%3D_internal%20OR%20index%3Dcim_modaction%20sourcetype%3Djira%3Aservice_desk_alert_action&earliest=0&latest=",
-                "sourcetype": "jira:service_desk_alert_action"
+                "sourcetype": "jira:service_desk_alert_action",
+                "supportsCloud": true
             },
             "entity": [
                 {
@@ -647,9 +611,9 @@
     "meta": {
         "name": "TA-jira-service-desk-simple-addon",
         "restRoot": "ta_service_desk_simple_addon",
-        "version": "2.0.18",
+        "version": "2.0.19",
         "displayName": "JIRA Service Desk simple addon",
-        "schemaVersion": "0.0.3",
-        "_uccVersion": "5.39.1"
+        "schemaVersion": "0.0.7",
+        "_uccVersion": "5.48.2"
     }
 }

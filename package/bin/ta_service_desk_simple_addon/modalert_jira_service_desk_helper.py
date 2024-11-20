@@ -888,12 +888,12 @@ def query_url(
         jira_dedup_full_mode = True
         helper.log_debug(
             "jira_dedup: jira_dedup_full_mode is set to True, the full issue data will be used"
-            " for the md5 calculation."
+            " for the sha256 calculation."
         )
     else:
         jira_dedup_full_mode = False
         helper.log_debug(
-            "jira_dedup: jira_dedup_full_mode is set to False, the md5 calculation scope will be restricted"
+            "jira_dedup: jira_dedup_full_mode is set to False, the sha256 calculation scope will be restricted"
             " to the content of the jira_dedup_content."
         )
         helper.log_debug("jira_dedup_content={}".format(jira_dedup_content))
@@ -1114,26 +1114,26 @@ def query_url(
             )
         )
 
-        # Generate an md5 unique hash for this issue
+        # Generate an sha256 unique hash for this issue
         # If jira_dedup_full_mode is set to True, the entire json data is used
-        # Otherwise, jira_dedup_content was detected as filled and its content is used to perform the md5 calculation
+        # Otherwise, jira_dedup_content was detected as filled and its content is used to perform the sha256 calculation
         if jira_dedup_full_mode:
-            jira_md5sum = hashlib.md5(json.dumps(data).encode())
+            jira_sha256sum = hashlib.sha256(json.dumps(data).encode())
         else:
-            jira_md5sum = hashlib.md5(jira_dedup_content.encode())
-        jira_md5sum = jira_md5sum.hexdigest()
-        helper.log_debug("jira_md5sum:={}".format(jira_md5sum))
+            jira_sha256sum = hashlib.sha256(jira_dedup_content.encode())
+        jira_sha256sum = jira_sha256sum.hexdigest()
+        helper.log_debug("jira_sha256sum:={}".format(jira_sha256sum))
 
         # Initiate default behaviour
-        jira_dedup_md5_found = False
+        jira_dedup_sha256_found = False
         jira_dedup_comment_issue = False
 
-        # Verify the collection, if the collection returns a result for this md5 as the _key, this issue
+        # Verify the collection, if the collection returns a result for this sha256 as the _key, this issue
         # is a duplicate (http 200)
         record_url = "https://localhost:" + str(
             splunkd_port
         ) + "/servicesNS/nobody/" "TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_issues_backlog/" + str(
-            jira_md5sum
+            jira_sha256sum
         )
         headers = {
             "Authorization": "Splunk %s" % session_key,
@@ -1146,8 +1146,8 @@ def query_url(
         if response.status_code == 200:
             if jira_dedup_enabled:
                 helper.log_info(
-                    "jira_dedup: An issue with same md5 hash ("
-                    + str(jira_md5sum)
+                    "jira_dedup: An issue with same sha256 hash ("
+                    + str(jira_sha256sum)
                     + ") was found in the backlog "
                     "collection, as jira_dedup is enabled a new comment "
                     "will be added if the issue is active. (status is not resolved or any other done status), entry:={}".format(
@@ -1164,7 +1164,7 @@ def query_url(
                 jira_backlog_key = jira_backlog_response_json["jira_key"]
                 jira_backlog_kvkey = jira_backlog_response_json["_key"]
                 jira_backlog_self = jira_backlog_response_json["jira_self"]
-                jira_backlog_md5 = jira_backlog_response_json["jira_md5"]
+                jira_backlog_sha256 = jira_backlog_response_json["jira_sha256"]
                 jira_backlog_ctime = jira_backlog_response_json["ctime"]
 
                 helper.log_debug("jira_backlog_key:={}".format(jira_backlog_key))
@@ -1290,7 +1290,7 @@ def query_url(
                         "jira_dedup: The issue with key "
                         + str(jira_backlog_key)
                         + " has the same MD5 hash: "
-                        + jira_backlog_md5
+                        + jira_backlog_sha256
                         + ' and its status was set to: "'
                         + jira_issue_status
                         + '" (status category: "'
@@ -1310,7 +1310,7 @@ def query_url(
                     }
 
                     response = requests.delete(
-                        record_url + "/" + jira_md5sum, headers=headers, verify=False
+                        record_url + "/" + jira_sha256sum, headers=headers, verify=False
                     )
 
                     if response.status_code not in (200, 201, 204):
@@ -1326,25 +1326,25 @@ def query_url(
                             "content={}".format(response.text)
                         )
 
-                    jira_dedup_md5_found = False
+                    jira_dedup_sha256_found = False
 
             else:
                 helper.log_info(
-                    "jira_dedup: An issue with same md5 hash ("
-                    + str(jira_md5sum)
+                    "jira_dedup: An issue with same sha256 hash ("
+                    + str(jira_sha256sum)
                     + ") was found in the backlog "
                     "collection, as jira_dedup is not enabled a new issue "
                     "will be created, entry:={}".format(response.text)
                 )
-                jira_dedup_md5_found = True
+                jira_dedup_sha256_found = True
 
         else:
             helper.log_debug(
-                "jira_dedup: The calculated md5 hash for this issue creation request ("
-                + str(jira_md5sum)
+                "jira_dedup: The calculated sha256 hash for this issue creation request ("
+                + str(jira_sha256sum)
                 + ") was not found in the backlog collection, a new issue will be created"
             )
-            jira_dedup_md5_found = False
+            jira_dedup_sha256_found = False
 
         # Try http post, catch exceptions and incorrect http return codes
 
@@ -1538,8 +1538,8 @@ def query_url(
                     record = (
                         '{"account": "'
                         + str(account)
-                        + '", "jira_md5": "'
-                        + jira_backlog_md5
+                        + '", "jira_sha256": "'
+                        + jira_backlog_sha256
                         + '", "ctime": "'
                         + jira_backlog_ctime
                         + '", "mtime": "'
@@ -1611,7 +1611,7 @@ def query_url(
                     )
                     jira_creation_response = response.text
 
-                    # Store the md5 hash of the JIRA issue in the backlog KVstore with the key values returned by JIRA
+                    # Store the sha256 hash of the JIRA issue in the backlog KVstore with the key values returned by JIRA
                     jira_creation_response_json = json.loads(jira_creation_response)
                     jira_created_id = jira_creation_response_json["id"]
                     jira_created_key = jira_creation_response_json["key"]
@@ -1631,12 +1631,12 @@ def query_url(
                         "Content-Type": "application/json",
                     }
 
-                    if jira_dedup_md5_found:
+                    if jira_dedup_sha256_found:
                         record = (
                             '{"account": "'
                             + str(account)
-                            + '", "jira_md5": "'
-                            + jira_md5sum
+                            + '", "jira_sha256": "'
+                            + jira_sha256sum
                             + '", "ctime": "'
                             + str(time.time())
                             + '", "mtime": "'
@@ -1657,9 +1657,9 @@ def query_url(
                             '{"account": "'
                             + str(account)
                             + '", "_key": "'
-                            + jira_md5sum
-                            + '", "jira_md5": "'
-                            + jira_md5sum
+                            + jira_sha256sum
+                            + '", "jira_sha256": "'
+                            + jira_sha256sum
                             + '", "ctime": "'
                             + str(time.time())
                             + '", "mtime": "'

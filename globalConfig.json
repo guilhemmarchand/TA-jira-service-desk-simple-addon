@@ -617,7 +617,7 @@
         "restRoot": "ta_service_desk_simple_addon",
         "version": "2.0.19",
         "displayName": "JIRA Service Desk simple addon",
-        "schemaVersion": "0.0.7",
-        "_uccVersion": "5.48.2"
+        "schemaVersion": "0.0.9",
+        "_uccVersion": "5.53.0"
     }
 }

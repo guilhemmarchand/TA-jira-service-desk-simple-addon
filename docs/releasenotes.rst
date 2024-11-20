@@ -1,6 +1,15 @@
 Release notes
 #############
 
+Version 2.0.19
+==============
+
+- Fix Issue#181 - Fix - Problem setting Assets custom field object #181
+- Fix Issue#194 - Enhancement - Result alerts in description as table #194
+- Fix Issue#197 - FIPS Support since Splunk 9.3.x - FIPS error when creating tickets #197
+- Change - Upgrade all SDKs and Libraries to latest versions
+- Change - Dark theme support for Configuration
+
 Version 2.0.18
 ==============
 

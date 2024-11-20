@@ -40,6 +40,32 @@ def reformat_customfields(i):
 
         return i
 
+# This function is used to format a markdown table from json table in description
+def json_to_jira_table(json_data):
+    # Ensure json_data is a list of dictionaries
+    if isinstance(json_data, dict):
+        json_data = [json_data]
+    
+    if not json_data:
+        return ""
+    
+    # Extract the headers from the keys of the first dictionary
+    headers = json_data[0].keys()
+    
+    # Create the header row in bold
+    #header_row = f"| {' | '.join(headers)} |"
+    header_row = f"| {' | '.join(f'*{header}*' for header in headers)} |"
+                
+    # Create the data rows
+    rows = []
+    for entry in json_data:
+        row = f"| {' | '.join(str(entry.get(header, '')) for header in headers)} |"
+        rows.append(row)
+    
+    # Combine all parts into the final table
+    table = f"{header_row}\n" + "\n".join(rows)
+    
+    return table
 
 # This function can optionnally be used to only remove the espaced double quotes and leave the custom fields with no parsing at all
 def reformat_customfields_minimal(i):
@@ -995,6 +1021,14 @@ def query_url(
                     + search_results_csv
                     + "\n{code}"
                 )
+
+        elif jira_results_description in ("enabled_table"):
+            search_results_json = get_results_json(helper, jira_attachment_token)
+            if search_results_json:
+                search_result_table = json_to_jira_table(json.loads(search_results_json))
+                jira_description = ( jira_description
+                    + "\nSplunk search results:\n"
+                    + search_result_table )
 
         data["fields"]["description"] = jira_description
 

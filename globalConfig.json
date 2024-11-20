@@ -520,6 +520,10 @@
                             {
                                 "value": "enabled_json",
                                 "label": "Enabled (JSON format)"
+                            },
+                            {
+                                "value": "enabled_table",
+                                "label": "Enabled (Table format)"
                             }
                         ],
                         "display": true

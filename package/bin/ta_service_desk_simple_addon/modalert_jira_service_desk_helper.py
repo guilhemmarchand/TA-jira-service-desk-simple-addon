@@ -1083,7 +1083,7 @@ def query_url(
                     jira_customfields = '"' + jira_customfields
 
             # Add a double quote at the end if it doesn't end with }
-            if not jira_customfields.endswith("}"):
+            if not jira_customfields.endswith("}") and not jira_customfields.endswith("]"): # added to support arrays (see: Issue#181)
                 if not jira_customfields.endswith('"'):
                     jira_customfields = jira_customfields + '"'
 

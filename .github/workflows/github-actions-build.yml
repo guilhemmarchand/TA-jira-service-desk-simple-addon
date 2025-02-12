@@ -40,27 +40,27 @@ jobs:
 
       - name: Archive Appinspect html report
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: appinspect-report-html
           path: output/report_appinspect.html
 
       - name: Archive Appinspect json report
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: appinspect-report-json
           path: output/report_appinspect.json
 
       - name: Archive tgz application
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           path: output/*.tgz
 
       - name: Archive sha256sum
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: release-sha256.txt
           path: output/release-sha256.txt

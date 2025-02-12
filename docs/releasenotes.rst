@@ -1,6 +1,11 @@
 Release notes
 #############
 
+Version 2.0.20
+==============
+
+- Issue dedup no longer works after Atlassian put cloudfront in front of the Jira cloud api #200
+
 Version 2.0.19
 ==============
 

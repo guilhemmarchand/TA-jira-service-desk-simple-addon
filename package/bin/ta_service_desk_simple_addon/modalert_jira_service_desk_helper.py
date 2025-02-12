@@ -1185,7 +1185,6 @@ def query_url(
                         jira_url_status,
                         "GET",
                         parameters=None,
-                        payload=data,
                         headers=jira_headers,
                         cookies=None,
                         verify=ssl_certificate_validation,

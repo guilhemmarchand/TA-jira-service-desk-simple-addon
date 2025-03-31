@@ -40,32 +40,34 @@ def reformat_customfields(i):
 
         return i
 
+
 # This function is used to format a markdown table from json table in description
 def json_to_jira_table(json_data):
     # Ensure json_data is a list of dictionaries
     if isinstance(json_data, dict):
         json_data = [json_data]
-    
+
     if not json_data:
         return ""
-    
+
     # Extract the headers from the keys of the first dictionary
     headers = json_data[0].keys()
-    
+
     # Create the header row in bold
-    #header_row = f"| {' | '.join(headers)} |"
+    # header_row = f"| {' | '.join(headers)} |"
     header_row = f"| {' | '.join(f'*{header}*' for header in headers)} |"
-                
+
     # Create the data rows
     rows = []
     for entry in json_data:
         row = f"| {' | '.join(str(entry.get(header, '')) for header in headers)} |"
         rows.append(row)
-    
+
     # Combine all parts into the final table
     table = f"{header_row}\n" + "\n".join(rows)
-    
+
     return table
+
 
 # This function can optionnally be used to only remove the espaced double quotes and leave the custom fields with no parsing at all
 def reformat_customfields_minimal(i):
@@ -403,7 +405,7 @@ def attach_json(
     data = [
         {k: v for k, v in row.items() if not k.startswith("__mv_")} for row in reader
     ]
-    results_json.writelines(json.dumps(data, indent=2))
+    results_json.writelines(json.dumps(data, indent=2, ensure_ascii=False))
     results_json.seek(0)
 
     try:
@@ -642,7 +644,7 @@ def get_results_json(helper, jira_attachment_token, *args, **kwargs):
             {k: v for k, v in row.items() if not k.startswith("__mv_")}
             for row in reader
         ]
-        results_json.writelines(json.dumps(data, indent=2))
+        results_json.writelines(json.dumps(data, indent=2, ensure_ascii=False))
         results_json.seek(0)
 
         return results_json.read()
@@ -1025,10 +1027,14 @@ def query_url(
         elif jira_results_description in ("enabled_table"):
             search_results_json = get_results_json(helper, jira_attachment_token)
             if search_results_json:
-                search_result_table = json_to_jira_table(json.loads(search_results_json))
-                jira_description = ( jira_description
+                search_result_table = json_to_jira_table(
+                    json.loads(search_results_json)
+                )
+                jira_description = (
+                    jira_description
                     + "\nSplunk search results:\n"
-                    + search_result_table )
+                    + search_result_table
+                )
 
         data["fields"]["description"] = jira_description
 
@@ -1083,7 +1089,9 @@ def query_url(
                     jira_customfields = '"' + jira_customfields
 
             # Add a double quote at the end if it doesn't end with }
-            if not jira_customfields.endswith("}") and not jira_customfields.endswith("]"): # added to support arrays (see: Issue#181)
+            if not jira_customfields.endswith("}") and not jira_customfields.endswith(
+                "]"
+            ):  # added to support arrays (see: Issue#181)
                 if not jira_customfields.endswith('"'):
                     jira_customfields = jira_customfields + '"'
 

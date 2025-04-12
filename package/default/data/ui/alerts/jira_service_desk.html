@@ -21,13 +21,14 @@
         id="jira_service_desk_account"
         value-field="title"
         label-field="title"
-        search="| rest splunk_server=local /servicesNS/nobody/TA-jira-service-desk-simple-addon/ta_service_desk_simple_addon_account | dedup title"
+        search="| rest splunk_server=local /servicesNS/nobody/TA-jira-service-desk-simple-addon/ta_service_desk_simple_addon_account | dedup title | where isnotnull(title) | table title"
       />
       <span class="help-block">
         Select the JIRA account from the dropdown
       </span>
     </div>
   </div>
+
   <div class="control-group">
     <label class="control-label" for="jira_service_desk_jira_project"
       >Project <span class="required">* required</span>
@@ -55,7 +56,7 @@
         id="jira_service_desk_jira_issue_type"
         search="| `get_jira_issue_types(_all)`"
         earliest="-5m"
-        latest="now"        
+        latest="now"
         label-field="issues"
         value-field="issues"
         allow-custom-value
@@ -142,13 +143,14 @@
       </select>
       <span class="help-block">
         <br />Enable this option to automatically add the Splunk results as
-        parts of the JIRA Description field after the sentence "Splunk search results:".<br />
+        parts of the JIRA Description field after the sentence "Splunk search
+        results:".<br />
         <br />
         Results can be added in CSV or JSON format.<br />
         <br />
       </span>
     </div>
-  </div>  
+  </div>
   <div class="control-group">
     <label class="control-label" for="jira_service_desk_jira_assignee"
       >Assignee

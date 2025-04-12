@@ -6,10 +6,10 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import json
 import sys
 import os
-import splunk
 import time
 import requests
 import logging
+from logging.handlers import RotatingFileHandler
 import base64
 import urllib3
 
@@ -18,8 +18,11 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 splunkhome = os.environ["SPLUNK_HOME"]
 
 # set logging
-filehandler = logging.FileHandler(
-    splunkhome + "/var/log/splunk/ta_jira_jirarest.log", "a"
+filehandler = RotatingFileHandler(
+    f"{splunkhome}/var/log/splunk/ta_jira_jirarest.log",
+    mode="a",
+    maxBytes=10000000,
+    backupCount=1,
 )
 formatter = logging.Formatter(
     "%(asctime)s %(levelname)s %(filename)s %(funcName)s %(lineno)d %(message)s"
@@ -136,49 +139,19 @@ class GenerateTextCommand(GeneratingCommand):
 
                 if proxy_type == "http":
                     proxy_dict = {
-                        "http": "http://"
-                        + proxy_username
-                        + ":"
-                        + proxy_password
-                        + "@"
-                        + proxy_url
-                        + ":"
-                        + proxy_port,
-                        "https": "https://"
-                        + proxy_username
-                        + ":"
-                        + proxy_password
-                        + "@"
-                        + proxy_url
-                        + ":"
-                        + proxy_port,
+                        "http": f"http://{proxy_username}:{proxy_password}@{proxy_url}:{proxy_port}",
+                        "https": f"https://{proxy_username}:{proxy_password}@{proxy_url}:{proxy_port}",
                     }
                 else:
                     proxy_dict = {
-                        "http": str(proxy_type)
-                        + "://"
-                        + proxy_username
-                        + ":"
-                        + proxy_password
-                        + "@"
-                        + proxy_url
-                        + ":"
-                        + proxy_port,
-                        "https": str(proxy_type)
-                        + "://"
-                        + proxy_username
-                        + ":"
-                        + proxy_password
-                        + "@"
-                        + proxy_url
-                        + ":"
-                        + proxy_port,
+                        "http": f"{proxy_type}://{proxy_username}:{proxy_password}@{proxy_url}:{proxy_port}",
+                        "https": f"{proxy_type}://{proxy_username}:{proxy_password}@{proxy_url}:{proxy_port}",
                     }
 
             else:
                 proxy_dict = {
-                    "http": proxy_url + ":" + proxy_port,
-                    "https": proxy_url + ":" + proxy_port,
+                    "http": f"{proxy_url}:{proxy_port}",
+                    "https": f"{proxy_url}:{proxy_port}",
                 }
 
         # get all acounts
@@ -226,13 +199,12 @@ class GenerateTextCommand(GeneratingCommand):
         # Stop here if we cannot find the submitted account
         if not isfound:
             self.logger.fatal(
-                "This acount has not been configured on this instance, cannot proceed!: %s",
-                self,
+                f"This acount has not been configured on this instance, cannot proceed!: {self}"
             )
 
         # else get the password
         else:
-            credential_username = str(account) + "``splunk_cred_sep``1"
+            credential_username = f"{str(account)}``splunk_cred_sep``1"
             credential_realm = "__REST_CREDENTIAL__#TA-jira-service-desk-simple-addon#configs/conf-ta_service_desk_simple_addon_account"
             for credential in storage_passwords:
                 if (
@@ -247,21 +219,21 @@ class GenerateTextCommand(GeneratingCommand):
 
             # Build the authentication header for JIRA
             if str(jira_auth_mode) == "basic":
-                authorization = username + ":" + password
+                authorization = f"{username}:{password}"
                 b64_auth = base64.b64encode(authorization.encode()).decode()
                 jira_headers = {
-                    "Authorization": "Basic %s" % b64_auth,
+                    "Authorization": f"Basic {b64_auth}",
                     "Content-Type": "application/json",
                 }
             elif str(jira_auth_mode) == "pat":
                 jira_headers = {
-                    "Authorization": "Bearer %s" % str(password),
+                    "Authorization": f"Bearer {str(password)}",
                     "Content-Type": "application/json",
                 }
 
         # verify the url
         if not jira_url.startswith("https://"):
-            jira_url = "https://" + str(jira_url)
+            jira_url = f"https://{str(jira_url)}"
 
         # handle SSL verification and bundle
         if jira_ssl_certificate_path and os.path.isfile(jira_ssl_certificate_path):
@@ -280,9 +252,7 @@ class GenerateTextCommand(GeneratingCommand):
         else:
             if jira_method == "POST" or jira_method == "PUT":
                 raise Exception(
-                    "jirarest: method {} requires a valid json_request. It is empty".format(
-                        jira_method
-                    )
+                    f"jirarest: method {jira_method} requires a valid json_request. It is empty"
                 )
 
         # check connectivity and proceed
@@ -290,9 +260,7 @@ class GenerateTextCommand(GeneratingCommand):
             connectivity_check = test_jira_connect(
                 account, jira_headers, jira_url, ssl_config, proxy_dict
             )
-            logging.debug(
-                'connectivity_check="{}"'.format(json.dumps(connectivity_check))
-            )
+            logging.debug(f'connectivity_check="{json.dumps(connectivity_check)}"')
 
             # Splunk Cloud vetting notes: ssl_config is always True or or path to a CA bundle for the validation of the SSL certificate
 
@@ -300,21 +268,21 @@ class GenerateTextCommand(GeneratingCommand):
                 # set proper headers
                 if jira_method == "GET":
                     jira_fields_response = requests.get(
-                        url=str(jira_url) + "/" + str(self.target),
+                        url=f"{str(jira_url)}/{str(self.target)}",
                         headers=jira_headers,
                         verify=ssl_config,
                         proxies=proxy_dict,
                     )
                 elif jira_method == "DELETE":
                     jira_fields_response = requests.delete(
-                        url=str(jira_url) + "/" + str(self.target),
+                        url=f"{str(jira_url)}/{str(self.target)}",
                         headers=jira_headers,
                         verify=ssl_config,
                         proxies=proxy_dict,
                     )
                 elif jira_method == "POST":
                     jira_fields_response = requests.post(
-                        url=str(jira_url) + "/" + str(self.target),
+                        url=f"{str(jira_url)}/{str(self.target)}",
                         data=json.dumps(body_dict).encode("utf-8"),
                         headers=jira_headers,
                         verify=ssl_config,
@@ -322,7 +290,7 @@ class GenerateTextCommand(GeneratingCommand):
                     )
                 elif jira_method == "PUT":
                     jira_fields_response = requests.put(
-                        url=str(jira_url) + "/" + str(self.target),
+                        url=f"{str(jira_url)}/{str(self.target)}",
                         data=json.dumps(body_dict).encode("utf-8"),
                         headers=jira_headers,
                         verify=ssl_config,
@@ -348,23 +316,9 @@ class GenerateTextCommand(GeneratingCommand):
 
                     # render
                     if jira_fields_response.text:
-                        json_response = (
-                            '{"action": "'
-                            + str(response_action)
-                            + '", "status_code": "'
-                            + str(jira_fields_response.status_code)
-                            + '", "text": "'
-                            + str(jira_fields_response.text)
-                            + '"}'
-                        )
+                        json_response = f'{{"action": "{response_action}", "status_code": "{jira_fields_response.status_code}", "text": "{jira_fields_response.text}"}}'
                     else:
-                        json_response = (
-                            '{"action": "'
-                            + str(response_action)
-                            + '", "status_code": "'
-                            + str(jira_fields_response.status_code)
-                            + '"}'
-                        )
+                        json_response = f'{{"action": "{response_action}", "status_code": "{jira_fields_response.status_code}"}}'
                     data = {
                         "_time": time.time(),
                         "_raw": str(
@@ -378,14 +332,10 @@ class GenerateTextCommand(GeneratingCommand):
 
         except Exception as e:
             logging.error(
-                'JIRA connect verification failed for account="{}" with exception="{}"'.format(
-                    account, str(e)
-                )
+                f'JIRA connect verification failed for account="{account}" with exception="{str(e)}"'
             )
             raise Exception(
-                'JIRA connect verification failed for account="{}" with exception="{}"'.format(
-                    account, str(e)
-                )
+                f'JIRA connect verification failed for account="{account}" with exception="{str(e)}"'
             )
 
 

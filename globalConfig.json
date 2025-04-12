@@ -50,14 +50,28 @@
                             "required": true,
                             "options": {
                                 "display": true
-                            }
+                            },
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Invalid JIRA URL",
+                                    "pattern": "^https?://.*"
+                                }
+                            ]
                         },
                         {
                             "type": "text",
                             "label": "Username or PAT ID",
                             "help": "Enter the username for this account, or the Personal Access Token ID.",
                             "field": "username",
-                            "required": true
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Invalid username",
+                                    "pattern": "^.*$"
+                                }
+                            ]
                         },
                         {
                             "type": "text",
@@ -65,7 +79,14 @@
                             "encrypted": true,
                             "help": "Enter the password for this account, API token or Personal Access Token.",
                             "field": "password",
-                            "required": true
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Invalid password",
+                                    "pattern": "^.*$"
+                                }
+                            ]
                         },
                         {
                             "field": "configuration_help_link",
@@ -170,7 +191,14 @@
                                 ]
                             },
                             "defaultValue": "http",
-                            "field": "proxy_type"
+                            "field": "proxy_type",
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Invalid proxy type",
+                                    "pattern": "^.*$"
+                                }
+                            ]
                         },
                         {
                             "type": "text",
@@ -279,6 +307,13 @@
                             "label": "KVstore instance and port",
                             "help": "For client instances, define the KVstore instance in the format of <server>:<port>, example: acme.splunk.com:8089",
                             "field": "kvstore_instance",
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Invalid KVstore instance",
+                                    "pattern": "^.*$"
+                                }
+                            ],
                             "options": {
                                 "display": true
                             },
@@ -290,6 +325,13 @@
                             "label": "Bearer token",
                             "help": "For client instances, set the bearer token used for remote access to the KVstore instance",
                             "field": "bearer_token",
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Invalid bearer token",
+                                    "pattern": "^.*$"
+                                }
+                            ],
                             "options": {
                                 "display": true
                             },
@@ -302,6 +344,13 @@
                             "label": "KVstore search filters",
                             "help": "You can setup a search filter string if required, example: (account=\"LAB1\")",
                             "field": "kvstore_search_filters",
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Invalid KVstore search filters",
+                                    "pattern": "^.*$"
+                                }
+                            ],
                             "options": {
                                 "display": true
                             },
@@ -351,7 +400,7 @@
                     "type": "singleSelectSplunkSearch",
                     "label": "Select JIRA Account",
                     "field": "account",
-                    "search": "| rest splunk_server=local /servicesNS/nobody/TA-jira-service-desk-simple-addon/ta_service_desk_simple_addon_account | dedup title",
+                    "search": "| rest splunk_server=local /servicesNS/nobody/TA-jira-service-desk-simple-addon/ta_service_desk_simple_addon_account | dedup title | where isnotnull(title) | table title",
                     "valueField": "title",
                     "labelField": "title",
                     "help": "Select the JIRA account from the dropdown",

@@ -5,7 +5,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import sys
 import os
-import splunk
 import time
 import requests
 import urllib3
@@ -14,13 +13,18 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 import json
 import base64
 import logging
+from logging.handlers import RotatingFileHandler
 
 splunkhome = os.environ["SPLUNK_HOME"]
 
 # set logging
-filehandler = logging.FileHandler(
-    splunkhome + "/var/log/splunk/ta_jira_jirafill.log", "a"
+filehandler = RotatingFileHandler(
+    f"{splunkhome}/var/log/splunk/ta_jira_jirafill.log",
+    mode="a",
+    maxBytes=10000000,
+    backupCount=1,
 )
+
 formatter = logging.Formatter(
     "%(asctime)s %(levelname)s %(filename)s %(funcName)s %(lineno)d %(message)s"
 )
@@ -55,10 +59,9 @@ class GenerateTextCommand(GeneratingCommand):
     def jira_url(self, url, endpoint):
         # For Splunk Cloud vetting, the URL must start with https://
         if not url.startswith("https://"):
-            return "https://%s/rest/api/latest/%s" % (url, endpoint)
-
+            return f"https://{url}/rest/api/latest/{endpoint}"
         else:
-            return "%s/rest/api/latest/%s" % (url, endpoint)
+            return f"{url}/rest/api/latest/{endpoint}"
 
     # Splunk Cloud vetting notes: SSL verification is always true or the path to the CA bundle for the SSL certificate to be verified
     def test_jira_connect(
@@ -75,12 +78,7 @@ class GenerateTextCommand(GeneratingCommand):
             )
             if response.status_code not in (200, 201, 204):
                 raise Exception(
-                    'JIRA connect verification failed, account="{}", url="{}", HTTP Error="{}", HTTP Response="{}"'.format(
-                        account,
-                        self.jira_url(url, endpoint),
-                        response.status_code,
-                        response.text,
-                    )
+                    f'JIRA connect verification failed, account="{account}", url="{self.jira_url(url, endpoint)}", HTTP Error="{response.status_code}", HTTP Response="{response.text}"'
                 )
             else:
                 return {
@@ -91,14 +89,10 @@ class GenerateTextCommand(GeneratingCommand):
 
         except Exception as e:
             logging.error(
-                'JIRA connect verification failed for account="{}" with exception="{}"'.format(
-                    account, str(e)
-                )
+                f'JIRA connect verification failed for account="{account}" with exception="{str(e)}"'
             )
             raise Exception(
-                'JIRA connect verification failed for account="{}" with exception="{}"'.format(
-                    account, str(e)
-                )
+                f'JIRA connect verification failed for account="{account}" with exception="{str(e)}"'
             )
 
     def get_jira_info(self, jira_headers, url, ssl_config, proxy_dict, endpoint):
@@ -169,49 +163,19 @@ class GenerateTextCommand(GeneratingCommand):
 
                 if proxy_type == "http":
                     proxy_dict = {
-                        "http": "http://"
-                        + proxy_username
-                        + ":"
-                        + proxy_password
-                        + "@"
-                        + proxy_url
-                        + ":"
-                        + proxy_port,
-                        "https": "https://"
-                        + proxy_username
-                        + ":"
-                        + proxy_password
-                        + "@"
-                        + proxy_url
-                        + ":"
-                        + proxy_port,
+                        "http": f"http://{proxy_username}:{proxy_password}@{proxy_url}:{proxy_port}",
+                        "https": f"https://{proxy_username}:{proxy_password}@{proxy_url}:{proxy_port}",
                     }
                 else:
                     proxy_dict = {
-                        "http": str(proxy_type)
-                        + "://"
-                        + proxy_username
-                        + ":"
-                        + proxy_password
-                        + "@"
-                        + proxy_url
-                        + ":"
-                        + proxy_port,
-                        "https": str(proxy_type)
-                        + "://"
-                        + proxy_username
-                        + ":"
-                        + proxy_password
-                        + "@"
-                        + proxy_url
-                        + ":"
-                        + proxy_port,
+                        "http": f"{proxy_type}://{proxy_username}:{proxy_password}@{proxy_url}:{proxy_port}",
+                        "https": f"{proxy_type}://{proxy_username}:{proxy_password}@{proxy_url}:{proxy_port}",
                     }
 
             else:
                 proxy_dict = {
-                    "http": proxy_url + ":" + proxy_port,
-                    "https": proxy_url + ":" + proxy_port,
+                    "http": f"{proxy_url}:{proxy_port}",
+                    "https": f"{proxy_url}:{proxy_port}",
                 }
 
         # get all acounts
@@ -230,7 +194,6 @@ class GenerateTextCommand(GeneratingCommand):
             for account in accounts:
 
                 # account configuration
-                jira_ssl_certificate_validation = None
                 jira_ssl_certificate_path = None
                 username = None
                 password = None
@@ -243,12 +206,8 @@ class GenerateTextCommand(GeneratingCommand):
                         for key, value in stanza.content.items():
                             if key == "jira_url":
                                 jira_url = value
-                            if key == "jira_ssl_certificate_validation":
-                                jira_ssl_certificate_validation = value
                             if key == "jira_ssl_certificate_path":
                                 jira_ssl_certificate_path = value
-                            if key == "auth_type":
-                                auth_type = value
                             if key == "jira_auth_mode":
                                 jira_auth_mode = value
                             if key == "username":
@@ -256,7 +215,7 @@ class GenerateTextCommand(GeneratingCommand):
 
                 # end of get configuration
 
-                credential_username = str(account) + "``splunk_cred_sep``1"
+                credential_username = f"{str(account)}``splunk_cred_sep``1"
                 credential_realm = "__REST_CREDENTIAL__#TA-jira-service-desk-simple-addon#configs/conf-ta_service_desk_simple_addon_account"
                 for credential in storage_passwords:
                     if (
@@ -272,15 +231,15 @@ class GenerateTextCommand(GeneratingCommand):
 
                 # Build the authentication header for JIRA
                 if str(jira_auth_mode) == "basic":
-                    authorization = username + ":" + password
+                    authorization = f"{username}:{password}"
                     b64_auth = base64.b64encode(authorization.encode()).decode()
                     jira_headers = {
-                        "Authorization": "Basic %s" % b64_auth,
+                        "Authorization": f"Basic {b64_auth}",
                         "Content-Type": "application/json",
                     }
                 elif str(jira_auth_mode) == "pat":
                     jira_headers = {
-                        "Authorization": "Bearer %s" % str(password),
+                        "Authorization": f"Bearer {str(password)}",
                         "Content-Type": "application/json",
                     }
 
@@ -353,9 +312,7 @@ class GenerateTextCommand(GeneratingCommand):
                             "myself",
                         )
                         logging.debug(
-                            'account="{}", connectivity_check="{}"'.format(
-                                account, connectivity_check
-                            )
+                            f'account="{account}", connectivity_check="{connectivity_check}"'
                         )
 
                     except Exception as e:
@@ -373,15 +330,19 @@ class GenerateTextCommand(GeneratingCommand):
                                 proxy_dict,
                                 "project",
                             ):
-                                usercreds = {
+                                result_dict = {
                                     "_time": time.time(),
                                     "account": str(account),
                                     "key": project.get("key"),
-                                    "key_projects": project.get("key")
-                                    + " - "
-                                    + project.get("name"),
+                                    "key_projects": f'{project.get("key")} - {project.get("name")}',
                                 }
-                                yield usercreds
+                                yield {
+                                    "_time": time.time(),
+                                    "_raw": result_dict,
+                                    "account": str(account),
+                                    "key": project.get("key"),
+                                    "key_projects": f'{project.get("key")} - {project.get("name")}',
+                                }
 
                         if self.opt == 2:
                             for issue in self.get_jira_info(
@@ -391,12 +352,17 @@ class GenerateTextCommand(GeneratingCommand):
                                 proxy_dict,
                                 "issuetype",
                             ):
-                                usercreds = {
+                                result_dict = {
                                     "_time": time.time(),
                                     "account": str(account),
                                     "issues": issue.get("name"),
                                 }
-                                yield usercreds
+                                yield {
+                                    "_time": time.time(),
+                                    "_raw": result_dict,
+                                    "account": str(account),
+                                    "issues": issue.get("name"),
+                                }
 
                         if self.opt == 3:
                             for priority in self.get_jira_info(
@@ -406,18 +372,23 @@ class GenerateTextCommand(GeneratingCommand):
                                 proxy_dict,
                                 "priority",
                             ):
-                                usercreds = {
+                                result_dict = {
                                     "_time": time.time(),
                                     "account": str(account),
                                     "priorities": priority.get("name"),
                                 }
-                                yield usercreds
+                                yield {
+                                    "_time": time.time(),
+                                    "_raw": result_dict,
+                                    "account": str(account),
+                                    "priorities": priority.get("name"),
+                                }
 
                         if self.opt == 4:
                             for status in self.get_jira_info(
                                 jira_headers, jira_url, ssl_config, proxy_dict, "status"
                             ):
-                                result = {
+                                result_dict = {
                                     "_time": time.time(),
                                     "account": str(account),
                                     "status": status.get("name"),
@@ -425,7 +396,15 @@ class GenerateTextCommand(GeneratingCommand):
                                         "name"
                                     ),
                                 }
-                                yield result
+                                yield {
+                                    "_time": time.time(),
+                                    "_raw": result_dict,
+                                    "account": str(account),
+                                    "status": status.get("name"),
+                                    "statusCategory": status.get("statusCategory").get(
+                                        "name"
+                                    ),
+                                }
 
                     except Exception as e:
                         logging.error(str(e))
@@ -434,7 +413,6 @@ class GenerateTextCommand(GeneratingCommand):
 
             # account configuration
             isfound = False
-            jira_ssl_certificate_validation = None
             jira_ssl_certificate_path = None
             username = None
             password = None
@@ -448,12 +426,8 @@ class GenerateTextCommand(GeneratingCommand):
                     for key, value in stanza.content.items():
                         if key == "jira_url":
                             jira_url = value
-                        if key == "jira_ssl_certificate_validation":
-                            jira_ssl_certificate_validation = value
                         if key == "jira_ssl_certificate_path":
                             jira_ssl_certificate_path = value
-                        if key == "auth_type":
-                            auth_type = value
                         if key == "jira_auth_mode":
                             jira_auth_mode = value
                         if key == "username":
@@ -470,7 +444,7 @@ class GenerateTextCommand(GeneratingCommand):
 
             # else get the password
             else:
-                credential_username = str(self.account) + "``splunk_cred_sep``1"
+                credential_username = f"{str(self.account)}``splunk_cred_sep``1"
                 credential_realm = "__REST_CREDENTIAL__#TA-jira-service-desk-simple-addon#configs/conf-ta_service_desk_simple_addon_account"
                 for credential in storage_passwords:
                     if (
@@ -486,15 +460,15 @@ class GenerateTextCommand(GeneratingCommand):
 
             # Build the authentication header for JIRA
             if str(jira_auth_mode) == "basic":
-                authorization = username + ":" + password
+                authorization = f"{username}:{password}"
                 b64_auth = base64.b64encode(authorization.encode()).decode()
                 jira_headers = {
-                    "Authorization": "Basic %s" % b64_auth,
+                    "Authorization": f"Basic {b64_auth}",
                     "Content-Type": "application/json",
                 }
             elif str(jira_auth_mode) == "pat":
                 jira_headers = {
-                    "Authorization": "Bearer %s" % str(password),
+                    "Authorization": f"Bearer {str(password)}",
                     "Content-Type": "application/json",
                 }
 
@@ -554,7 +528,7 @@ class GenerateTextCommand(GeneratingCommand):
                 try:
 
                     connectivity_check = self.test_jira_connect(
-                        account,
+                        self.account,
                         jira_headers,
                         jira_url,
                         ssl_config,
@@ -562,52 +536,64 @@ class GenerateTextCommand(GeneratingCommand):
                         "myself",
                     )
                     logging.debug(
-                        'account="{}", connectivity_check="{}"'.format(
-                            account, connectivity_check
-                        )
+                        f'account="{self.account}", connectivity_check="{connectivity_check}"'
                     )
 
                     if self.opt == 1:
                         for project in self.get_jira_info(
                             jira_headers, jira_url, ssl_config, proxy_dict, "project"
                         ):
-                            usercreds = {
+                            result_dict = {
                                 "_time": time.time(),
                                 "account": str(self.account),
                                 "key": project.get("key"),
-                                "key_projects": project.get("key")
-                                + " - "
-                                + project.get("name"),
+                                "key_projects": f'{project.get("key")} - {project.get("name")}',
                             }
-                            yield usercreds
+                            yield {
+                                "_time": time.time(),
+                                "_raw": result_dict,
+                                "account": str(self.account),
+                                "key": project.get("key"),
+                                "key_projects": f'{project.get("key")} - {project.get("name")}',
+                            }
 
                     if self.opt == 2:
                         for issue in self.get_jira_info(
                             jira_headers, jira_url, ssl_config, proxy_dict, "issuetype"
                         ):
-                            usercreds = {
+                            result_dict = {
                                 "_time": time.time(),
                                 "account": str(self.account),
                                 "issues": issue.get("name"),
                             }
-                            yield usercreds
+                            yield {
+                                "_time": time.time(),
+                                "_raw": result_dict,
+                                "account": str(self.account),
+                                "issues": issue.get("name"),
+                            }
 
                     if self.opt == 3:
                         for priority in self.get_jira_info(
                             jira_headers, jira_url, ssl_config, proxy_dict, "priority"
                         ):
-                            usercreds = {
+                            result_dict = {
                                 "_time": time.time(),
                                 "account": str(self.account),
                                 "priorities": priority.get("name"),
                             }
-                            yield usercreds
+                            yield {
+                                "_time": time.time(),
+                                "_raw": result_dict,
+                                "account": str(self.account),
+                                "priorities": priority.get("name"),
+                            }
 
                     if self.opt == 4:
                         for status in self.get_jira_info(
                             jira_headers, jira_url, ssl_config, proxy_dict, "status"
                         ):
-                            result = {
+                            result_dict = {
                                 "_time": time.time(),
                                 "account": str(self.account),
                                 "status": status.get("name"),
@@ -615,7 +601,15 @@ class GenerateTextCommand(GeneratingCommand):
                                     "name"
                                 ),
                             }
-                            yield result
+                            yield {
+                                "_time": time.time(),
+                                "_raw": result_dict,
+                                "account": str(self.account),
+                                "status": status.get("name"),
+                                "statusCategory": status.get("statusCategory").get(
+                                    "name"
+                                ),
+                            }
 
                 except Exception as e:
                     logging.error(str(e))

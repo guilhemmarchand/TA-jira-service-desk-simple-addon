@@ -5,8 +5,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import os
 import sys
-import splunk
-import splunk.entity
 import requests
 import logging
 import urllib3
@@ -24,7 +22,7 @@ sys.path.append(
 # Splunk Cloud vetting notes: SSL verification is always true or the path to the CA bundle for the SSL certificate to be verified
 def test_jira_connect(account, jira_headers, jira_url, ssl_config, proxy_dict):
 
-    jira_check_url = jira_url + "/rest/api/latest/myself"
+    jira_check_url = f"{jira_url}/rest/api/latest/myself"
     try:
         response = requests.get(
             url=jira_check_url,
@@ -35,9 +33,7 @@ def test_jira_connect(account, jira_headers, jira_url, ssl_config, proxy_dict):
         )
         if response.status_code not in (200, 201, 204):
             raise Exception(
-                'JIRA connect verification failed, account="{}", url="{}", HTTP Error="{}", HTTP Response="{}"'.format(
-                    account, jira_check_url, response.status_code, response.text
-                )
+                f'JIRA connect verification failed, account="{account}", url="{jira_check_url}", HTTP Error="{response.status_code}", HTTP Response="{response.text}"'
             )
         else:
             return {
@@ -48,12 +44,8 @@ def test_jira_connect(account, jira_headers, jira_url, ssl_config, proxy_dict):
 
     except Exception as e:
         logging.error(
-            'JIRA connect verification failed for account="{}" with exception="{}"'.format(
-                account, str(e)
-            )
+            f'JIRA connect verification failed for account="{account}" with exception="{str(e)}"'
         )
         raise Exception(
-            'JIRA connect verification failed for account="{}" with exception="{}"'.format(
-                account, str(e)
-            )
+            f'JIRA connect verification failed for account="{account}" with exception="{str(e)}"'
         )

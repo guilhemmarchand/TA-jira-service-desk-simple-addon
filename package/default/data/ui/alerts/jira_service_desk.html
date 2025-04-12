@@ -37,6 +37,8 @@
         name="action.jira_service_desk.param.jira_project"
         id="jira_service_desk_jira_project"
         search="| `get_jira_projects(_all)`"
+        earliest="-5m"
+        latest="now"
         label-field="key_projects"
         value-field="key"
         allow-custom-value
@@ -52,6 +54,8 @@
         name="action.jira_service_desk.param.jira_issue_type"
         id="jira_service_desk_jira_issue_type"
         search="| `get_jira_issue_types(_all)`"
+        earliest="-5m"
+        latest="now"        
         label-field="issues"
         value-field="issues"
         allow-custom-value
@@ -67,6 +71,8 @@
         name="action.jira_service_desk.param.jira_priority"
         id="jira_service_desk_jira_priority"
         search="| `get_jira_priorities(_all)`"
+        earliest="-5m"
+        latest="now"
         label-field="priorities"
         value-field="priorities"
         allow-custom-value

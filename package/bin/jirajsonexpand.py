@@ -48,6 +48,7 @@ from splunklib.searchcommands import (
 )
 from splunklib import six
 import splunklib.client as client
+from ta_jira_libs import jira_get_conf
 
 
 @Configuration()
@@ -75,18 +76,13 @@ class TrackMePrettyJson(StreamingCommand):
 
     def stream(self, records):
 
-        # global configuration
-        conf_file = "ta_service_desk_simple_addon_settings"
-        confs = self.service.confs[str(conf_file)]
+        # get conf
+        jira_conf = jira_get_conf(
+            self._metadata.searchinfo.session_key, self._metadata.searchinfo.splunkd_uri
+        )
 
         # set loglevel
-        loglevel = "INFO"
-        for stanza in confs:
-            if stanza.name == "logging":
-                for stanzakey, stanzavalue in stanza.content.items():
-                    if stanzakey == "loglevel":
-                        loglevel = stanzavalue
-        log.setLevel(loglevel)
+        log.setLevel(jira_conf["logging"]["loglevel"])
 
         # Loop, expand and yield
         count = 0

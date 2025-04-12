@@ -49,7 +49,12 @@ from splunklib.searchcommands import (
 )
 
 # Import JIRA libs
-from ta_jira_libs import test_jira_connect
+from ta_jira_libs import (
+    test_jira_connect,
+    jira_get_conf,
+    jira_get_accounts,
+    jira_get_account,
+)
 
 
 @Configuration(distributed=False)
@@ -58,138 +63,53 @@ class GenerateTextCommand(GeneratingCommand):
     # Proceed
     def generate(self):
 
-        storage_passwords = self.service.storage_passwords
-
-        # global configuration
-        conf_file = "ta_service_desk_simple_addon_settings"
-        confs = self.service.confs[str(conf_file)]
+        # get conf
+        jira_conf = jira_get_conf(
+            self._metadata.searchinfo.session_key, self._metadata.searchinfo.splunkd_uri
+        )
 
         # set loglevel
-        loglevel = "INFO"
-        for stanza in confs:
-            if stanza.name == "logging":
-                for stanzakey, stanzavalue in stanza.content.items():
-                    if stanzakey == "loglevel":
-                        loglevel = stanzavalue
-        log.setLevel(loglevel)
+        log.setLevel(jira_conf["logging"]["loglevel"])
 
-        # init
-        proxy_enabled = "0"
-        proxy_url = None
-        proxy_dict = None
-        proxy_username = None
-        for stanza in confs:
-            if stanza.name == "proxy":
-                for key, value in stanza.content.items():
-                    if key == "proxy_enabled":
-                        proxy_enabled = value
-                    if key == "proxy_port":
-                        proxy_port = value
-                    if key == "proxy_type":
-                        proxy_type = value
-                    if key == "proxy_url":
-                        proxy_url = value
-                    if key == "proxy_username":
-                        proxy_username = value
-
-        if proxy_enabled == "1":
-
-            # get proxy password
-            if proxy_username:
-                proxy_password = None
-
-                # get proxy password, if any
-                credential_realm = "__REST_CREDENTIAL__#TA-jira-service-desk-simple-addon#configs/conf-ta_service_desk_simple_addon_settings"
-                for credential in storage_passwords:
-                    if (
-                        credential.content.get("realm") == str(credential_realm)
-                        and credential.content.get("clear_password").find(
-                            "proxy_password"
-                        )
-                        > 0
-                    ):
-                        proxy_password = json.loads(
-                            credential.content.get("clear_password")
-                        ).get("proxy_password")
-                        break
-
-                if proxy_type == "http":
-                    proxy_dict = {
-                        "http": f"http://{proxy_username}:{proxy_password}@{proxy_url}:{proxy_port}",
-                        "https": f"https://{proxy_username}:{proxy_password}@{proxy_url}:{proxy_port}",
-                    }
-                else:
-                    proxy_dict = {
-                        "http": f"{proxy_type}://{proxy_username}:{proxy_password}@{proxy_url}:{proxy_port}",
-                        "https": f"{proxy_type}://{proxy_username}:{proxy_password}@{proxy_url}:{proxy_port}",
-                    }
-
-            else:
-                proxy_dict = {
-                    "http": f"{proxy_url}:{proxy_port}",
-                    "https": f"{proxy_url}:{proxy_port}",
-                }
+        # global configuration
+        proxy_conf = jira_conf["proxy"]
+        proxy_dict = proxy_conf.get("proxy_dict", {})
 
         # get all acounts
-        accounts = []
-        conf_file = "ta_service_desk_simple_addon_account"
-        confs = self.service.confs[str(conf_file)]
-        for stanza in confs:
-            # get all accounts
-            for name in stanza.name:
-                accounts.append(stanza.name)
-                break
+        accounts_dict = jira_get_accounts(
+            self._metadata.searchinfo.session_key, self._metadata.searchinfo.splunkd_uri
+        )
+        accounts = accounts_dict.get("accounts", [])
 
         # loop through the accounts
         for account in accounts:
 
             # account configuration
-            jira_ssl_certificate_validation = None
-            jira_ssl_certificate_path = None
-            username = None
-            password = None
+            account_conf = jira_get_account(
+                self._metadata.searchinfo.session_key,
+                self._metadata.searchinfo.splunkd_uri,
+                account,
+            )
 
-            conf_file = "ta_service_desk_simple_addon_account"
-            confs = self.service.confs[str(conf_file)]
-            for stanza in confs:
-
-                if stanza.name == str(account):
-                    for key, value in stanza.content.items():
-                        if key == "jira_url":
-                            jira_url = value
-                        if key == "jira_ssl_certificate_validation":
-                            jira_ssl_certificate_validation = value
-                        if key == "jira_ssl_certificate_path":
-                            jira_ssl_certificate_path = value
-                        if key == "auth_type":
-                            auth_type = value
-                        if key == "jira_auth_mode":
-                            jira_auth_mode = value
-                        if key == "username":
-                            username = value
+            jira_auth_mode = account_conf.get("auth_mode", "basic")
+            jira_url = account_conf.get("jira_url", None)
+            jira_ssl_certificate_path = account_conf.get("ssl_certificate_path", None)
+            jira_username = account_conf.get("username", None)
+            jira_password = account_conf.get("jira_password", None)
 
             # verify the url
             if not jira_url.startswith("https://"):
                 jira_url = f"https://{str(jira_url)}"
 
-            # end of get configuration
-
-            credential_username = f"{str(account)}``splunk_cred_sep``1"
-            credential_realm = "__REST_CREDENTIAL__#TA-jira-service-desk-simple-addon#configs/conf-ta_service_desk_simple_addon_account"
-            for credential in storage_passwords:
-                if (
-                    credential.content.get("username") == str(credential_username)
-                    and credential.content.get("realm") == str(credential_realm)
-                    and credential.content.get("clear_password").find("password") > 0
-                ):
-                    password = json.loads(credential.content.get("clear_password")).get(
-                        "password"
-                    )
-                    break
+            # handle SSL verification and bundle
+            if jira_ssl_certificate_path and os.path.isfile(jira_ssl_certificate_path):
+                ssl_config = str(jira_ssl_certificate_path)
+            else:
+                ssl_config = True
 
             # Build the authentication header for JIRA
             if str(jira_auth_mode) == "basic":
-                authorization = f"{username}:{password}"
+                authorization = f"{jira_username}:{jira_password}"
                 b64_auth = base64.b64encode(authorization.encode()).decode()
                 jira_headers = {
                     "Authorization": f"Basic {b64_auth}",
@@ -197,15 +117,9 @@ class GenerateTextCommand(GeneratingCommand):
                 }
             elif str(jira_auth_mode) == "pat":
                 jira_headers = {
-                    "Authorization": f"Bearer {str(password)}",
+                    "Authorization": f"Bearer {str(jira_password)}",
                     "Content-Type": "application/json",
                 }
-
-            # Splunk Cloud vetting notes: SSL verification is always true or the path to the CA bundle for the SSL certificate to be verified
-            if jira_ssl_certificate_path and os.path.isfile(jira_ssl_certificate_path):
-                ssl_config = str(jira_ssl_certificate_path)
-            else:
-                ssl_config = True
 
             # ensures connectivity and proceed
             try:

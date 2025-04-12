@@ -8,8 +8,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import os
 import sys
-import splunk
-import splunk.entity
 import requests
 import urllib3
 
@@ -52,7 +50,9 @@ from splunklib.searchcommands import (
     Option,
     validators,
 )
-import splunklib.client as client
+
+# import least privileges access libs
+from ta_jira_libs import jira_get_conf
 
 
 @Configuration(distributed=False)
@@ -74,42 +74,27 @@ class GetJiraKv(GeneratingCommand):
             # Get the session key
             session_key = self._metadata.searchinfo.session_key
 
-            # Get splunkd port
-            entity = splunk.entity.getEntity(
-                "/server",
-                "settings",
-                namespace="TA-jira-service-desk-simple-addon",
-                sessionKey=session_key,
-                owner="-",
+            # get conf
+            jira_conf = jira_get_conf(
+                self._metadata.searchinfo.session_key,
+                self._metadata.searchinfo.splunkd_uri,
             )
-            splunkd_port = entity["mgmtHostPort"]
-
-            # Get conf
-            conf_file = "ta_service_desk_simple_addon_settings"
-            confs = self.service.confs[str(conf_file)]
 
             # set loglevel
-            loglevel = "INFO"
-            for stanza in confs:
-                if stanza.name == "logging":
-                    for stanzakey, stanzavalue in stanza.content.items():
-                        if stanzakey == "loglevel":
-                            loglevel = stanzavalue
-            log.setLevel(loglevel)
+            log.setLevel(jira_conf["logging"]["loglevel"])
 
             # init
             storage_passwords = self.service.storage_passwords
-            kvstore_instance = None
+            jira_passthrough_mode = int(
+                jira_conf["advanced_configuration"].get("jira_passthrough_mode", 0)
+            )
+            kvstore_instance = jira_conf["advanced_configuration"].get(
+                "kvstore_instance", None
+            )
+            kvstore_search_filters = jira_conf["advanced_configuration"].get(
+                "kvstore_search_filters", None
+            )
             bearer_token = None
-            for stanza in confs:
-                if stanza.name == "advanced_configuration":
-                    for key, value in stanza.content.items():
-                        if key == "jira_passthrough_mode":
-                            jira_passthrough_mode = value
-                        if key == "kvstore_instance":
-                            kvstore_instance = value
-                        if key == "kvstore_search_filters":
-                            kvstore_search_filters = value
 
             if kvstore_instance:
 
@@ -142,7 +127,7 @@ class GetJiraKv(GeneratingCommand):
             if (not kvstore_instance or not bearer_token) and str(
                 jira_passthrough_mode
             ) == "0":
-                kvstore_instance = f"localhost:{splunkd_port}"
+                kvstore_instance = self._metadata.searchinfo.splunkd_uri
                 header = f"Splunk {session_key}"
             elif str(jira_passthrough_mode) == "1":
                 # yield
@@ -173,7 +158,10 @@ class GetJiraKv(GeneratingCommand):
                 search = f"{search} | search {kvstore_search_filters}"
 
             # Define the url
-            url = f"https://{kvstore_instance}/services/search/jobs/export"
+            if not kvstore_instance.startswith("https://"):
+                url = f"https://{kvstore_instance}/services/search/jobs/export"
+            else:
+                url = f"{kvstore_instance}/services/search/jobs/export"
 
             # Get data
             output_mode = "csv"

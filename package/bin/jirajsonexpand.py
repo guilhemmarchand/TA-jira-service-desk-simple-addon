@@ -86,8 +86,7 @@ class TrackMePrettyJson(StreamingCommand):
                 for stanzakey, stanzavalue in stanza.content.items():
                     if stanzakey == "loglevel":
                         loglevel = stanzavalue
-        logginglevel = logging.getLevelName(loglevel)
-        log.setLevel(logginglevel)
+        log.setLevel(loglevel)
 
         # Loop, expand and yield
         count = 0

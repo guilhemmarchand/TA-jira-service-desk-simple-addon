@@ -71,8 +71,7 @@ class GenerateTextCommand(GeneratingCommand):
                 for stanzakey, stanzavalue in stanza.content.items():
                     if stanzakey == "loglevel":
                         loglevel = stanzavalue
-        logginglevel = logging.getLevelName(loglevel)
-        log.setLevel(logginglevel)
+        log.setLevel(loglevel)
 
         # init
         proxy_enabled = "0"

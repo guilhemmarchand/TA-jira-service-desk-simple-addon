@@ -49,12 +49,30 @@ from splunklib.searchcommands import (
     validators,
 )
 
+# import least privileges access libs
+from ta_jira_libs import jira_get_conf, jira_get_accounts, jira_get_account
+
 
 @Configuration(distributed=False)
 class GenerateTextCommand(GeneratingCommand):
 
-    account = Option(require=True)
-    opt = Option(require=True, validate=validators.Integer(0))
+    account = Option(
+        doc="""
+        **Syntax:** **account=****
+        **Description:** Optional, account to be used.""",
+        require=False,
+        default="_all",
+        validate=validators.Match("account", r"^.*$"),
+    )
+
+    opt = Option(
+        doc="""
+        **Syntax:** **opt=****
+        **Description:** Optional, action to be performed.""",
+        require=False,
+        default=0,
+        validate=validators.Match("opt", r"^(0|1|2|3|4)$"),
+    )
 
     def jira_url(self, url, endpoint):
         # For Splunk Cloud vetting, the URL must start with https://
@@ -76,24 +94,27 @@ class GenerateTextCommand(GeneratingCommand):
                 proxies=proxy_dict,
                 timeout=10,
             )
-            if response.status_code not in (200, 201, 204):
-                raise Exception(
-                    f'JIRA connect verification failed, account="{account}", url="{self.jira_url(url, endpoint)}", HTTP Error="{response.status_code}", HTTP Response="{response.text}"'
-                )
-            else:
-                return {
-                    "status": "success",
-                    "response": response.text,
-                    "status_code": response.status_code,
-                }
+            response.raise_for_status()
+            return True, {
+                "account": account,
+                "status": "success",
+                "response": response.text,
+                "status_code": response.status_code,
+                "result": f"The connection to the JIRA target {url} successfully established and verified.",
+            }
 
         except Exception as e:
+
             logging.error(
                 f'JIRA connect verification failed for account="{account}" with exception="{str(e)}"'
             )
-            raise Exception(
-                f'JIRA connect verification failed for account="{account}" with exception="{str(e)}"'
-            )
+            return False, {
+                "account": account,
+                "status": "failure",
+                "response": str(e),
+                "status_code": 500,
+                "result": f"The connection to the JIRA target {url} failed.",
+            }
 
     def get_jira_info(self, jira_headers, url, ssl_config, proxy_dict, endpoint):
         response = requests.get(
@@ -106,87 +127,23 @@ class GenerateTextCommand(GeneratingCommand):
 
     def generate(self):
 
-        # set loglevel
-        loglevel = "INFO"
-        conf_file = "ta_service_desk_simple_addon_settings"
-        confs = self.service.confs[str(conf_file)]
-        for stanza in confs:
-            if stanza.name == "logging":
-                for stanzakey, stanzavalue in stanza.content.items():
-                    if stanzakey == "loglevel":
-                        loglevel = stanzavalue
-        logginglevel = logging.getLevelName(loglevel)
-        log.setLevel(logginglevel)
+        # get conf
+        jira_conf = jira_get_conf(
+            self._metadata.searchinfo.session_key, self._metadata.searchinfo.splunkd_uri
+        )
 
-        # credential store
-        storage_passwords = self.service.storage_passwords
+        # set loglevel
+        log.setLevel(jira_conf["logging"]["loglevel"])
 
         # global configuration
-        proxy_enabled = "0"
-        proxy_url = None
-        proxy_dict = None
-        proxy_username = None
-        for stanza in confs:
-            if stanza.name == "proxy":
-                for key, value in stanza.content.items():
-                    if key == "proxy_enabled":
-                        proxy_enabled = value
-                    if key == "proxy_port":
-                        proxy_port = value
-                    if key == "proxy_type":
-                        proxy_type = value
-                    if key == "proxy_url":
-                        proxy_url = value
-                    if key == "proxy_username":
-                        proxy_username = value
-
-        if proxy_enabled == "1":
-
-            # get proxy password
-            if proxy_username:
-                proxy_password = None
-
-                # get proxy password, if any
-                credential_realm = "__REST_CREDENTIAL__#TA-jira-service-desk-simple-addon#configs/conf-ta_service_desk_simple_addon_settings"
-                for credential in storage_passwords:
-                    if (
-                        credential.content.get("realm") == str(credential_realm)
-                        and credential.content.get("clear_password").find(
-                            "proxy_password"
-                        )
-                        > 0
-                    ):
-                        proxy_password = json.loads(
-                            credential.content.get("clear_password")
-                        ).get("proxy_password")
-                        break
-
-                if proxy_type == "http":
-                    proxy_dict = {
-                        "http": f"http://{proxy_username}:{proxy_password}@{proxy_url}:{proxy_port}",
-                        "https": f"https://{proxy_username}:{proxy_password}@{proxy_url}:{proxy_port}",
-                    }
-                else:
-                    proxy_dict = {
-                        "http": f"{proxy_type}://{proxy_username}:{proxy_password}@{proxy_url}:{proxy_port}",
-                        "https": f"{proxy_type}://{proxy_username}:{proxy_password}@{proxy_url}:{proxy_port}",
-                    }
-
-            else:
-                proxy_dict = {
-                    "http": f"{proxy_url}:{proxy_port}",
-                    "https": f"{proxy_url}:{proxy_port}",
-                }
+        proxy_conf = jira_conf["proxy"]
+        proxy_dict = proxy_conf.get("proxy_dict", {})
 
         # get all acounts
-        accounts = []
-        conf_file = "ta_service_desk_simple_addon_account"
-        confs = self.service.confs[str(conf_file)]
-        for stanza in confs:
-            # get all accounts
-            for name in stanza.name:
-                accounts.append(stanza.name)
-                break
+        accounts_dict = jira_get_accounts(
+            self._metadata.searchinfo.session_key, self._metadata.searchinfo.splunkd_uri
+        )
+        accounts = accounts_dict.get("accounts", [])
 
         # run
         if self.account == "_all":
@@ -194,44 +151,25 @@ class GenerateTextCommand(GeneratingCommand):
             for account in accounts:
 
                 # account configuration
-                jira_ssl_certificate_path = None
-                username = None
-                password = None
+                account_conf = jira_get_account(
+                    self._metadata.searchinfo.session_key,
+                    self._metadata.searchinfo.splunkd_uri,
+                    account,
+                )
 
-                conf_file = "ta_service_desk_simple_addon_account"
-                confs = self.service.confs[str(conf_file)]
-                for stanza in confs:
-
-                    if stanza.name == str(account):
-                        for key, value in stanza.content.items():
-                            if key == "jira_url":
-                                jira_url = value
-                            if key == "jira_ssl_certificate_path":
-                                jira_ssl_certificate_path = value
-                            if key == "jira_auth_mode":
-                                jira_auth_mode = value
-                            if key == "username":
-                                username = value
+                jira_auth_mode = account_conf.get("auth_mode", "basic")
+                jira_url = account_conf.get("jira_url", None)
+                jira_ssl_certificate_path = account_conf.get(
+                    "ssl_certificate_path", None
+                )
+                jira_username = account_conf.get("username", None)
+                jira_password = account_conf.get("jira_password", None)
 
                 # end of get configuration
 
-                credential_username = f"{str(account)}``splunk_cred_sep``1"
-                credential_realm = "__REST_CREDENTIAL__#TA-jira-service-desk-simple-addon#configs/conf-ta_service_desk_simple_addon_account"
-                for credential in storage_passwords:
-                    if (
-                        credential.content.get("username") == str(credential_username)
-                        and credential.content.get("realm") == str(credential_realm)
-                        and credential.content.get("clear_password").find("password")
-                        > 0
-                    ):
-                        password = json.loads(
-                            credential.content.get("clear_password")
-                        ).get("password")
-                        break
-
                 # Build the authentication header for JIRA
                 if str(jira_auth_mode) == "basic":
-                    authorization = f"{username}:{password}"
+                    authorization = f"{jira_username}:{jira_password}"
                     b64_auth = base64.b64encode(authorization.encode()).decode()
                     jira_headers = {
                         "Authorization": f"Basic {b64_auth}",
@@ -239,7 +177,7 @@ class GenerateTextCommand(GeneratingCommand):
                     }
                 elif str(jira_auth_mode) == "pat":
                     jira_headers = {
-                        "Authorization": f"Bearer {str(password)}",
+                        "Authorization": f"Bearer {str(jira_password)}",
                         "Content-Type": "application/json",
                     }
 
@@ -251,216 +189,151 @@ class GenerateTextCommand(GeneratingCommand):
                 else:
                     ssl_config = True
 
-                # test connectivity per account
-                if self.opt == 0:
+                #
+                # Process
+                #
 
-                    try:
-                        response = self.test_jira_connect(
-                            account,
-                            jira_headers,
-                            jira_url,
-                            ssl_config,
-                            proxy_dict,
-                            "myself",
+                # test connectivity systematically
+                connected, healthcheck_response = self.test_jira_connect(
+                    account,
+                    jira_headers,
+                    jira_url,
+                    ssl_config,
+                    proxy_dict,
+                    "myself",
+                )
+
+                # return connection test results
+                if int(self.opt) == 0:
+
+                    yield {
+                        "_time": time.time(),
+                        "_raw": healthcheck_response,
+                        "account": account,
+                        "connectivy_test": healthcheck_response.get("status"),
+                        "response": healthcheck_response.get("response"),
+                        "status_code": healthcheck_response.get("status_code"),
+                        "result": healthcheck_response.get("result"),
+                    }
+
+                else:
+                    if not connected:
+                        raise Exception(
+                            f'JIRA connect verification failed for account="{account}" with exception="{healthcheck_response.get("response")}"'
                         )
-                        response_dict = {
-                            "account": account,
-                            "connectivy_test": response.get("status"),
-                            "response": response.get("response"),
-                            "status_code": response.get("status_code"),
-                        }
-
-                        yield {
-                            "_time": time.time(),
-                            "_raw": response_dict,
-                            "account": account,
-                            "connectivy_test": response.get("status"),
-                            "response": response.get("response"),
-                            "status_code": response.get("status_code"),
-                        }
-
-                    except Exception as e:
-
-                        response_dict = {
-                            "account": account,
-                            "connectivy_test": "failure",
-                            "exception": str(e),
-                        }
-
-                        yield {
-                            "_time": time.time(),
-                            "_raw": response_dict,
-                            "account": account,
-                            "connectivy_test": "failure",
-                            "exception": str(e),
-                        }
 
                 #
                 # Get data
                 #
 
-                if self.opt:
+                # Proceed
+                if int(self.opt) == 1 and connected:
+                    for project in self.get_jira_info(
+                        jira_headers,
+                        jira_url,
+                        ssl_config,
+                        proxy_dict,
+                        "project",
+                    ):
+                        result_dict = {
+                            "_time": time.time(),
+                            "account": str(account),
+                            "key": project.get("key"),
+                            "key_projects": f'{project.get("key")} - {project.get("name")}',
+                        }
+                        yield {
+                            "_time": time.time(),
+                            "_raw": result_dict,
+                            "account": str(account),
+                            "key": project.get("key"),
+                            "key_projects": f'{project.get("key")} - {project.get("name")}',
+                        }
 
-                    # Check the connectivity, fails and raise an exception accordingly
-                    try:
-                        connectivity_check = self.test_jira_connect(
-                            account,
-                            jira_headers,
-                            jira_url,
-                            ssl_config,
-                            proxy_dict,
-                            "myself",
-                        )
-                        logging.debug(
-                            f'account="{account}", connectivity_check="{connectivity_check}"'
-                        )
+                if int(self.opt) == 2 and connected:
+                    for issue in self.get_jira_info(
+                        jira_headers,
+                        jira_url,
+                        ssl_config,
+                        proxy_dict,
+                        "issuetype",
+                    ):
+                        result_dict = {
+                            "_time": time.time(),
+                            "account": str(account),
+                            "issues": issue.get("name"),
+                        }
+                        yield {
+                            "_time": time.time(),
+                            "_raw": result_dict,
+                            "account": str(account),
+                            "issues": issue.get("name"),
+                        }
 
-                    except Exception as e:
-                        logging.error(str(e))
-                        raise Exception(str(e))
+                if int(self.opt) == 3 and connected:
+                    for priority in self.get_jira_info(
+                        jira_headers,
+                        jira_url,
+                        ssl_config,
+                        proxy_dict,
+                        "priority",
+                    ):
+                        result_dict = {
+                            "_time": time.time(),
+                            "account": str(account),
+                            "priorities": priority.get("name"),
+                        }
+                        yield {
+                            "_time": time.time(),
+                            "_raw": result_dict,
+                            "account": str(account),
+                            "priorities": priority.get("name"),
+                        }
 
-                    # Loop depending on the action, but do not fail here
-                    try:
-
-                        if self.opt == 1:
-                            for project in self.get_jira_info(
-                                jira_headers,
-                                jira_url,
-                                ssl_config,
-                                proxy_dict,
-                                "project",
-                            ):
-                                result_dict = {
-                                    "_time": time.time(),
-                                    "account": str(account),
-                                    "key": project.get("key"),
-                                    "key_projects": f'{project.get("key")} - {project.get("name")}',
-                                }
-                                yield {
-                                    "_time": time.time(),
-                                    "_raw": result_dict,
-                                    "account": str(account),
-                                    "key": project.get("key"),
-                                    "key_projects": f'{project.get("key")} - {project.get("name")}',
-                                }
-
-                        if self.opt == 2:
-                            for issue in self.get_jira_info(
-                                jira_headers,
-                                jira_url,
-                                ssl_config,
-                                proxy_dict,
-                                "issuetype",
-                            ):
-                                result_dict = {
-                                    "_time": time.time(),
-                                    "account": str(account),
-                                    "issues": issue.get("name"),
-                                }
-                                yield {
-                                    "_time": time.time(),
-                                    "_raw": result_dict,
-                                    "account": str(account),
-                                    "issues": issue.get("name"),
-                                }
-
-                        if self.opt == 3:
-                            for priority in self.get_jira_info(
-                                jira_headers,
-                                jira_url,
-                                ssl_config,
-                                proxy_dict,
-                                "priority",
-                            ):
-                                result_dict = {
-                                    "_time": time.time(),
-                                    "account": str(account),
-                                    "priorities": priority.get("name"),
-                                }
-                                yield {
-                                    "_time": time.time(),
-                                    "_raw": result_dict,
-                                    "account": str(account),
-                                    "priorities": priority.get("name"),
-                                }
-
-                        if self.opt == 4:
-                            for status in self.get_jira_info(
-                                jira_headers, jira_url, ssl_config, proxy_dict, "status"
-                            ):
-                                result_dict = {
-                                    "_time": time.time(),
-                                    "account": str(account),
-                                    "status": status.get("name"),
-                                    "statusCategory": status.get("statusCategory").get(
-                                        "name"
-                                    ),
-                                }
-                                yield {
-                                    "_time": time.time(),
-                                    "_raw": result_dict,
-                                    "account": str(account),
-                                    "status": status.get("name"),
-                                    "statusCategory": status.get("statusCategory").get(
-                                        "name"
-                                    ),
-                                }
-
-                    except Exception as e:
-                        logging.error(str(e))
+                if int(self.opt) == 4 and connected:
+                    for status in self.get_jira_info(
+                        jira_headers, jira_url, ssl_config, proxy_dict, "status"
+                    ):
+                        result_dict = {
+                            "_time": time.time(),
+                            "account": str(account),
+                            "status": status.get("name"),
+                            "statusCategory": status.get("statusCategory").get("name"),
+                        }
+                        yield {
+                            "_time": time.time(),
+                            "_raw": result_dict,
+                            "account": str(account),
+                            "status": status.get("name"),
+                            "statusCategory": status.get("statusCategory").get("name"),
+                        }
 
         else:
 
             # account configuration
-            isfound = False
-            jira_ssl_certificate_path = None
-            username = None
-            password = None
-
-            conf_file = "ta_service_desk_simple_addon_account"
-            confs = self.service.confs[str(conf_file)]
-            for stanza in confs:
-
-                if stanza.name == str(self.account):
-                    isfound = True
-                    for key, value in stanza.content.items():
-                        if key == "jira_url":
-                            jira_url = value
-                        if key == "jira_ssl_certificate_path":
-                            jira_ssl_certificate_path = value
-                        if key == "jira_auth_mode":
-                            jira_auth_mode = value
-                        if key == "username":
-                            username = value
-
-            # end of get configuration
 
             # Stop here if we cannot find the submitted account
-            if not isfound:
+            if not self.account in accounts:
                 raise ValueError(
-                    "This acount has not been configured on this instance, cannot proceed!: %s",
-                    self,
+                    f"The account={self.account} does not exist, check your inputs and configuration.",
                 )
 
-            # else get the password
-            else:
-                credential_username = f"{str(self.account)}``splunk_cred_sep``1"
-                credential_realm = "__REST_CREDENTIAL__#TA-jira-service-desk-simple-addon#configs/conf-ta_service_desk_simple_addon_account"
-                for credential in storage_passwords:
-                    if (
-                        credential.content.get("username") == str(credential_username)
-                        and credential.content.get("realm") == str(credential_realm)
-                        and credential.content.get("clear_password").find("password")
-                        > 0
-                    ):
-                        password = json.loads(
-                            credential.content.get("clear_password")
-                        ).get("password")
-                        break
+            # get account configuration
+            account_conf = jira_get_account(
+                self._metadata.searchinfo.session_key,
+                self._metadata.searchinfo.splunkd_uri,
+                self.account,
+            )
+
+            jira_auth_mode = account_conf.get("auth_mode", "basic")
+            jira_url = account_conf.get("jira_url", None)
+            jira_ssl_certificate_path = account_conf.get("ssl_certificate_path", None)
+            jira_username = account_conf.get("username", None)
+            jira_password = account_conf.get("jira_password", None)
+            # end of get configuration
 
             # Build the authentication header for JIRA
             if str(jira_auth_mode) == "basic":
-                authorization = f"{username}:{password}"
+                authorization = f"{jira_username}:{jira_password}"
                 b64_auth = base64.b64encode(authorization.encode()).decode()
                 jira_headers = {
                     "Authorization": f"Basic {b64_auth}",
@@ -468,7 +341,7 @@ class GenerateTextCommand(GeneratingCommand):
                 }
             elif str(jira_auth_mode) == "pat":
                 jira_headers = {
-                    "Authorization": f"Bearer {str(password)}",
+                    "Authorization": f"Bearer {str(jira_password)}",
                     "Content-Type": "application/json",
                 }
 
@@ -478,142 +351,102 @@ class GenerateTextCommand(GeneratingCommand):
             else:
                 ssl_config = True
 
-            # test connectivity per account
-            if self.opt == 0:
+            # test connectivity systematically
+            connected, healthcheck_response = self.test_jira_connect(
+                self.account,
+                jira_headers,
+                jira_url,
+                ssl_config,
+                proxy_dict,
+                "myself",
+            )
 
-                try:
-                    response = self.test_jira_connect(
-                        self.account,
-                        jira_headers,
-                        jira_url,
-                        ssl_config,
-                        proxy_dict,
-                        "myself",
-                    )
-                    response_dict = {
-                        "account": self.account,
-                        "connectivy_test": response.get("status"),
-                        "response": response.get("response"),
-                        "status_code": response.get("status_code"),
-                    }
+            # return connection test results
+            if int(self.opt) == 0:
 
-                    yield {
-                        "_time": time.time(),
-                        "_raw": response_dict,
-                        "account": self.account,
-                        "connectivy_test": response.get("status"),
-                        "response": response.get("response"),
-                        "status_code": response.get("status_code"),
-                    }
-
-                except Exception as e:
-
-                    response_dict = {
-                        "account": self.account,
-                        "connectivy_test": "failure",
-                        "exception": str(e),
-                    }
-
-                    yield {
-                        "_time": time.time(),
-                        "_raw": response_dict,
-                        "account": self.account,
-                        "connectivy_test": "failure",
-                        "exception": str(e),
-                    }
+                yield {
+                    "_time": time.time(),
+                    "_raw": healthcheck_response,
+                    "account": self.account,
+                    "connectivy_test": healthcheck_response.get("status"),
+                    "response": healthcheck_response.get("response"),
+                    "status_code": healthcheck_response.get("status_code"),
+                    "result": healthcheck_response.get("result"),
+                }
 
             else:
-
-                # check connectivity and proceed
-                try:
-
-                    connectivity_check = self.test_jira_connect(
-                        self.account,
-                        jira_headers,
-                        jira_url,
-                        ssl_config,
-                        proxy_dict,
-                        "myself",
-                    )
-                    logging.debug(
-                        f'account="{self.account}", connectivity_check="{connectivity_check}"'
+                if not connected:
+                    raise Exception(
+                        f'JIRA connect verification failed for account="{self.account}" with exception="{healthcheck_response.get("response")}"'
                     )
 
-                    if self.opt == 1:
-                        for project in self.get_jira_info(
-                            jira_headers, jira_url, ssl_config, proxy_dict, "project"
-                        ):
-                            result_dict = {
-                                "_time": time.time(),
-                                "account": str(self.account),
-                                "key": project.get("key"),
-                                "key_projects": f'{project.get("key")} - {project.get("name")}',
-                            }
-                            yield {
-                                "_time": time.time(),
-                                "_raw": result_dict,
-                                "account": str(self.account),
-                                "key": project.get("key"),
-                                "key_projects": f'{project.get("key")} - {project.get("name")}',
-                            }
+                if int(self.opt) == 1 and connected:
+                    for project in self.get_jira_info(
+                        jira_headers, jira_url, ssl_config, proxy_dict, "project"
+                    ):
+                        result_dict = {
+                            "_time": time.time(),
+                            "account": str(self.account),
+                            "key": project.get("key"),
+                            "key_projects": f'{project.get("key")} - {project.get("name")}',
+                        }
+                        yield {
+                            "_time": time.time(),
+                            "_raw": result_dict,
+                            "account": str(self.account),
+                            "key": project.get("key"),
+                            "key_projects": f'{project.get("key")} - {project.get("name")}',
+                        }
 
-                    if self.opt == 2:
-                        for issue in self.get_jira_info(
-                            jira_headers, jira_url, ssl_config, proxy_dict, "issuetype"
-                        ):
-                            result_dict = {
-                                "_time": time.time(),
-                                "account": str(self.account),
-                                "issues": issue.get("name"),
-                            }
-                            yield {
-                                "_time": time.time(),
-                                "_raw": result_dict,
-                                "account": str(self.account),
-                                "issues": issue.get("name"),
-                            }
+                if int(self.opt) == 2 and connected:
+                    for issue in self.get_jira_info(
+                        jira_headers, jira_url, ssl_config, proxy_dict, "issuetype"
+                    ):
+                        result_dict = {
+                            "_time": time.time(),
+                            "account": str(self.account),
+                            "issues": issue.get("name"),
+                        }
+                        yield {
+                            "_time": time.time(),
+                            "_raw": result_dict,
+                            "account": str(self.account),
+                            "issues": issue.get("name"),
+                        }
 
-                    if self.opt == 3:
-                        for priority in self.get_jira_info(
-                            jira_headers, jira_url, ssl_config, proxy_dict, "priority"
-                        ):
-                            result_dict = {
-                                "_time": time.time(),
-                                "account": str(self.account),
-                                "priorities": priority.get("name"),
-                            }
-                            yield {
-                                "_time": time.time(),
-                                "_raw": result_dict,
-                                "account": str(self.account),
-                                "priorities": priority.get("name"),
-                            }
+                if int(self.opt) == 3 and connected:
+                    for priority in self.get_jira_info(
+                        jira_headers, jira_url, ssl_config, proxy_dict, "priority"
+                    ):
+                        result_dict = {
+                            "_time": time.time(),
+                            "account": str(self.account),
+                            "priorities": priority.get("name"),
+                        }
+                        yield {
+                            "_time": time.time(),
+                            "_raw": result_dict,
+                            "account": str(self.account),
+                            "priorities": priority.get("name"),
+                        }
 
-                    if self.opt == 4:
-                        for status in self.get_jira_info(
-                            jira_headers, jira_url, ssl_config, proxy_dict, "status"
-                        ):
-                            result_dict = {
-                                "_time": time.time(),
-                                "account": str(self.account),
-                                "status": status.get("name"),
-                                "statusCategory": status.get("statusCategory").get(
-                                    "name"
-                                ),
-                            }
-                            yield {
-                                "_time": time.time(),
-                                "_raw": result_dict,
-                                "account": str(self.account),
-                                "status": status.get("name"),
-                                "statusCategory": status.get("statusCategory").get(
-                                    "name"
-                                ),
-                            }
-
-                except Exception as e:
-                    logging.error(str(e))
-                    raise Exception(str(e))
+                if int(self.opt) == 4 and connected:
+                    for status in self.get_jira_info(
+                        jira_headers, jira_url, ssl_config, proxy_dict, "status"
+                    ):
+                        result_dict = {
+                            "_time": time.time(),
+                            "account": str(self.account),
+                            "status": status.get("name"),
+                            "statusCategory": status.get("statusCategory").get("name"),
+                        }
+                        yield {
+                            "_time": time.time(),
+                            "_raw": result_dict,
+                            "account": str(self.account),
+                            "status": status.get("name"),
+                            "statusCategory": status.get("statusCategory").get("name"),
+                        }
 
 
 dispatch(GenerateTextCommand, sys.argv, sys.stdin, sys.stdout, __name__)

@@ -458,6 +458,55 @@
                     "required": true
                 },
                 {
+                    "type": "singleSelect",
+                    "label": "Auto close issue:",
+                    "field": "jira_auto_close",
+                    "defaultValue": "enabled",
+                    "help": "This options allows you to automatically close the issue if a certain field key value pair is found in the search results., it requires the Auto close key value pair to be defined to be effective.",
+                    "required": true,
+                    "options": {
+                        "items": [
+                            {
+                                "value": "enabled",
+                                "label": "Enabled"
+                            },
+                            {
+                                "value": "disabled",
+                                "label": "Disabled"
+                            }
+                        ],
+                        "display": true
+                    }
+                },
+                {
+                    "type": "text",
+                    "label": "Auto close key value pair",
+                    "help": "Required for auto close to be effective, enter the key value pair in the format of key=value, example: alert_status=closed.",
+                    "field": "jira_auto_close_key_value_pair",
+                    "required": false
+                },
+                {
+                    "type": "text",
+                    "label": "Auto close issue number field name",
+                    "help": "To perform the auto close, the JIRA alert actions needs to be able to do the link between the instance execution and the issue number. If using the dedup option, this link is made automatically, otherwise the field name must be defined here. If the modular alert cannot do the link with the issue number, auto closure will be skipped.",
+                    "field": "jira_auto_close_issue_number_field_name",
+                    "required": false
+                },
+                {
+                    "type": "text",
+                    "label": "Auto close status transition value",
+                    "help": "The status to be transitioned to when the auto close is triggered, defaults is Done.",
+                    "field": "jira_auto_close_status_transition_value",
+                    "required": false
+                },
+                {
+                    "type": "text",
+                    "label": "Auto close status transition comment",
+                    "help": "The comment added to the issue when the auto close is triggered, you can use tokens here. (ex: $result.message$)",
+                    "field": "jira_auto_close_status_transition_comment",
+                    "required": false
+                },
+                {
                     "type": "text",
                     "label": "Assignee",
                     "help": "(Optional) Issue assignee.",

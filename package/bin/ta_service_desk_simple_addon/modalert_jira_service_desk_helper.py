@@ -735,6 +735,24 @@ def query_url(
     # remove the content-type header
     jira_headers_attachment.pop("Content-Type", None)
 
+    #
+    # Auto close capabilities
+    #
+    jira_auto_close = helper.get_param("jira_auto_close")
+    jira_auto_close_key_value_pair = helper.get_param("jira_auto_close_key_value_pair")
+    jira_auto_close_status_transition_value = helper.get_param(
+        "jira_auto_close_status_transition_value"
+    )
+    jira_auto_close_status_transition_comment = helper.get_param(
+        "jira_auto_close_status_transition_comment"
+    )
+    jira_auto_close_issue_number_field_name = helper.get_param(
+        "jira_auto_close_issue_number_field_name"
+    )
+    helper.log_info(
+        f"MARKER auto-close parameters: jira_auto_close={jira_auto_close}, jira_auto_close_key_value_pair={jira_auto_close_key_value_pair}, jira_auto_close_status_transition_value={jira_auto_close_status_transition_value}, jira_auto_close_issue_number_field_name={jira_auto_close_issue_number_field_name}"
+    )
+
     # Loop within events and proceed
     events = helper.get_events()
     for event in events:
@@ -1017,6 +1035,22 @@ def query_url(
                         "therefore, a new comment will be added to this issue."
                     )
 
+                    # Check for auto-closure
+                    perform_auto_closure(
+                        helper,
+                        jira_url,
+                        jira_headers,
+                        ssl_config,
+                        proxy_dict,
+                        event,
+                        jira_auto_close,
+                        jira_auto_close_key_value_pair,
+                        jira_auto_close_status_transition_value,
+                        jira_auto_close_issue_number_field_name,
+                        jira_auto_close_status_transition_comment,
+                        jira_backlog_key,
+                    )
+
                     # generate a new jira_url, and the comment
                     jira_dedup_comment_issue = True
                     jira_url = jira_url + "/" + str(jira_backlog_key) + "/comment"
@@ -1254,33 +1288,17 @@ def query_url(
                     jira_creation_response = response.text
 
                     # Update the backlog collection entry
-                    record_url = (
-                        f"{splunkd_uri}/servicesNS/nobody/"
-                        "TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_issues_backlog/"
-                        + jira_backlog_kvkey
-                    )
-                    headers = {
-                        "Authorization": "Splunk %s" % session_key,
-                        "Content-Type": "application/json",
+                    record = {
+                        "account": str(account),
+                        "jira_sha256": jira_backlog_sha256,
+                        "ctime": jira_backlog_ctime,
+                        "mtime": time.time(),
+                        "status": "updated",
+                        "jira_id": jira_backlog_id,
+                        "jira_key": jira_backlog_key,
+                        "jira_self": jira_backlog_self,
                     }
-
-                    record = (
-                        '{"account": "'
-                        + str(account)
-                        + '", "jira_sha256": "'
-                        + jira_backlog_sha256
-                        + '", "ctime": "'
-                        + jira_backlog_ctime
-                        + '", "mtime": "'
-                        + str(time.time())
-                        + '", "status": "updated", "jira_id": "'
-                        + jira_backlog_id
-                        + '", "jira_key": "'
-                        + jira_backlog_key
-                        + '", "jira_self": "'
-                        + jira_backlog_self
-                        + '"}'
-                    )
+                    record = json.dumps(record).encode("utf-8")
                     helper.log_debug(f"record={record}")
 
                     response = requests.post(
@@ -1347,6 +1365,22 @@ def query_url(
                         f"jira_creation_response_json:={jira_creation_response_json}"
                     )
 
+                    # Check for auto-closure on the newly created issue
+                    perform_auto_closure(
+                        helper,
+                        jira_url,
+                        jira_headers,
+                        ssl_config,
+                        proxy_dict,
+                        event,
+                        jira_auto_close,
+                        jira_auto_close_key_value_pair,
+                        jira_auto_close_status_transition_value,
+                        jira_auto_close_issue_number_field_name,
+                        jira_auto_close_status_transition_comment,
+                        jira_created_key,
+                    )
+
                     record_url = (
                         f"{splunkd_uri}/servicesNS/nobody/"
                         "TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_issues_backlog"
@@ -1357,48 +1391,31 @@ def query_url(
                     }
 
                     if jira_dedup_sha256_found:
-                        record = (
-                            '{"account": "'
-                            + str(account)
-                            + '", "jira_sha256": "'
-                            + jira_sha256sum
-                            + '", "ctime": "'
-                            + str(time.time())
-                            + '", "mtime": "'
-                            + str(time.time())
-                            + '", "status": "created", "jira_id": "'
-                            + jira_created_id
-                            + '", "jira_key": "'
-                            + jira_created_key
-                            + '", "jira_self": "'
-                            + jira_created_self
-                            + '"}'
-                        )
-                        # Force encode UTF8
-                        record = record.encode("utf-8")
+                        record = {
+                            "account": str(account),
+                            "jira_sha256": jira_sha256sum,
+                            "ctime": time.time(),
+                            "mtime": time.time(),
+                            "status": "created",
+                            "jira_id": jira_created_id,
+                            "jira_key": jira_created_key,
+                            "jira_self": jira_created_self,
+                        }
+                        record = json.dumps(record).encode("utf-8")
                         helper.log_debug(f"record={record}")
                     else:
-                        record = (
-                            '{"account": "'
-                            + str(account)
-                            + '", "_key": "'
-                            + jira_sha256sum
-                            + '", "jira_sha256": "'
-                            + jira_sha256sum
-                            + '", "ctime": "'
-                            + str(time.time())
-                            + '", "mtime": "'
-                            + str(time.time())
-                            + '", "status": "created", "jira_id": "'
-                            + jira_created_id
-                            + '", "jira_key": "'
-                            + jira_created_key
-                            + '", "jira_self": "'
-                            + jira_created_self
-                            + '"}'
-                        )
-                        # Force encode UTF8
-                        record = record.encode("utf-8")
+                        record = {
+                            "account": str(account),
+                            "_key": jira_sha256sum,
+                            "jira_sha256": jira_sha256sum,
+                            "ctime": time.time(),
+                            "mtime": time.time(),
+                            "status": "created",
+                            "jira_id": jira_created_id,
+                            "jira_key": jira_created_key,
+                            "jira_self": jira_created_self,
+                        }
+                        record = json.dumps(record).encode("utf-8")
                         helper.log_debug(f"record={record}")
 
                     response = requests.post(
@@ -1451,3 +1468,153 @@ def query_url(
 
                 # Return the JIRA response as final word
                 return jira_creation_response
+
+
+def perform_auto_closure(
+    helper,
+    jira_url,
+    jira_headers,
+    ssl_config,
+    proxy_dict,
+    event,
+    jira_auto_close,
+    jira_auto_close_key_value_pair,
+    jira_auto_close_status_transition_value,
+    jira_auto_close_issue_number_field_name,
+    jira_auto_close_status_transition_comment,
+    jira_backlog_key=None,
+):
+    """
+    Perform auto-closure of a Jira issue based on the provided parameters and event data.
+
+    Args:
+        helper: The helper object for logging and HTTP requests
+        jira_url: The base Jira URL
+        jira_headers: Headers for Jira API requests
+        ssl_config: SSL configuration
+        proxy_dict: Proxy configuration
+        event: The event data containing field values
+        jira_auto_close: Whether auto-closure is enabled
+        jira_auto_close_key_value_pair: The key-value pair to check for auto-closure
+        jira_auto_close_status_transition_value: The target status for transition
+        jira_auto_close_issue_number_field_name: The field name containing the issue number
+        jira_auto_close_status_transition_comment: The comment to add when performing the transition
+        jira_backlog_key: The Jira issue key from deduplication (if available)
+    """
+    # Skip if auto-closure is not enabled
+    if jira_auto_close != "enabled":
+        helper.log_debug("Auto-closure is not enabled, skipping")
+        return
+
+    # Skip if key-value pair is not provided
+    if not jira_auto_close_key_value_pair:
+        helper.log_debug("Auto-closure key-value pair not provided, skipping")
+        return
+
+    # Parse the key-value pair
+    try:
+        key, value = jira_auto_close_key_value_pair.split("=")
+    except ValueError:
+        helper.log_error(
+            f"Invalid auto-closure key-value pair format: {jira_auto_close_key_value_pair}"
+        )
+        return
+
+    # Check if the event contains the required key-value pair
+    if key not in event or event[key] != value:
+        helper.log_debug(
+            f"Event does not contain required key-value pair: {key}={value}"
+        )
+        return
+
+    # Get the issue key/ID
+    issue_key = None
+    if jira_backlog_key:  # If we have a backlog key from dedup
+        issue_key = jira_backlog_key
+    elif (
+        jira_auto_close_issue_number_field_name
+        and jira_auto_close_issue_number_field_name in event
+    ):
+        issue_key = event[jira_auto_close_issue_number_field_name]
+
+    if not issue_key:
+        helper.log_error("Could not determine Jira issue key for auto-closure")
+        return
+
+    # Step 1: Get available transitions
+    transitions_url = f"{jira_url}/{issue_key}/transitions"
+    try:
+        response = helper.send_http_request(
+            transitions_url,
+            "GET",
+            parameters=None,
+            headers=jira_headers,
+            cookies=None,
+            verify=ssl_config,
+            cert=None,
+            timeout=120,
+            use_proxy=proxy_dict,
+        )
+
+        if response.status_code not in (200, 201, 204):
+            helper.log_error(
+                f"Failed to get transitions for issue {issue_key}: {response.text}"
+            )
+            return
+
+        transitions_data = json.loads(response.text)
+        target_transition = None
+
+        # Find the transition matching the target status
+        for transition in transitions_data.get("transitions", []):
+            if (
+                transition.get("to", {}).get("name")
+                == jira_auto_close_status_transition_value
+            ):
+                target_transition = transition
+                break
+
+        if not target_transition:
+            helper.log_error(
+                f"Could not find transition to status: {jira_auto_close_status_transition_value}"
+            )
+            return
+
+        # Step 2: Perform the transition
+        transition_url = f"{jira_url}/{issue_key}/transitions"
+
+        # Use custom comment if provided, otherwise use default
+        comment = (
+            jira_auto_close_status_transition_comment
+            if jira_auto_close_status_transition_comment
+            else f"Issue status automatically transitioned to {jira_auto_close_status_transition_value} by Splunk alert action."
+        )
+
+        transition_data = {
+            "transition": {"id": target_transition["id"]},
+            "update": {"comment": [{"add": {"body": comment}}]},
+        }
+
+        response = helper.send_http_request(
+            transition_url,
+            "POST",
+            parameters=None,
+            payload=transition_data,
+            headers=jira_headers,
+            cookies=None,
+            verify=ssl_config,
+            cert=None,
+            timeout=120,
+            use_proxy=proxy_dict,
+        )
+
+        if response.status_code not in (200, 201, 204):
+            helper.log_error(f"Failed to transition issue {issue_key}: {response.text}")
+            return
+
+        helper.log_info(
+            f"Successfully transitioned issue {issue_key} to {jira_auto_close_status_transition_value}"
+        )
+
+    except Exception as e:
+        helper.log_error(f"Error during auto-closure process: {str(e)}")

@@ -152,6 +152,98 @@
     </div>
   </div>
   <div class="control-group">
+    <label class="control-label" for="jira_service_desk_jira_auto_close"
+      >Auto close issue: <span class="required">*</span>
+    </label>
+    <div class="controls">
+      <select
+        name="action.jira_service_desk.param.jira_auto_close"
+        id="jira_service_desk_jira_auto_close"
+      >
+        <option value="enabled">Enabled</option>
+        <option value="disabled">Disabled</option>
+      </select>
+      <span class="help-block">
+        This options allows you to automatically close the issue if a certain
+        field key value pair is found in the search results., it requires the
+        Auto close key value pair to be defined to be effective.
+      </span>
+    </div>
+  </div>
+  <div class="control-group">
+    <label
+      class="control-label"
+      for="jira_service_desk_jira_auto_close_key_value_pair"
+      >Auto close key value pair
+    </label>
+    <div class="controls">
+      <input
+        type="text"
+        name="action.jira_service_desk.param.jira_auto_close_key_value_pair"
+        id="jira_service_desk_jira_auto_close_key_value_pair"
+      />
+      <span class="help-block">
+        Required for auto close to be effective, enter the key value pair in the
+        format of key=value, example: alert_status=closed.
+      </span>
+    </div>
+  </div>
+  <div class="control-group">
+    <label
+      class="control-label"
+      for="jira_service_desk_jira_auto_close_issue_number_field_name"
+      >Auto close issue number field name
+    </label>
+    <div class="controls">
+      <input
+        type="text"
+        name="action.jira_service_desk.param.jira_auto_close_issue_number_field_name"
+        id="jira_service_desk_jira_auto_close_issue_number_field_name"
+      />
+      <span class="help-block">
+        To perform the auto close, the JIRA alert actions needs to be able to do
+        the link between the instance execution and the issue number. If using
+        the dedup option, this link is made automatically, otherwise the field
+        name must be defined here. If the modular alert cannot do the link with
+        the issue number, auto closure will be skipped.
+      </span>
+    </div>
+  </div>
+  <div class="control-group">
+    <label
+      class="control-label"
+      for="jira_service_desk_jira_auto_close_status_transition_value"
+      >Auto close status transition value
+    </label>
+    <div class="controls">
+      <input
+        type="text"
+        name="action.jira_service_desk.param.jira_auto_close_status_transition_value"
+        id="jira_service_desk_jira_auto_close_status_transition_value"
+      />
+      <span class="help-block">
+        The status to be transitioned to when the auto close is triggered,
+        defaults is Done.
+      </span>
+    </div>
+    <div class="control-group">
+      <label
+        class="control-label"
+        for="jira_service_desk_jira_auto_close_status_transition_comment"
+        >Auto close status transition comment
+      </label>
+      <div class="controls">
+        <input
+          type="text"
+          name="action.jira_service_desk.param.jira_auto_close_status_transition_comment"
+          id="jira_service_desk_jira_auto_close_status_transition_comment"
+        />
+        <span class="help-block">
+          The comment added to the issue when the auto close is triggered.
+        </span>
+      </div>    
+  </div>
+  <div class="control-group">
     <label class="control-label" for="jira_service_desk_jira_assignee"
       >Assignee
     </label>

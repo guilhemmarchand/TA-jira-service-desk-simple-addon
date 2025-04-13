@@ -47,12 +47,12 @@ from splunklib.searchcommands import (
 
 # Import JIRA libs
 from ta_jira_libs import (
-    test_jira_connect,
     jira_get_conf,
     jira_get_accounts,
     jira_get_account,
     jira_build_headers,
     jira_build_ssl_config,
+    jira_test_connectivity,
 )
 
 
@@ -109,17 +109,24 @@ class GenerateTextCommand(GeneratingCommand):
             ssl_config = jira_build_ssl_config(jira_ssl_certificate_path)
 
             # ensures connectivity and proceed
+            # test connectivity systematically
+            connected = False
             try:
-                connectivity_check = test_jira_connect(
-                    account, jira_headers, jira_url, ssl_config, proxy_dict
+                healthcheck_response = jira_test_connectivity(
+                    self._metadata.searchinfo.session_key,
+                    self._metadata.searchinfo.splunkd_uri,
+                    account,
                 )
-                logging.debug(
-                    f'account="{account}", connectivity_check="{connectivity_check}"'
+                connected = True
+            except Exception as e:
+                raise Exception(
+                    f'JIRA connect verification failed for account="{account}" with exception="{str(e)}"'
                 )
 
-            except Exception as e:
-                logging.error(str(e))
-                raise Exception(str(e))
+            if not connected:
+                raise Exception(
+                    f'JIRA connect verification failed for account="{account}" with exception="{healthcheck_response.get("response")}"'
+                )
 
             # Get the list of projects
             projects_list = []

@@ -47,7 +47,6 @@ from splunklib.searchcommands import (
 
 # Import JIRA libs
 from ta_jira_libs import (
-    test_jira_connect,
     jira_get_conf,
     jira_get_accounts,
     jira_get_account,

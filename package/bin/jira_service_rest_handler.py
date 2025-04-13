@@ -552,6 +552,11 @@ class Jira_v1(jira_rest_handler.RESTHandler):
             }
 
         except Exception as e:
+            try:
+                response_status_code = response.status_code
+            except Exception as e:
+                response_status_code = 500
+
             logging.error(
                 f'JIRA connection validation failed with exception="{str(e)}"'
             )
@@ -559,10 +564,10 @@ class Jira_v1(jira_rest_handler.RESTHandler):
                 "payload": {
                     "status": "failure",
                     "response": str(e),
-                    "status_code": 500,
+                    "status_code": response_status_code,
                     "result": f"The connection to the JIRA target {jira_url} failed.",
                 },
-                "status": 500,
+                "status": response_status_code,
             }
 
     # get account details with least privileges approach

@@ -982,16 +982,12 @@ def query_url(
 
                 # Try http get, catch exceptions and incorrect http return codes
                 try:
-                    response = helper.send_http_request(
+                    response = requests.get(
                         jira_url_status,
-                        "GET",
-                        parameters=None,
-                        headers=jira_headers,
-                        cookies=None,
+                        headers=headers,
                         verify=ssl_config,
-                        cert=None,
+                        proxies=proxy_dict,
                         timeout=120,
-                        use_proxy=proxy_dict,
                     )
                     helper.log_debug(f"response status_code:={response.status_code}")
 
@@ -1172,17 +1168,13 @@ def query_url(
 
         else:
             try:
-                response = helper.send_http_request(
+                response = requests.post(
                     jira_url,
-                    "POST",
-                    parameters=None,
-                    payload=data,
+                    json=data,
                     headers=jira_headers,
-                    cookies=None,
                     verify=ssl_config,
-                    cert=None,
+                    proxies=proxy_dict,
                     timeout=120,
-                    use_proxy=proxy_dict,
                 )
                 helper.log_debug(f"response status_code:={response.status_code}")
 
@@ -1544,16 +1536,12 @@ def perform_auto_closure(
     # Step 1: Get available transitions
     transitions_url = f"{jira_url}/{issue_key}/transitions"
     try:
-        response = helper.send_http_request(
+        response = requests.get(
             transitions_url,
-            "GET",
-            parameters=None,
             headers=jira_headers,
-            cookies=None,
             verify=ssl_config,
-            cert=None,
+            proxies=proxy_dict,
             timeout=120,
-            use_proxy=proxy_dict,
         )
 
         if response.status_code not in (200, 201, 204):
@@ -1595,17 +1583,13 @@ def perform_auto_closure(
             "update": {"comment": [{"add": {"body": comment}}]},
         }
 
-        response = helper.send_http_request(
+        response = requests.post(
             transition_url,
-            "POST",
-            parameters=None,
-            payload=transition_data,
+            json=transition_data,
             headers=jira_headers,
-            cookies=None,
             verify=ssl_config,
-            cert=None,
+            proxies=proxy_dict,
             timeout=120,
-            use_proxy=proxy_dict,
         )
 
         if response.status_code not in (200, 201, 204):

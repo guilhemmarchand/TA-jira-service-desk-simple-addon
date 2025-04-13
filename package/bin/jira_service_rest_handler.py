@@ -1,4 +1,5 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
+#!/usr/bin/env python
+# coding=utf-8
 
 __name__ = "jira_rest_handler.py"
 __author__ = "Guilhem Marchand"
@@ -9,19 +10,10 @@ import logging
 import os
 import sys
 import time
-from urllib.parse import urlencode
+import re
 import urllib3
 import base64
 import requests
-
-# Log level mapping
-LOG_LEVEL_MAP = {
-    "DEBUG": logging.DEBUG,
-    "INFO": logging.INFO,
-    "WARNING": logging.WARNING,
-    "ERROR": logging.ERROR,
-    "CRITICAL": logging.CRITICAL,
-}
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -726,3 +718,79 @@ class Jira_v1(jira_rest_handler.RESTHandler):
                 account_data["jira_password"] = jira_password
 
                 return {"payload": account_data, "status": 200}
+
+    # Get the bearer token
+    def get_get_bearer_token(self, request_info, **kwargs):
+        describe = False
+
+        # Retrieve from data
+        try:
+            resp_dict = json.loads(str(request_info.raw_args["payload"]))
+        except Exception as e:
+            resp_dict = None
+
+        if resp_dict is not None:
+            try:
+                describe = resp_dict["describe"]
+                if describe in ("true", "True"):
+                    describe = True
+            except Exception as e:
+                describe = False
+        else:
+            # body is not required
+            describe = False
+
+        # if describe is requested, show the usage
+        if describe:
+            response = {
+                "describe": "This endpoint returns the bearer token configured in the Jira application, it requires a GET call:",
+                "resource_desc": "Retrieve the bearer token",
+                "options": [],
+            }
+            return {"payload": response, "status": 200}
+
+        # Get service
+        service = client.connect(
+            owner="nobody",
+            app="TA-jira-service-desk-simple-addon",
+            port=request_info.server_rest_port,
+            token=request_info.system_authtoken,
+        )
+
+        # set loglevel
+        loglevel = "INFO"
+        conf_file = "ta_service_desk_simple_addon_settings"
+        confs = service.confs[str(conf_file)]
+        for stanza in confs:
+            if stanza.name == "logging":
+                for stanzakey, stanzavalue in stanza.content.items():
+                    if stanzakey == "loglevel":
+                        loglevel = stanzavalue
+        log.setLevel(loglevel)
+
+        # Splunk credentials store
+        storage_passwords = service.storage_passwords
+
+        # init bearer token
+        bearer_token = None
+
+        # The bearer token is stored in the credential store
+        # However, likely due to the number of chars, the credential.content.get SDK command is unable to return its value in a single operation
+        # As a workaround, we concatenate the different values return to form a complete object, finally we use a regex approach to extract its clear text value
+        credential_realm = "__REST_CREDENTIAL__#TA-jira-service-desk-simple-addon#configs/conf-ta_service_desk_simple_addon_settings"
+        bearer_token_rawvalue = ""
+
+        for credential in storage_passwords:
+            if credential.content.get("realm") == str(credential_realm):
+                bearer_token_rawvalue = (
+                    f"{bearer_token_rawvalue}{str(credential.content.clear_password)}"
+                )
+
+        # extract a clean json object
+        bearer_token_rawvalue_match = re.search(
+            '\{"bearer_token":\s*"(.*)"\}', bearer_token_rawvalue
+        )
+        if bearer_token_rawvalue_match:
+            bearer_token = bearer_token_rawvalue_match.group(1)
+
+        return {"payload": {"bearer_token": bearer_token}, "status": 200}

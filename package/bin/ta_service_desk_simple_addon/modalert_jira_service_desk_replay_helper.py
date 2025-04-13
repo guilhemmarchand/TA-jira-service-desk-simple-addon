@@ -1,6 +1,29 @@
 # encoding = utf-8
 
-from requests.api import head
+# Standard library imports
+import json
+import os
+import sys
+import time
+
+# Third-party imports
+import requests
+
+splunkhome = os.environ["SPLUNK_HOME"]
+sys.path.append(
+    os.path.join(splunkhome, "etc", "apps", "TA-jira-service-desk-simple-addon", "lib")
+)
+
+# import least privileges access libs
+from ta_jira_libs import (
+    jira_get_conf,
+    jira_get_accounts,
+    jira_get_account,
+    jira_test_connectivity,
+    jira_build_headers,
+    jira_build_ssl_config,
+    jira_get_bearer_token,
+)
 
 
 def process_event(helper, *args, **kwargs):
@@ -16,72 +39,56 @@ def process_event(helper, *args, **kwargs):
     helper.log_debug("Get session_key.")
     session_key = helper.session_key
 
-    # configuration manager
-    import solnlib
+    # server_uri
+    server_uri = helper.settings["server_uri"]
 
-    app = "TA-jira-service-desk-simple-addon"
-    account_cfm = solnlib.conf_manager.ConfManager(
+    # get conf
+    jira_conf = jira_get_conf(session_key, server_uri)
+
+    # get proxy configuration
+    proxy_conf = jira_conf["proxy"]
+    proxy_dict = proxy_conf.get("proxy_dict", {})
+
+    # get all acounts
+    accounts_dict = jira_get_accounts(session_key, server_uri)
+    accounts = accounts_dict.get("accounts", [])
+
+    # account configuration
+
+    # Stop here if we cannot find the submitted account
+    if not account in accounts:
+        raise ValueError(
+            f"The account={account} does not exist, check your inputs and configuration.",
+        )
+
+    # get account configuration
+    account_conf = jira_get_account(
         session_key,
-        app,
-        realm=f"__REST_CREDENTIAL__#{app}#configs/conf-ta_service_desk_simple_addon_account",
+        server_uri,
+        account,
     )
-    splunk_ta_account_conf = account_cfm.get_conf(
-        "ta_service_desk_simple_addon_account"
-    ).get_all()
 
-    # account details
-    account_details = splunk_ta_account_conf[account]
+    jira_auth_mode = account_conf.get("auth_mode", "basic")
+    jira_url = account_conf.get("jira_url", None)
+    jira_ssl_certificate_path = account_conf.get("ssl_certificate_path", None)
+    jira_username = account_conf.get("username", None)
+    jira_password = account_conf.get("jira_password", None)
+    # end of get configuration
 
-    # Get authentication type
-    auth_type = account_details.get("auth_type", 0)
-    helper.log_debug(f"auth_type={auth_type}")
+    # Build the authentication header for JIRA
+    jira_headers = jira_build_headers(jira_auth_mode, jira_username, jira_password)
 
-    # Get username
-    username = account_details.get("username", 0)
-    helper.log_debug(f"username={username}")
-    # by convention
-    jira_username = username
+    # Splunk Cloud vetting notes: SSL verification is always true or the path to the CA bundle for the SSL certificate to be verified
+    ssl_config = jira_build_ssl_config(jira_ssl_certificate_path)
 
-    # Get passowrd
-    password = account_details.get("password", 0)
-    # helper.log_info(f"password={password}")
-    # by convention
-    jira_password = password
-
-    # Get authentication mode
-    jira_auth_mode = account_details.get("jira_auth_mode", 0)
-    helper.log_debug(f"jira_auth_mode={jira_auth_mode}")
-
-    # Get jira_url
-    jira_url = account_details.get("jira_url", 0)
-    helper.log_debug(f"jira_url={jira_url}")
-
-    # Get jira_ssl_certificate_validation
-    jira_ssl_certificate_validation = int(
-        account_details.get("jira_ssl_certificate_validation", 0)
-    )
-    helper.log_debug(
-        f"jira_ssl_certificate_validation={jira_ssl_certificate_validation}"
-    )
-    ssl_certificate_validation = True
-    if jira_ssl_certificate_validation == 0:
-        ssl_certificate_validation = False
-    helper.log_debug(f"ssl_certificate_validation={ssl_certificate_validation}")
-
-    # Get jira_ssl_certificate_path
-    # SSL certificate path - customers using an internal PKI can use this option to verify the certificate bundle
-    # See: https://docs.python-requests.org/en/stable/user/advanced/#ssl-cert-verification
-    # If it is set, and the SSL verification is enabled, and the file exists, the file path replaces the boolean in the requests calls
-    jira_ssl_certificate_path = account_details.get("jira_ssl_certificate_path", 0)
-    helper.log_debug(f"jira_ssl_certificate_path={jira_ssl_certificate_path}")
-    if jira_ssl_certificate_path not in ["", "None", None]:
-        helper.log_debug(f"jira_ssl_certificate_path={jira_ssl_certificate_path}")
-        # replace the ssl_certificate_validation boolean by the SSL certiticate path if the file exists
-        import os
-
-        if ssl_certificate_validation and jira_ssl_certificate_path:
-            if os.path.isfile(jira_ssl_certificate_path):
-                ssl_certificate_validation = str(jira_ssl_certificate_path)
+    # test connectivity systematically
+    try:
+        jira_test_connectivity(session_key, server_uri, account)
+    except Exception as e:
+        helper.log_error(
+            f"Failed to test connectivity to Jira, account={account}, exception={str(e)}"
+        )
+        raise e
 
     # call the query URL REST Endpoint and pass the url and API token
     content = query_url(
@@ -91,59 +98,10 @@ def process_event(helper, *args, **kwargs):
         jira_url,
         jira_username,
         jira_password,
-        ssl_certificate_validation,
+        ssl_config,
     )
 
     return 0
-
-
-def get_bearer_token(helper, session_key, **kwargs):
-
-    import splunk
-    import splunk.entity
-    import splunklib.client as client
-    import re
-
-    # Get splunkd port
-    entity = splunk.entity.getEntity(
-        "/server",
-        "settings",
-        namespace="TA-jira-service-desk-simple-addon",
-        sessionKey=session_key,
-        owner="-",
-    )
-    splunkd_port = entity["mgmtHostPort"]
-
-    service = client.connect(
-        owner="nobody",
-        app="TA-jira-service-desk-simple-addon",
-        port=splunkd_port,
-        token=session_key,
-    )
-
-    # Cred store
-    storage_passwords = service.storage_passwords
-
-    # The bearer token is stored in the credential store
-    # However, likely due to the number of chars, the credential.content.get SDK command is unable to return its value in a single operation
-    # As a workaround, we concatenate the different values return to form a complete object, finally we use a regex approach to extract its clear text value
-    credential_realm = "__REST_CREDENTIAL__#TA-jira-service-desk-simple-addon#configs/conf-ta_service_desk_simple_addon_settings"
-    bearer_token_rawvalue = ""
-
-    for credential in storage_passwords:
-        if credential.content.get("realm") == str(credential_realm):
-            bearer_token_rawvalue = (
-                f"{bearer_token_rawvalue}{str(credential.content.clear_password)}"
-            )
-
-    # extract a clean json object
-    bearer_token_rawvalue_match = re.search(
-        '\{"bearer_token":\s*"(.*)"\}', bearer_token_rawvalue
-    )
-    if bearer_token_rawvalue_match:
-        bearer_token = bearer_token_rawvalue_match.group(1)
-
-    return bearer_token
 
 
 def query_url(
@@ -153,50 +111,28 @@ def query_url(
     jira_url,
     jira_username,
     jira_password,
-    ssl_certificate_validation,
+    ssl_config,
 ):
-
-    import requests
-    import json
-    import time
-    import base64
-
-    import splunk.entity
-    import splunk.Intersplunk
 
     # Retrieve the session_key
     helper.log_debug("Get session_key.")
     session_key = helper.session_key
 
-    # Get splunkd port
-    entity = splunk.entity.getEntity(
-        "/server",
-        "settings",
-        namespace="TA-jira-service-desk-simple-addon",
-        sessionKey=session_key,
-        owner="-",
-    )
-    mydict = entity
-    splunkd_port = mydict["mgmtHostPort"]
-    helper.log_debug(f"splunkd_port={splunkd_port}")
+    # server_uri
+    server_uri = helper.settings["server_uri"]
+
+    # get conf
+    jira_conf = jira_get_conf(session_key, server_uri)
+
+    # get proxy configuration
+    proxy_conf = jira_conf["proxy"]
+    proxy_dict = proxy_conf.get("proxy_dict", {})
 
     # For Splunk Cloud vetting, the URL must start with https://
     if not jira_url.startswith("https://"):
         jira_url = f"https://{jira_url}/rest/api/latest/issue"
     else:
         jira_url = f"{jira_url}/rest/api/latest/issue"
-
-    # get proxy configuration
-    proxy_config = helper.get_proxy()
-    proxy_url = proxy_config.get("proxy_url")
-    helper.log_debug(f"proxy_url={proxy_url}")
-
-    if proxy_url is not None:
-        opt_use_proxy = True
-        helper.log_debug("use_proxy set to True")
-    else:
-        opt_use_proxy = False
-        helper.log_debug("use_proxy set to False")
 
     # Retrieve parameters
     ticket_uuid = helper.get_param("ticket_uuid")
@@ -233,28 +169,7 @@ def query_url(
     helper.log_debug(f"json data for final rest call:={ticket_data}")
 
     # Build the authentication header for JIRA
-    if str(jira_auth_mode) == "basic":
-        authorization = f"{jira_username}:{jira_password}"
-        b64_auth = base64.b64encode(authorization.encode()).decode()
-        jira_headers = {
-            "Authorization": f"Basic {b64_auth}",
-            "Content-Type": "application/json",
-        }
-        # required when uploading attachments
-        jira_headers_attachment = {
-            "Authorization": f"Basic {b64_auth}",
-            "X-Atlassian-Token": "no-check",
-        }
-    elif str(jira_auth_mode) == "pat":
-        jira_headers = {
-            "Authorization": f"Bearer {str(jira_password)}",
-            "Content-Type": "application/json",
-        }
-        # required when uploading attachments
-        jira_headers_attachment = {
-            "Authorization": f"Bearer {str(jira_password)}",
-            "X-Atlassian-Token": "no-check",
-        }
+    jira_headers = jira_build_headers(jira_auth_mode, jira_username, jira_password)
 
     helper.log_debug(f"ticket_no_attempts={ticket_no_attempts}")
     helper.log_debug(f"ticket_max_attempts={ticket_max_attempts}")
@@ -266,15 +181,11 @@ def query_url(
     helper.log_debug(f"kvstore_instance={kvstore_instance}")
 
     # Get the bearer_token if required (store in the credential store)
+    bearer_token = None
     if kvstore_instance and str(kvstore_instance) != "null":
-        bearer_token = get_bearer_token(helper, session_key)
-        # helper.log_debug(f"bearer_token={bearer_token}")
-    else:
-        bearer_token = "null"
+        bearer_token = jira_get_bearer_token(session_key, server_uri)
 
-    if (kvstore_instance and str(kvstore_instance) != "null") and (
-        bearer_token and bearer_token != "null"
-    ):
+    if (kvstore_instance and str(kvstore_instance) != "null") and bearer_token:
         if not kvstore_instance.startswith("https://"):
             kvstore_instance = f"https://{str(kvstore_instance)}"
         splunk_headers = {
@@ -282,7 +193,7 @@ def query_url(
             "Content-Type": "application/json",
         }
     else:
-        kvstore_instance = f"https://localhost:{str(splunkd_port)}"
+        kvstore_instance = server_uri
         splunk_headers = {
             "Authorization": f"Splunk {session_key}",
             "Content-Type": "application/json",
@@ -320,17 +231,13 @@ def query_url(
         # Try http post, catch exceptions and incorrect http return codes
         try:
 
-            response = helper.send_http_request(
+            response = requests.post(
                 jira_url,
-                "POST",
-                parameters=None,
-                payload=ticket_data,
+                data=ticket_data,
                 headers=jira_headers,
-                cookies=None,
-                verify=ssl_certificate_validation,
-                cert=None,
+                verify=ssl_config if ssl_config else True,
+                proxies=proxy_dict,
                 timeout=120,
-                use_proxy=opt_use_proxy,
             )
             helper.log_debug(f"response status_code:={response.status_code}")
 

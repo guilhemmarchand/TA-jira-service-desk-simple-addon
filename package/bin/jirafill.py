@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # coding=utf-8
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import sys
 import os
 import time
@@ -10,8 +8,6 @@ import requests
 import urllib3
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-import json
-import base64
 import logging
 from logging.handlers import RotatingFileHandler
 
@@ -50,7 +46,14 @@ from splunklib.searchcommands import (
 )
 
 # import least privileges access libs
-from ta_jira_libs import jira_get_conf, jira_get_accounts, jira_get_account
+from ta_jira_libs import (
+    jira_get_conf,
+    jira_get_accounts,
+    jira_get_account,
+    jira_build_headers,
+    jira_build_ssl_config,
+    jira_test_connectivity,
+)
 
 
 @Configuration(distributed=False)
@@ -80,41 +83,6 @@ class GenerateTextCommand(GeneratingCommand):
             return f"https://{url}/rest/api/latest/{endpoint}"
         else:
             return f"{url}/rest/api/latest/{endpoint}"
-
-    # Splunk Cloud vetting notes: SSL verification is always true or the path to the CA bundle for the SSL certificate to be verified
-    def test_jira_connect(
-        self, account, jira_headers, url, ssl_config, proxy_dict, endpoint
-    ):
-
-        try:
-            response = requests.get(
-                url=self.jira_url(url, endpoint),
-                headers=jira_headers,
-                verify=ssl_config,
-                proxies=proxy_dict,
-                timeout=10,
-            )
-            response.raise_for_status()
-            return True, {
-                "account": account,
-                "status": "success",
-                "response": response.text,
-                "status_code": response.status_code,
-                "result": f"The connection to the JIRA target {url} successfully established and verified.",
-            }
-
-        except Exception as e:
-
-            logging.error(
-                f'JIRA connect verification failed for account="{account}" with exception="{str(e)}"'
-            )
-            return False, {
-                "account": account,
-                "status": "failure",
-                "response": str(e),
-                "status_code": 500,
-                "result": f"The connection to the JIRA target {url} failed.",
-            }
 
     def get_jira_info(self, jira_headers, url, ssl_config, proxy_dict, endpoint):
         response = requests.get(
@@ -168,40 +136,30 @@ class GenerateTextCommand(GeneratingCommand):
                 # end of get configuration
 
                 # Build the authentication header for JIRA
-                if str(jira_auth_mode) == "basic":
-                    authorization = f"{jira_username}:{jira_password}"
-                    b64_auth = base64.b64encode(authorization.encode()).decode()
-                    jira_headers = {
-                        "Authorization": f"Basic {b64_auth}",
-                        "Content-Type": "application/json",
-                    }
-                elif str(jira_auth_mode) == "pat":
-                    jira_headers = {
-                        "Authorization": f"Bearer {str(jira_password)}",
-                        "Content-Type": "application/json",
-                    }
+                jira_headers = jira_build_headers(
+                    jira_auth_mode, jira_username, jira_password
+                )
 
                 # SSL verification is always true or the path to the CA bundle for the SSL certificate to be verified
-                if jira_ssl_certificate_path and os.path.isfile(
-                    jira_ssl_certificate_path
-                ):
-                    ssl_config = str(jira_ssl_certificate_path)
-                else:
-                    ssl_config = True
+                ssl_config = jira_build_ssl_config(jira_ssl_certificate_path)
 
                 #
                 # Process
                 #
 
                 # test connectivity systematically
-                connected, healthcheck_response = self.test_jira_connect(
-                    account,
-                    jira_headers,
-                    jira_url,
-                    ssl_config,
-                    proxy_dict,
-                    "myself",
-                )
+                connected = False
+                try:
+                    healthcheck_response = jira_test_connectivity(
+                        self._metadata.searchinfo.session_key,
+                        self._metadata.searchinfo.splunkd_uri,
+                        account,
+                    )
+                    connected = True
+                except Exception as e:
+                    raise Exception(
+                        f'JIRA connect verification failed for account="{account}" with exception="{str(e)}"'
+                    )
 
                 # return connection test results
                 if int(self.opt) == 0:
@@ -332,34 +290,26 @@ class GenerateTextCommand(GeneratingCommand):
             # end of get configuration
 
             # Build the authentication header for JIRA
-            if str(jira_auth_mode) == "basic":
-                authorization = f"{jira_username}:{jira_password}"
-                b64_auth = base64.b64encode(authorization.encode()).decode()
-                jira_headers = {
-                    "Authorization": f"Basic {b64_auth}",
-                    "Content-Type": "application/json",
-                }
-            elif str(jira_auth_mode) == "pat":
-                jira_headers = {
-                    "Authorization": f"Bearer {str(jira_password)}",
-                    "Content-Type": "application/json",
-                }
+            jira_headers = jira_build_headers(
+                jira_auth_mode, jira_username, jira_password
+            )
 
-            # Splunk Cloud vetting notes: SSL verification is always true or the path to the CA bundle for the SSL certificate to be verified
-            if jira_ssl_certificate_path and os.path.isfile(jira_ssl_certificate_path):
-                ssl_config = str(jira_ssl_certificate_path)
-            else:
-                ssl_config = True
+            # SSL verification is always true or the path to the CA bundle for the SSL certificate to be verified
+            ssl_config = jira_build_ssl_config(jira_ssl_certificate_path)
 
             # test connectivity systematically
-            connected, healthcheck_response = self.test_jira_connect(
-                self.account,
-                jira_headers,
-                jira_url,
-                ssl_config,
-                proxy_dict,
-                "myself",
-            )
+            connected = False
+            try:
+                healthcheck_response = jira_test_connectivity(
+                    self._metadata.searchinfo.session_key,
+                    self._metadata.searchinfo.splunkd_uri,
+                    self.account,
+                )
+                connected = True
+            except Exception as e:
+                raise Exception(
+                    f'JIRA connect verification failed for account="{self.account}" with exception="{str(e)}"'
+                )
 
             # return connection test results
             if int(self.opt) == 0:

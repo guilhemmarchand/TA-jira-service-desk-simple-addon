@@ -4,8 +4,6 @@
 # REST API SPL handler for JIRA, allows interracting with a remote Splunk KVstore instance
 # See: https://ta-jira-service-desk-simple-addon.readthedocs.io/en/latest/
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import os
 import sys
 import requests
@@ -16,7 +14,6 @@ import time
 import csv
 import logging
 from logging.handlers import RotatingFileHandler
-import re
 
 splunkhome = os.environ["SPLUNK_HOME"]
 
@@ -52,7 +49,7 @@ from splunklib.searchcommands import (
 )
 
 # import least privileges access libs
-from ta_jira_libs import jira_get_conf
+from ta_jira_libs import jira_get_conf, jira_get_bearer_token
 
 
 @Configuration(distributed=False)
@@ -73,7 +70,7 @@ class GetJiraKv(GeneratingCommand):
 
             # Get the session key
             session_key = self._metadata.searchinfo.session_key
-
+            server_uri = self._metadata.searchinfo.splunkd_uri
             # get conf
             jira_conf = jira_get_conf(
                 self._metadata.searchinfo.session_key,
@@ -97,27 +94,7 @@ class GetJiraKv(GeneratingCommand):
             bearer_token = None
 
             if kvstore_instance:
-
-                # The bearer token is stored in the credential store
-                # However, likely due to the number of chars, the credential.content.get SDK command is unable to return its value in a single operation
-                # As a workaround, we concatenate the different values return to form a complete object, finally we use a regex approach to extract its clear text value
-                credential_realm = "__REST_CREDENTIAL__#TA-jira-service-desk-simple-addon#configs/conf-ta_service_desk_simple_addon_settings"
-                bearer_token_rawvalue = ""
-
-                for credential in storage_passwords:
-                    if credential.content.get("realm") == str(credential_realm):
-                        bearer_token_rawvalue = bearer_token_rawvalue + str(
-                            credential.content.clear_password
-                        )
-
-                # extract a clean json object
-                bearer_token_rawvalue_match = re.search(
-                    '\{"bearer_token":\s*"(.*)"\}', bearer_token_rawvalue
-                )
-                if bearer_token_rawvalue_match:
-                    bearer_token = bearer_token_rawvalue_match.group(1)
-                else:
-                    bearer_token = None
+                bearer_token = jira_get_bearer_token(session_key, server_uri)
 
             # the root search
             search = '| inputlookup jira_failures_replay | eval uuid=_key, mtime=if(isnull(mtime), ctime, mtime), status=case(isnull(status), "tempoary_failure", isnull(data), "tagged_for_removal", 1=1, status), data=if(isnull(data), "null", data), no_attempts=if(isnull(no_attempts), 0, no_attempts)'
@@ -166,19 +143,23 @@ class GetJiraKv(GeneratingCommand):
             # Get data
             output_mode = "csv"
             exec_mode = "oneshot"
-            response = requests.post(
-                url,
-                headers={"Authorization": header},
-                verify=False,
-                data={
-                    "search": search,
-                    "output_mode": output_mode,
-                    "exec_mode": exec_mode,
-                },
-            )
-            csv_data = response.text
 
-            if response.status_code not in (200, 201, 204):
+            # Call
+            try:
+                response = requests.post(
+                    url,
+                    headers={"Authorization": header},
+                    verify=False,
+                    data={
+                        "search": search,
+                        "output_mode": output_mode,
+                        "exec_mode": exec_mode,
+                    },
+                )
+                csv_data = response.text
+                response.raise_for_status()
+
+            except Exception as e:
                 response_error = f"JIRA Get remove KVstore has failed!. url={url}, data={search}, HTTP Error={response.status_code}, content={response.text}"
                 self.logger.fatal(str(response_error))
                 data = {
@@ -188,39 +169,37 @@ class GetJiraKv(GeneratingCommand):
                 yield data
                 sys.exit(0)
 
+            if self.verify == "True":
+
+                response_error = f"JIRA Get remove KVstore was successfull. url={url}, data={search}, HTTP Error={response.status_code}"
+                data = {
+                    "_time": time.time(),
+                    "_raw": f'{{"response": "{response_error}"}}',
+                }
+                yield data
+                sys.exit(0)
+
             else:
 
-                if self.verify == "True":
+                # Use the CSV dict reader
+                readCSV = csv.DictReader(
+                    csv_data.splitlines(True),
+                    delimiter=str(","),
+                    quotechar=str('"'),
+                )
 
-                    response_error = f"JIRA Get remove KVstore was successfull. url={url}, data={search}, HTTP Error={response.status_code}"
-                    data = {
+                # For row in CSV, generate the _raw
+                for row in readCSV:
+                    yield {
                         "_time": time.time(),
-                        "_raw": f'{{"response": "{response_error}"}}',
+                        "uuid": str(row["uuid"]),
+                        "account": str(row["account"]),
+                        "data": str(row["data"]),
+                        "status": str(row["status"]),
+                        "ctime": str(row["ctime"]),
+                        "mtime": str(row["mtime"]),
+                        "no_attempts": str(row["no_attempts"]),
                     }
-                    yield data
-                    sys.exit(0)
-
-                else:
-
-                    # Use the CSV dict reader
-                    readCSV = csv.DictReader(
-                        csv_data.splitlines(True),
-                        delimiter=str(","),
-                        quotechar=str('"'),
-                    )
-
-                    # For row in CSV, generate the _raw
-                    for row in readCSV:
-                        yield {
-                            "_time": time.time(),
-                            "uuid": str(row["uuid"]),
-                            "account": str(row["account"]),
-                            "data": str(row["data"]),
-                            "status": str(row["status"]),
-                            "ctime": str(row["ctime"]),
-                            "mtime": str(row["mtime"]),
-                            "no_attempts": str(row["no_attempts"]),
-                        }
 
         else:
 

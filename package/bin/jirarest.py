@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # coding=utf-8
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import json
 import sys
 import os
@@ -10,7 +8,6 @@ import time
 import requests
 import logging
 from logging.handlers import RotatingFileHandler
-import base64
 import urllib3
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -54,6 +51,9 @@ from ta_jira_libs import (
     jira_get_conf,
     jira_get_accounts,
     jira_get_account,
+    jira_build_headers,
+    jira_build_ssl_config,
+    jira_test_connectivity,
 )
 
 
@@ -123,29 +123,11 @@ class GenerateTextCommand(GeneratingCommand):
         jira_username = account_conf.get("username", None)
         jira_password = account_conf.get("jira_password", None)
 
-        # verify the url
-        if not jira_url.startswith("https://"):
-            jira_url = f"https://{str(jira_url)}"
-
-        # handle SSL verification and bundle
-        if jira_ssl_certificate_path and os.path.isfile(jira_ssl_certificate_path):
-            ssl_config = str(jira_ssl_certificate_path)
-        else:
-            ssl_config = True
-
         # Build the authentication header for JIRA
-        if str(jira_auth_mode) == "basic":
-            authorization = f"{jira_username}:{jira_password}"
-            b64_auth = base64.b64encode(authorization.encode()).decode()
-            jira_headers = {
-                "Authorization": f"Basic {b64_auth}",
-                "Content-Type": "application/json",
-            }
-        elif str(jira_auth_mode) == "pat":
-            jira_headers = {
-                "Authorization": f"Bearer {str(jira_password)}",
-                "Content-Type": "application/json",
-            }
+        jira_headers = jira_build_headers(jira_auth_mode, jira_username, jira_password)
+
+        # SSL verification is always true or the path to the CA bundle for the SSL certificate to be verified
+        ssl_config = jira_build_ssl_config(jira_ssl_certificate_path)
 
         # verify the method
         if self.method:
@@ -161,88 +143,91 @@ class GenerateTextCommand(GeneratingCommand):
                     f"jirarest: method {jira_method} requires a valid json_request. It is empty"
                 )
 
-        # check connectivity and proceed
+        # test connectivity systematically
+        connected = False
         try:
-            connectivity_check = test_jira_connect(
-                account, jira_headers, jira_url, ssl_config, proxy_dict
+            healthcheck_response = jira_test_connectivity(
+                self._metadata.searchinfo.session_key,
+                self._metadata.searchinfo.splunkd_uri,
+                account,
             )
-            logging.debug(f'connectivity_check="{json.dumps(connectivity_check)}"')
-
-            # Splunk Cloud vetting notes: ssl_config is always True or or path to a CA bundle for the validation of the SSL certificate
-
-            if self.target:
-                # set proper headers
-                if jira_method == "GET":
-                    jira_fields_response = requests.get(
-                        url=f"{str(jira_url)}/{str(self.target)}",
-                        headers=jira_headers,
-                        verify=ssl_config,
-                        proxies=proxy_dict,
-                    )
-                elif jira_method == "DELETE":
-                    jira_fields_response = requests.delete(
-                        url=f"{str(jira_url)}/{str(self.target)}",
-                        headers=jira_headers,
-                        verify=ssl_config,
-                        proxies=proxy_dict,
-                    )
-                elif jira_method == "POST":
-                    jira_fields_response = requests.post(
-                        url=f"{str(jira_url)}/{str(self.target)}",
-                        data=json.dumps(body_dict).encode("utf-8"),
-                        headers=jira_headers,
-                        verify=ssl_config,
-                        proxies=proxy_dict,
-                    )
-                elif jira_method == "PUT":
-                    jira_fields_response = requests.put(
-                        url=f"{str(jira_url)}/{str(self.target)}",
-                        data=json.dumps(body_dict).encode("utf-8"),
-                        headers=jira_headers,
-                        verify=ssl_config,
-                        proxies=proxy_dict,
-                    )
-
-                # Attenpt to get a JSON response, and render in Splunk
-                try:
-
-                    json_response = jira_fields_response.json()
-                    data = {"_time": time.time(), "_raw": json.dumps(json_response)}
-                    yield data
-
-                except Exception as e:
-
-                    # Build a custom response for Splunk dynamically
-
-                    # Create an action field, convenient to quickly understanding when things go wrong
-                    if jira_fields_response.status_code in (200, 201, 204):
-                        response_action = "success"
-                    else:
-                        response_action = "failure"
-
-                    # render
-                    if jira_fields_response.text:
-                        json_response = f'{{"action": "{response_action}", "status_code": "{jira_fields_response.status_code}", "text": "{jira_fields_response.text}"}}'
-                    else:
-                        json_response = f'{{"action": "{response_action}", "status_code": "{jira_fields_response.status_code}"}}'
-                    data = {
-                        "_time": time.time(),
-                        "_raw": str(
-                            json.dumps(
-                                json.loads(json_response, strict=False), indent=4
-                            )
-                        ),
-                    }
-
-                    yield data
-
+            connected = True
+            logging.debug(
+                f'JIRA connect verification successful for account="{account}", response="{json.dumps(healthcheck_response)}"'
+            )
         except Exception as e:
-            logging.error(
-                f'JIRA connect verification failed for account="{account}" with exception="{str(e)}"'
-            )
             raise Exception(
                 f'JIRA connect verification failed for account="{account}" with exception="{str(e)}"'
             )
+
+        #
+        # main
+        #
+
+        if connected:
+
+            # set proper headers
+            if jira_method == "GET":
+                jira_fields_response = requests.get(
+                    url=f"{str(jira_url)}/{str(self.target)}",
+                    headers=jira_headers,
+                    verify=ssl_config,
+                    proxies=proxy_dict,
+                )
+            elif jira_method == "DELETE":
+                jira_fields_response = requests.delete(
+                    url=f"{str(jira_url)}/{str(self.target)}",
+                    headers=jira_headers,
+                    verify=ssl_config,
+                    proxies=proxy_dict,
+                )
+            elif jira_method == "POST":
+                jira_fields_response = requests.post(
+                    url=f"{str(jira_url)}/{str(self.target)}",
+                    data=json.dumps(body_dict).encode("utf-8"),
+                    headers=jira_headers,
+                    verify=ssl_config,
+                    proxies=proxy_dict,
+                )
+            elif jira_method == "PUT":
+                jira_fields_response = requests.put(
+                    url=f"{str(jira_url)}/{str(self.target)}",
+                    data=json.dumps(body_dict).encode("utf-8"),
+                    headers=jira_headers,
+                    verify=ssl_config,
+                    proxies=proxy_dict,
+                )
+
+            # Attenpt to get a JSON response, and render in Splunk
+            try:
+
+                json_response = jira_fields_response.json()
+                data = {"_time": time.time(), "_raw": json.dumps(json_response)}
+                yield data
+
+            except Exception as e:
+
+                # Build a custom response for Splunk dynamically
+
+                # Create an action field, convenient to quickly understanding when things go wrong
+                if jira_fields_response.status_code in (200, 201, 204):
+                    response_action = "success"
+                else:
+                    response_action = "failure"
+
+                # render
+                if jira_fields_response.text:
+                    json_response = f'{{"action": "{response_action}", "status_code": "{jira_fields_response.status_code}", "text": "{jira_fields_response.text}"}}'
+                else:
+                    json_response = f'{{"action": "{response_action}", "status_code": "{jira_fields_response.status_code}"}}'
+                data = {
+                    "_time": time.time(),
+                    "_raw": str(
+                        json.dumps(json.loads(json_response, strict=False), indent=4)
+                    ),
+                }
+
+                yield data
 
 
 dispatch(GenerateTextCommand, sys.argv, sys.stdin, sys.stdout, __name__)

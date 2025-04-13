@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # coding=utf-8
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import sys
 import os
 import time
@@ -11,7 +9,6 @@ import urllib3
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 import json
-import base64
 import logging
 from logging.handlers import RotatingFileHandler
 
@@ -54,6 +51,8 @@ from ta_jira_libs import (
     jira_get_conf,
     jira_get_accounts,
     jira_get_account,
+    jira_build_headers,
+    jira_build_ssl_config,
 )
 
 
@@ -101,25 +100,13 @@ class GenerateTextCommand(GeneratingCommand):
             if not jira_url.startswith("https://"):
                 jira_url = f"https://{str(jira_url)}"
 
-            # handle SSL verification and bundle
-            if jira_ssl_certificate_path and os.path.isfile(jira_ssl_certificate_path):
-                ssl_config = str(jira_ssl_certificate_path)
-            else:
-                ssl_config = True
-
             # Build the authentication header for JIRA
-            if str(jira_auth_mode) == "basic":
-                authorization = f"{jira_username}:{jira_password}"
-                b64_auth = base64.b64encode(authorization.encode()).decode()
-                jira_headers = {
-                    "Authorization": f"Basic {b64_auth}",
-                    "Content-Type": "application/json",
-                }
-            elif str(jira_auth_mode) == "pat":
-                jira_headers = {
-                    "Authorization": f"Bearer {str(jira_password)}",
-                    "Content-Type": "application/json",
-                }
+            jira_headers = jira_build_headers(
+                jira_auth_mode, jira_username, jira_password
+            )
+
+            # SSL verification is always true or the path to the CA bundle for the SSL certificate to be verified
+            ssl_config = jira_build_ssl_config(jira_ssl_certificate_path)
 
             # ensures connectivity and proceed
             try:

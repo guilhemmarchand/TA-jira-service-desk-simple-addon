@@ -1,10 +1,42 @@
 # encoding = utf-8
 
+# Standard library imports
+import csv
+import gzip
+import hashlib
+import json
+import os
+import sys
+import platform
+import re
+import tempfile
+import time
+import uuid
+from time import localtime, strftime
+
+# Third-party imports
+import openpyxl
+import requests
+from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
+
+splunkhome = os.environ["SPLUNK_HOME"]
+sys.path.append(
+    os.path.join(splunkhome, "etc", "apps", "TA-jira-service-desk-simple-addon", "lib")
+)
+
+# import least privileges access libs
+from ta_jira_libs import (
+    jira_get_conf,
+    jira_get_accounts,
+    jira_get_account,
+    jira_test_connectivity,
+    jira_build_headers,
+    jira_build_ssl_config,
+)
+
 
 # This function is required to reformat proper values in the custom fields
 def reformat_customfields(i):
-    import re
-
     if i is not None:
         i = re.sub(r'\\"customfield_(\d+)\\": \\"', r'"customfield_\1": "', i)
         i = re.sub(r'\\"customfield_(\d+)\\": (\d)', r'"customfield_\1": \2', i)
@@ -70,8 +102,6 @@ def json_to_jira_table(json_data):
 
 # This function can optionnally be used to only remove the espaced double quotes and leave the custom fields with no parsing at all
 def reformat_customfields_minimal(i):
-    import re
-
     if i is not None:
         i = re.sub(r'\\"', '"', i)
         # any non escaped backslash
@@ -94,101 +124,72 @@ def process_event(helper, *args, **kwargs):
     helper.log_debug("Get session_key.")
     session_key = helper.session_key
 
-    # configuration manager
-    import solnlib
+    # server_uri
+    server_uri = helper.settings["server_uri"]
 
-    app = "TA-jira-service-desk-simple-addon"
-    account_cfm = solnlib.conf_manager.ConfManager(
+    # get conf
+    jira_conf = jira_get_conf(session_key, server_uri)
+
+    # get proxy configuration
+    proxy_conf = jira_conf["proxy"]
+    proxy_dict = proxy_conf.get("proxy_dict", {})
+
+    # get all acounts
+    accounts_dict = jira_get_accounts(session_key, server_uri)
+    accounts = accounts_dict.get("accounts", [])
+
+    # account configuration
+
+    # Stop here if we cannot find the submitted account
+    if not account in accounts:
+        raise ValueError(
+            f"The account={account} does not exist, check your inputs and configuration.",
+        )
+
+    # get account configuration
+    account_conf = jira_get_account(
         session_key,
-        app,
-        realm=f"__REST_CREDENTIAL__#{app}#configs/conf-ta_service_desk_simple_addon_account",
+        server_uri,
+        account,
     )
-    splunk_ta_account_conf = account_cfm.get_conf(
-        "ta_service_desk_simple_addon_account"
-    ).get_all()
 
-    # account details
-    account_details = splunk_ta_account_conf[account]
+    jira_auth_mode = account_conf.get("auth_mode", "basic")
+    jira_url = account_conf.get("jira_url", None)
+    jira_ssl_certificate_path = account_conf.get("ssl_certificate_path", None)
+    jira_username = account_conf.get("username", None)
+    jira_password = account_conf.get("jira_password", None)
+    # end of get configuration
 
-    # Get authentication type
-    auth_type = account_details.get("auth_type", 0)
-    helper.log_debug(f"auth_type={auth_type}")
+    # Build the authentication header for JIRA
+    jira_headers = jira_build_headers(jira_auth_mode, jira_username, jira_password)
 
-    # Get username
-    username = account_details.get("username", 0)
-    helper.log_debug(f"username={username}")
-    # by convention
-    jira_username = username
+    # Splunk Cloud vetting notes: SSL verification is always true or the path to the CA bundle for the SSL certificate to be verified
+    ssl_config = jira_build_ssl_config(jira_ssl_certificate_path)
 
-    # Get passowrd
-    password = account_details.get("password", 0)
-    # helper.log_info(f"password={password}")
-    # by convention
-    jira_password = password
-
-    # Get authentication mode
-    jira_auth_mode = account_details.get("jira_auth_mode", 0)
-    helper.log_debug(f"jira_auth_mode={jira_auth_mode}")
-
-    # Get jira_url
-    jira_url = account_details.get("jira_url", 0)
-    helper.log_debug(f"jira_url={jira_url}")
-
-    # Get jira_ssl_certificate_validation
-    jira_ssl_certificate_validation = int(
-        account_details.get("jira_ssl_certificate_validation", 0)
-    )
-    helper.log_debug(
-        f"jira_ssl_certificate_validation={jira_ssl_certificate_validation}"
-    )
-    ssl_certificate_validation = True
-    if jira_ssl_certificate_validation == 0:
-        ssl_certificate_validation = False
-    helper.log_debug(f"ssl_certificate_validation={ssl_certificate_validation}")
-
-    # Get jira_ssl_certificate_path
-    # SSL certificate path - customers using an internal PKI can use this option to verify the certificate bundle
-    # See: https://docs.python-requests.org/en/stable/user/advanced/#ssl-cert-verification
-    # If it is set, and the SSL verification is enabled, and the file exists, the file path replaces the boolean in the requests calls
-    jira_ssl_certificate_path = account_details.get("jira_ssl_certificate_path", 0)
-    helper.log_debug(f"jira_ssl_certificate_path={jira_ssl_certificate_path}")
-    if jira_ssl_certificate_path not in ["", "None", None]:
-        helper.log_debug(f"jira_ssl_certificate_path={jira_ssl_certificate_path}")
-        # replace the ssl_certificate_validation boolean by the SSL certiticate path if the file exists
-        import os
-
-        if ssl_certificate_validation and jira_ssl_certificate_path:
-            if os.path.isfile(jira_ssl_certificate_path):
-                ssl_certificate_validation = str(jira_ssl_certificate_path)
+    # test connectivity systematically
+    try:
+        jira_test_connectivity(session_key, server_uri, account)
+    except Exception as e:
+        helper.log_error(
+            f"Failed to test connectivity to Jira, account={account}, exception={str(e)}"
+        )
+        raise e
 
     # Get Passthrough mode
-    jira_passthrough_mode = helper.get_global_setting("jira_passthrough_mode")
-    helper.log_debug(f"jira_passthrough_mode={jira_passthrough_mode}")
-    # if an alert was created before this setting was introduced
-    if jira_passthrough_mode in ["", "None", None]:
-        jira_passthrough_mode = 0
-    else:
-        jira_passthrough_mode = int(jira_passthrough_mode)
-    # False by default
-    passthrough_mode = False
-    helper.log_debug(f"jira_passthrough_mode={jira_passthrough_mode}")
-    if jira_passthrough_mode == 1:
-        passthrough_mode = True
-        helper.log_info(
-            "passthrough_mode: Jira passthrough mode is enabled, this instance will not attempt to contact Jira, issues will be written to the replay KVstore."
-        )
-    helper.log_debug(f"passthrough_mode={passthrough_mode}")
+    jira_passthrough_mode = int(
+        jira_conf["advanced_configuration"].get("jira_passthrough_mode", 0)
+    )
+    helper.log_debug(f"passthrough_mode={jira_passthrough_mode}")
 
     # call the query URL REST Endpoint and pass the url and API token
     content = query_url(
         helper,
-        account,
-        jira_auth_mode,
-        jira_url,
-        jira_username,
-        jira_password,
-        ssl_certificate_validation,
-        passthrough_mode,
+        account=account,
+        jira_url=jira_url,
+        jira_headers=jira_headers,
+        ssl_config=ssl_config,
+        proxy_dict=proxy_dict,
+        jira_passthrough_mode=jira_passthrough_mode,
     )
 
     return 0
@@ -196,18 +197,12 @@ def process_event(helper, *args, **kwargs):
 
 # simple def to return current time for file naming
 def get_timestr():
-    from time import localtime, strftime
-
     timestr = strftime("%Y-%m-%d-%H%M%S", localtime())
 
     return timestr
 
 
 def get_tempdir():
-    import os
-    import re
-    import platform
-
     # If running Windows OS (used for directory identification)
     is_windows = re.match(r"^win\w+", (platform.system().lower()))
 
@@ -256,17 +251,11 @@ def attach_csv(
     jira_created_key,
     jira_attachment_token,
     jira_headers_attachment,
-    ssl_certificate_validation,
+    ssl_config,
     proxy_dict,
     *args,
     **kwargs,
 ):
-    import gzip
-    import tempfile
-    import requests
-    import os
-    import csv
-
     # Get tempdir
     tempdir = get_tempdir()
 
@@ -305,7 +294,7 @@ def attach_csv(
             jira_url,
             files=files,
             headers=jira_headers_attachment,
-            verify=ssl_certificate_validation,
+            verify=ssl_config,
             proxies=proxy_dict,
         )
         helper.log_debug(f"response status_code:={response.status_code}")
@@ -347,18 +336,11 @@ def attach_json(
     jira_created_key,
     jira_attachment_token,
     jira_headers_attachment,
-    ssl_certificate_validation,
+    ssl_config,
     proxy_dict,
     *args,
     **kwargs,
 ):
-    import gzip
-    import tempfile
-    import csv
-    import json
-    import requests
-    import os
-
     # Get tempdir
     tempdir = get_tempdir()
 
@@ -402,7 +384,7 @@ def attach_json(
             jira_url,
             files=files,
             headers=jira_headers_attachment,
-            verify=ssl_certificate_validation,
+            verify=ssl_config,
             proxies=proxy_dict,
         )
 
@@ -455,19 +437,11 @@ def attach_xlsx(
     jira_created_key,
     jira_attachment_token,
     jira_headers_attachment,
-    ssl_certificate_validation,
+    ssl_config,
     proxy_dict,
     *args,
     **kwargs,
 ):
-    import gzip
-    import tempfile
-    import requests
-    import csv
-    import openpyxl
-    from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
-    import os
-
     # Get tempdir
     tempdir = get_tempdir()
 
@@ -531,7 +505,7 @@ def attach_xlsx(
             jira_url,
             files=files,
             headers=jira_headers_attachment,
-            verify=ssl_certificate_validation,
+            verify=ssl_config,
             proxies=proxy_dict,
         )
         helper.log_debug(f"response status_code:={response.status_code}")
@@ -578,11 +552,6 @@ def attach_xlsx(
 
 
 def get_results_json(helper, jira_attachment_token, *args, **kwargs):
-    import gzip
-    import tempfile
-    import csv
-    import json
-
     try:
         # Get tempdir
         tempdir = get_tempdir()
@@ -631,10 +600,6 @@ def get_results_json(helper, jira_attachment_token, *args, **kwargs):
 
 
 def get_results_csv(helper, jira_attachment_token, *args, **kwargs):
-    import gzip
-    import tempfile
-    import csv
-
     try:
         # Get tempdir
         tempdir = get_tempdir()
@@ -681,47 +646,18 @@ def get_results_csv(helper, jira_attachment_token, *args, **kwargs):
 def query_url(
     helper,
     account,
-    jira_auth_mode,
-    jira_url,
-    jira_username,
-    jira_password,
-    ssl_certificate_validation,
-    passthrough_mode,
+    jira_url=None,
+    jira_headers=None,
+    ssl_config=None,
+    proxy_dict=None,
+    jira_passthrough_mode=None,
 ):
-    import requests
-    import json
-    import uuid
-    import time
-    import base64
-    import hashlib
-
-    import splunk.entity
-    import splunk.Intersplunk
-    import splunklib.client as client
-
     # Retrieve the session_key
     helper.log_debug("Get session_key.")
     session_key = helper.session_key
 
-    # Get splunkd port
-    entity = splunk.entity.getEntity(
-        "/server",
-        "settings",
-        namespace="TA-jira-service-desk-simple-addon",
-        sessionKey=session_key,
-        owner="-",
-    )
-    mydict = entity
-    splunkd_port = mydict["mgmtHostPort"]
-    helper.log_debug(f"splunkd_port={splunkd_port}")
-
-    service = client.connect(
-        owner="nobody",
-        app="TA-jira-service-desk-simple-addon",
-        port=splunkd_port,
-        token=session_key,
-    )
-    storage_passwords = service.storage_passwords
+    # splunkd_uri
+    splunkd_uri = helper.settings["server_uri"]
 
     # For Splunk Cloud vetting, the URL must start with https://
     if not jira_url.startswith("https://"):
@@ -730,79 +666,6 @@ def query_url(
         jira_url = f"{jira_url}/rest/api/latest/issue"
     # keep this url as a super url
     jira_root_url = jira_url
-
-    # get proxy configuration
-    # note: the proxy dict is used with requests calls when attachment is enabled
-    proxy_config = helper.get_proxy()
-    proxy_enabled = "0"
-    proxy_url = proxy_config.get("proxy_url")
-    proxy_dict = None
-    proxy_username = None
-    helper.log_debug(f"proxy_url={proxy_url}")
-
-    if proxy_url is not None:
-        opt_use_proxy = True
-        helper.log_debug("use_proxy set to True")
-
-        # to be used for attachment purposes with the requests module
-        conf_file = "ta_service_desk_simple_addon_settings"
-        confs = service.confs[str(conf_file)]
-        for stanza in confs:
-            if stanza.name == "proxy":
-                for key, value in stanza.content.items():
-                    if key == "proxy_enabled":
-                        proxy_enabled = value
-                    if key == "proxy_port":
-                        proxy_port = value
-                    if key == "proxy_rdns":
-                        proxy_rdns = value
-                    if key == "proxy_type":
-                        proxy_type = value
-                    if key == "proxy_url":
-                        proxy_url = value
-                    if key == "proxy_username":
-                        proxy_username = value
-
-        if proxy_enabled == "1":
-            # get proxy password
-            if proxy_username:
-                proxy_password = None
-
-                # get proxy password, if any
-                credential_realm = "__REST_CREDENTIAL__#TA-jira-service-desk-simple-addon#configs/conf-ta_service_desk_simple_addon_settings"
-                for credential in storage_passwords:
-                    if (
-                        credential.content.get("realm") == str(credential_realm)
-                        and credential.content.get("clear_password").find(
-                            "proxy_password"
-                        )
-                        > 0
-                    ):
-                        proxy_password = json.loads(
-                            credential.content.get("clear_password")
-                        ).get("proxy_password")
-                        break
-
-                if proxy_type == "http":
-                    proxy_dict = {
-                        "http": f"http://{proxy_username}:{proxy_password}@{proxy_url}:{proxy_port}",
-                        "https": f"https://{proxy_username}:{proxy_password}@{proxy_url}:{proxy_port}",
-                    }
-                else:
-                    proxy_dict = {
-                        "http": f"{proxy_type}://{proxy_username}:{proxy_password}@{proxy_url}:{proxy_port}",
-                        "https": f"{proxy_type}://{proxy_username}:{proxy_password}@{proxy_url}:{proxy_port}",
-                    }
-
-            else:
-                proxy_dict = {
-                    "http": proxy_url + ":" + proxy_port,
-                    "https": proxy_url + ":" + proxy_port,
-                }
-
-    else:
-        opt_use_proxy = False
-        helper.log_debug("use_proxy set to False")
 
     # Retrieve parameters which are not event related
     jira_project = helper.get_param("jira_project")
@@ -866,29 +729,11 @@ def query_url(
         jira_customfields_parsing = "enabled"
     helper.log_debug(f"jira_customfields_parsing:={jira_customfields_parsing}")
 
-    # Build the authentication header for JIRA
-    if str(jira_auth_mode) == "basic":
-        authorization = jira_username + ":" + jira_password
-        b64_auth = base64.b64encode(authorization.encode()).decode()
-        jira_headers = {
-            "Authorization": "Basic %s" % b64_auth,
-            "Content-Type": "application/json",
-        }
-        # required when uploading attachments
-        jira_headers_attachment = {
-            "Authorization": "Basic %s" % b64_auth,
-            "X-Atlassian-Token": "no-check",
-        }
-    elif str(jira_auth_mode) == "pat":
-        jira_headers = {
-            "Authorization": "Bearer %s" % str(jira_password),
-            "Content-Type": "application/json",
-        }
-        # required when uploading attachments
-        jira_headers_attachment = {
-            "Authorization": "Bearer %s" % str(jira_password),
-            "X-Atlassian-Token": "no-check",
-        }
+    # headers for attachments
+    jira_headers_attachment = jira_headers
+    jira_headers_attachment["X-Atlassian-Token"] = "no-check"
+    # remove the content-type header
+    jira_headers_attachment.pop("Content-Type", None)
 
     # Loop within events and proceed
     events = helper.get_events()
@@ -1073,7 +918,7 @@ def query_url(
         # Verify the collection, if the collection returns a result for this sha256 as the _key, this issue
         # is a duplicate (http 200)
         record_url = (
-            f"https://localhost:{splunkd_port}/servicesNS/nobody/"
+            f"{splunkd_uri}/servicesNS/nobody/"
             "TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_issues_backlog/"
             + str(jira_sha256sum)
         )
@@ -1125,10 +970,10 @@ def query_url(
                         parameters=None,
                         headers=jira_headers,
                         cookies=None,
-                        verify=ssl_certificate_validation,
+                        verify=ssl_config,
                         cert=None,
                         timeout=120,
-                        use_proxy=opt_use_proxy,
+                        use_proxy=proxy_dict,
                     )
                     helper.log_debug(f"response status_code:={response.status_code}")
 
@@ -1206,7 +1051,7 @@ def query_url(
 
                     # Remove this issue from the backlog collection
                     record_url = (
-                        f"https://localhost:{splunkd_port}/servicesNS/nobody/"
+                        f"{splunkd_uri}/servicesNS/nobody/"
                         "TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_issues_backlog"
                     )
                     headers = {
@@ -1254,12 +1099,12 @@ def query_url(
         # A second search head running on-premise would recycle the replay KVstore results and perform the true call to JIRA
         #
 
-        if passthrough_mode:
+        if jira_passthrough_mode:
             # For issue creation only
             if not jira_dedup_comment_issue:
                 # Store the failed publication in the replay KVstore
                 record_url = (
-                    f"https://localhost:{splunkd_port}/servicesNS/nobody/"
+                    f"{splunkd_uri}/servicesNS/nobody/"
                     "TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_failures_replay"
                 )
                 record_uuid = str(uuid.uuid1())
@@ -1300,10 +1145,10 @@ def query_url(
                     payload=data,
                     headers=jira_headers,
                     cookies=None,
-                    verify=ssl_certificate_validation,
+                    verify=ssl_config,
                     cert=None,
                     timeout=120,
-                    use_proxy=opt_use_proxy,
+                    use_proxy=proxy_dict,
                 )
                 helper.log_debug(f"response status_code:={response.status_code}")
 
@@ -1317,7 +1162,7 @@ def query_url(
                     # For issue creation only
                     if not jira_dedup_comment_issue:
                         record_url = (
-                            f"https://localhost:{splunkd_port}/servicesNS/nobody/"
+                            f"{splunkd_uri}/servicesNS/nobody/"
                             "TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_failures_replay"
                         )
                         record_uuid = str(uuid.uuid1())
@@ -1364,7 +1209,7 @@ def query_url(
                 if not jira_dedup_comment_issue:
                     # Store the failed publication in the replay KVstore
                     record_url = (
-                        f"https://localhost:{splunkd_port}/servicesNS/nobody/"
+                        f"{splunkd_uri}/servicesNS/nobody/"
                         "TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_failures_replay"
                     )
                     record_uuid = str(uuid.uuid1())
@@ -1410,7 +1255,7 @@ def query_url(
 
                     # Update the backlog collection entry
                     record_url = (
-                        f"https://localhost:{splunkd_port}/servicesNS/nobody/"
+                        f"{splunkd_uri}/servicesNS/nobody/"
                         "TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_issues_backlog/"
                         + jira_backlog_kvkey
                     )
@@ -1460,7 +1305,7 @@ def query_url(
                             jira_backlog_key,
                             jira_attachment_token,
                             jira_headers_attachment,
-                            ssl_certificate_validation,
+                            ssl_config,
                             proxy_dict,
                         )
 
@@ -1471,7 +1316,7 @@ def query_url(
                             jira_backlog_key,
                             jira_attachment_token,
                             jira_headers_attachment,
-                            ssl_certificate_validation,
+                            ssl_config,
                             proxy_dict,
                         )
 
@@ -1482,7 +1327,7 @@ def query_url(
                             jira_backlog_key,
                             jira_attachment_token,
                             jira_headers_attachment,
-                            ssl_certificate_validation,
+                            ssl_config,
                             proxy_dict,
                         )
 
@@ -1503,7 +1348,7 @@ def query_url(
                     )
 
                     record_url = (
-                        f"https://localhost:{splunkd_port}/servicesNS/nobody/"
+                        f"{splunkd_uri}/servicesNS/nobody/"
                         "TA-jira-service-desk-simple-addon/storage/collections/data/kv_jira_issues_backlog"
                     )
                     headers = {
@@ -1578,7 +1423,7 @@ def query_url(
                             jira_created_key,
                             jira_attachment_token,
                             jira_headers_attachment,
-                            ssl_certificate_validation,
+                            ssl_config,
                             proxy_dict,
                         )
 
@@ -1589,7 +1434,7 @@ def query_url(
                             jira_created_key,
                             jira_attachment_token,
                             jira_headers_attachment,
-                            ssl_certificate_validation,
+                            ssl_config,
                             proxy_dict,
                         )
 
@@ -1600,7 +1445,7 @@ def query_url(
                             jira_created_key,
                             jira_attachment_token,
                             jira_headers_attachment,
-                            ssl_certificate_validation,
+                            ssl_config,
                             proxy_dict,
                         )
 

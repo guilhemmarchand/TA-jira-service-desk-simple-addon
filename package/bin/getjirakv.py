@@ -81,7 +81,6 @@ class GetJiraKv(GeneratingCommand):
             log.setLevel(jira_conf["logging"]["loglevel"])
 
             # init
-            storage_passwords = self.service.storage_passwords
             jira_passthrough_mode = int(
                 jira_conf["advanced_configuration"].get("jira_passthrough_mode", 0)
             )

@@ -147,8 +147,9 @@ class GenerateTextCommand(GeneratingCommand):
                 # Process
                 #
 
-                # test connectivity systematically
+                # test connectivity systematically, raise an exception only if opt!=0
                 connected = False
+                connection_failure_message = None
                 try:
                     healthcheck_response = jira_test_connectivity(
                         self._metadata.searchinfo.session_key,
@@ -157,22 +158,35 @@ class GenerateTextCommand(GeneratingCommand):
                     )
                     connected = True
                 except Exception as e:
-                    raise Exception(
-                        f'JIRA connect verification failed for account="{account}" with exception="{str(e)}"'
-                    )
+                    connection_failure_message = f'JIRA connect verification failed for account="{account}" with exception="{str(e)}"'
+                    if int(self.opt) != 0:
+                        raise Exception(connection_failure_message)
 
                 # return connection test results
                 if int(self.opt) == 0:
-
-                    yield {
-                        "_time": time.time(),
-                        "_raw": healthcheck_response,
-                        "account": account,
-                        "connectivy_test": healthcheck_response.get("status"),
-                        "response": healthcheck_response.get("response"),
-                        "status_code": healthcheck_response.get("status_code"),
-                        "result": healthcheck_response.get("result"),
-                    }
+                    if connected:
+                        yield {
+                            "_time": time.time(),
+                            "_raw": healthcheck_response,
+                            "account": account,
+                            "connectivy_test": healthcheck_response.get("status"),
+                            "response": healthcheck_response.get("response"),
+                            "status_code": healthcheck_response.get("status_code"),
+                            "result": healthcheck_response.get("result"),
+                        }
+                    else:
+                        raw = {
+                            "account": account,
+                            "connectivy_test": "failure",
+                            "result": connection_failure_message,
+                        }
+                        yield {
+                            "_time": time.time(),
+                            "_raw": raw,
+                            "account": account,
+                            "connectivy_test": "failure",
+                            "result": connection_failure_message,
+                        }
 
                 else:
                     if not connected:
@@ -297,8 +311,9 @@ class GenerateTextCommand(GeneratingCommand):
             # SSL verification is always true or the path to the CA bundle for the SSL certificate to be verified
             ssl_config = jira_build_ssl_config(jira_ssl_certificate_path)
 
-            # test connectivity systematically
+            # test connectivity systematically, raise an exception only if opt!=0
             connected = False
+            connection_failure_message = None
             try:
                 healthcheck_response = jira_test_connectivity(
                     self._metadata.searchinfo.session_key,
@@ -307,46 +322,35 @@ class GenerateTextCommand(GeneratingCommand):
                 )
                 connected = True
             except Exception as e:
-                raise Exception(
-                    f'JIRA connect verification failed for account="{self.account}" with exception="{str(e)}"'
-                )
+                connection_failure_message = f'JIRA connect verification failed for account="{self.account}" with exception="{str(e)}"'
+                if int(self.opt) != 0:
+                    raise Exception(connection_failure_message)
 
             # return connection test results
             if int(self.opt) == 0:
-
-                yield {
-                    "_time": time.time(),
-                    "_raw": healthcheck_response,
-                    "account": self.account,
-                    "connectivy_test": healthcheck_response.get("status"),
-                    "response": healthcheck_response.get("response"),
-                    "status_code": healthcheck_response.get("status_code"),
-                    "result": healthcheck_response.get("result"),
-                }
-
-            else:
-                if not connected:
-                    raise Exception(
-                        f'JIRA connect verification failed for account="{self.account}" with exception="{healthcheck_response.get("response")}"'
-                    )
-
-                if int(self.opt) == 1 and connected:
-                    for project in self.get_jira_info(
-                        jira_headers, jira_url, ssl_config, proxy_dict, "project"
-                    ):
-                        result_dict = {
-                            "_time": time.time(),
-                            "account": str(self.account),
-                            "key": project.get("key"),
-                            "key_projects": f'{project.get("key")} - {project.get("name")}',
-                        }
-                        yield {
-                            "_time": time.time(),
-                            "_raw": result_dict,
-                            "account": str(self.account),
-                            "key": project.get("key"),
-                            "key_projects": f'{project.get("key")} - {project.get("name")}',
-                        }
+                if connected:
+                    yield {
+                        "_time": time.time(),
+                        "_raw": healthcheck_response,
+                        "account": self.account,
+                        "connectivy_test": healthcheck_response.get("status"),
+                        "response": healthcheck_response.get("response"),
+                        "status_code": healthcheck_response.get("status_code"),
+                        "result": healthcheck_response.get("result"),
+                    }
+                else:
+                    raw = {
+                        "account": self.account,
+                        "connectivy_test": "failure",
+                        "result": connection_failure_message,
+                    }
+                    yield {
+                        "_time": time.time(),
+                        "_raw": raw,
+                        "account": self.account,
+                        "connectivy_test": "failure",
+                        "result": connection_failure_message,
+                    }
 
                 if int(self.opt) == 2 and connected:
                     for issue in self.get_jira_info(

@@ -42,13 +42,6 @@ def process_event(helper, *args, **kwargs):
     # server_uri
     server_uri = helper.settings["server_uri"]
 
-    # get conf
-    jira_conf = jira_get_conf(session_key, server_uri)
-
-    # get proxy configuration
-    proxy_conf = jira_conf["proxy"]
-    proxy_dict = proxy_conf.get("proxy_dict", {})
-
     # get all acounts
     accounts_dict = jira_get_accounts(session_key, server_uri)
     accounts = accounts_dict.get("accounts", [])
@@ -75,20 +68,16 @@ def process_event(helper, *args, **kwargs):
     jira_password = account_conf.get("jira_password", None)
     # end of get configuration
 
-    # Build the authentication header for JIRA
-    jira_headers = jira_build_headers(jira_auth_mode, jira_username, jira_password)
-
     # Splunk Cloud vetting notes: SSL verification is always true or the path to the CA bundle for the SSL certificate to be verified
     ssl_config = jira_build_ssl_config(jira_ssl_certificate_path)
 
-    # test connectivity systematically
+    # test connectivity systematically but do not fail
     try:
         jira_test_connectivity(session_key, server_uri, account)
     except Exception as e:
         helper.log_error(
             f"Failed to test connectivity to Jira, account={account}, exception={str(e)}"
         )
-        raise e
 
     # call the query URL REST Endpoint and pass the url and API token
     content = query_url(

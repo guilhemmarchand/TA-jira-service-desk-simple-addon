@@ -166,14 +166,13 @@ def process_event(helper, *args, **kwargs):
     # Splunk Cloud vetting notes: SSL verification is always true or the path to the CA bundle for the SSL certificate to be verified
     ssl_config = jira_build_ssl_config(jira_ssl_certificate_path)
 
-    # test connectivity systematically
+    # test connectivity systematically but do not fail as the resilient tracker will retry
     try:
         jira_test_connectivity(session_key, server_uri, account)
     except Exception as e:
         helper.log_error(
             f"Failed to test connectivity to Jira, account={account}, exception={str(e)}"
         )
-        raise e
 
     # Get Passthrough mode
     jira_passthrough_mode = int(

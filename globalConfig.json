@@ -502,7 +502,7 @@
                 {
                     "type": "text",
                     "label": "Auto close status transition comment",
-                    "help": "The comment added to the issue when the auto close is triggered, you can use tokens here. (ex: $result.message$)",
+                    "help": "The comment added to the issue when the auto close is triggered, you can use tokens here. (ex: $result.message$) - If defined, this is added to the default comment - Defaults to: Auto-closure triggered by Splunk alert action. Condition: {jira_auto_close_key_value_pair}",
                     "field": "jira_auto_close_status_transition_comment",
                     "required": false
                 },

@@ -231,7 +231,7 @@
     <label
       class="control-label"
       for="jira_service_desk_jira_auto_close_status_transition_comment"
-      >Auto close status transition comment
+      >Auto-close comment.
     </label>
     <div class="controls">
       <input
@@ -240,7 +240,9 @@
         id="jira_service_desk_jira_auto_close_status_transition_comment"
       />
       <span class="help-block">
-        The comment added to the issue when the auto close is triggered.
+        You can use tokens here. (ex: $result.message$) - If defined, this is
+        added to the default comment - Defaults to: Auto-closure triggered by
+        Splunk alert action. Condition: {jira_auto_close_key_value_pair}
       </span>
     </div>
   </div>

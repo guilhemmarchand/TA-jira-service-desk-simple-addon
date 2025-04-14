@@ -1572,10 +1572,13 @@ def perform_auto_closure(
         transition_url = f"{jira_url}/{issue_key}/transitions"
 
         # Use custom comment if provided, otherwise use default
+        base_comment = (
+            f"Auto-closure triggered by Splunk alert action. Condition: {key}={value}"
+        )
         comment = (
-            jira_auto_close_status_transition_comment
+            f"{base_comment} - {jira_auto_close_status_transition_comment}"
             if jira_auto_close_status_transition_comment
-            else f"Issue status automatically transitioned to {jira_auto_close_status_transition_value} by Splunk alert action."
+            else base_comment
         )
 
         transition_data = {
@@ -1599,6 +1602,27 @@ def perform_auto_closure(
         helper.log_info(
             f"Successfully transitioned issue {issue_key} to {jira_auto_close_status_transition_value}"
         )
+
+        # Step 3: Add a separate comment using the comment API endpoint
+        comment_url = f"{jira_url}/{issue_key}/comment"
+        comment_data = {"body": comment}
+
+        response = requests.post(
+            comment_url,
+            json=comment_data,
+            headers=jira_headers,
+            verify=ssl_config,
+            proxies=proxy_dict,
+            timeout=120,
+        )
+
+        if response.status_code not in (200, 201, 204):
+            helper.log_error(
+                f"Failed to add comment to issue {issue_key}: {response.text}"
+            )
+            return
+
+        helper.log_info(f"Successfully added comment to issue {issue_key}")
 
     except Exception as e:
         helper.log_error(f"Error during auto-closure process: {str(e)}")

@@ -751,8 +751,8 @@ def query_url(
     jira_auto_close_issue_number_field_name = helper.get_param(
         "jira_auto_close_issue_number_field_name"
     )
-    helper.log_info(
-        f"MARKER auto-close parameters: jira_auto_close={jira_auto_close}, jira_auto_close_key_value_pair={jira_auto_close_key_value_pair}, jira_auto_close_status_transition_value={jira_auto_close_status_transition_value}, jira_auto_close_issue_number_field_name={jira_auto_close_issue_number_field_name}"
+    helper.log_debug(
+        f"auto-close parameters: jira_auto_close={jira_auto_close}, jira_auto_close_key_value_pair={jira_auto_close_key_value_pair}, jira_auto_close_status_transition_value={jira_auto_close_status_transition_value}, jira_auto_close_issue_number_field_name={jira_auto_close_issue_number_field_name}"
     )
 
     # Loop within events and proceed

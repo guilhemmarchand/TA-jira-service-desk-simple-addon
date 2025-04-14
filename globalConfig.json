@@ -557,6 +557,13 @@
                 },
                 {
                     "type": "text",
+                    "label": "JIRA dedup comment",
+                    "help": "Optional comment to be added to the issue when the dedup is triggered. If defined, this is added to the default comment 'New alert triggered: Splunk Alert: $jira_summary$'",
+                    "field": "jira_dedup_comment",
+                    "required": false
+                },
+                {
+                    "type": "text",
                     "label": "JIRA dedup excluded statuses",
                     "help": "CSV list of Jira status categories not considered for updates, if dedup is enabled and the duplicated issue status is in one of these categories, a new issue will be created instead.",
                     "field": "jira_dedup_exclude_statuses",

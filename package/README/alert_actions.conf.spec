@@ -17,6 +17,7 @@ param.jira_reporter = <string> Reporter.
 param.jira_labels = <string> Labels.
 param.jira_components = <string> Components names.
 param.jira_dedup = <list> JIRA dedup behaviour:. It's a required parameter. It's default value is disabled.
+param.jira_dedup_comment = <string> JIRA dedup comment.
 param.jira_dedup_exclude_statuses = <string> JIRA dedup excluded statuses.
 param.jira_dedup_content = <string> JIRA dedup content.
 param.jira_attachment = <list> Results attachment:. It's a required parameter. It's default value is disabled.

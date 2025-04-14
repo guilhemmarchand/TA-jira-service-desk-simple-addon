@@ -6,9 +6,9 @@
   </style>
 
   <div>
-    <br />
-    <h4>JIRA main fields:</h4>
-    <br />
+    <legend style="font-size: 14px; color: dodgerblue; font-weight: bold">
+      JIRA Main Fields:
+    </legend>
   </div>
 
   <div class="control-group">
@@ -125,6 +125,56 @@
       </span>
     </div>
   </div>
+
+  <div>
+    <legend style="font-size: 14px; color: dodgerblue; font-weight: bold">
+      JIRA Attachments:
+    </legend>
+  </div>
+
+  <div class="control-group">
+    <label class="control-label" for="jira_service_desk_jira_attachment"
+      >Add Results as Attachment:
+    </label>
+    <div class="controls">
+      <select
+        name="action.jira_service_desk.param.jira_attachment"
+        id="jira_service_desk_jira_attachment"
+      >
+        <option value="disabled">Disabled</option>
+        <option value="enabled_csv">Enabled (CSV format)</option>
+        <option value="enabled_json">Enabled (JSON format)</option>
+        <option value="enabled_xlsx">Enabled (EXCEL format)</option>
+      </select>
+      <span class="help-block">
+        <br />Enable this option to automatically attach the Splunk results as
+        an attachment to the JIRA issue.<br />
+        <br />
+        Attachments can be added in CSV, JSON or XLSX format.<br />
+        <br />
+        Finally, the attachment action cannot be replayed by the resilient
+        store, shall the JIRA creation temporary fail, the attachment will not
+        be added if the issue creation had to be replayed due to a temporary
+        issue.
+        <br />
+      </span>
+    </div>
+  </div>
+
+  <div style="display: none" class="control-group">
+    <label class="control-label" for="jira_service_desk_jira_attachment_token"
+      >Attachment token</label
+    >
+    <div class="controls">
+      <input
+        type="text"
+        name="action.jira_service_desk.param.jira_attachment_token"
+        id="jira_service_desk_jira_attachment_token"
+      />
+      <span class="help-block"> <br />$results_file$ </span>
+    </div>
+  </div>
+
   <div class="control-group">
     <label
       class="control-label"
@@ -146,11 +196,21 @@
         parts of the JIRA Description field after the sentence "Splunk search
         results:".<br />
         <br />
-        Results can be added in CSV or JSON format.<br />
+        The results become part of the issue description text itself, not a
+        separate attachment.<br />
+        <br />
+        Results can be added in CSV, JSON or Table format.<br />
         <br />
       </span>
     </div>
   </div>
+
+  <div>
+    <legend style="font-size: 14px; color: dodgerblue; font-weight: bold">
+      JIRA Auto Close:
+    </legend>
+  </div>
+
   <div class="control-group">
     <label class="control-label" for="jira_service_desk_jira_auto_close"
       >Auto close issue: <span class="required">*</span>
@@ -164,9 +224,11 @@
         <option value="disabled">Disabled</option>
       </select>
       <span class="help-block">
-        This options allows you to automatically close the issue if a certain
-        field key value pair is found in the search results., it requires the
-        Auto close key value pair to be defined to be effective.
+        <br />This options allows you to automatically close the issue if a
+        certain field key value pair is found in the search results.<br />
+        <br />This feature requires the Auto close key value pair to be defined,
+        and will be skipped if the key value pair is not found in the search
+        results or not defined.
       </span>
     </div>
   </div>
@@ -183,8 +245,8 @@
         id="jira_service_desk_jira_auto_close_key_value_pair"
       />
       <span class="help-block">
-        Required for auto close to be effective, enter the key value pair in the
-        format of key=value, example: alert_status=closed.
+        <br />Required for auto close to be effective, enter the key value pair
+        in the format of key=value, example: alert_status=closed.
       </span>
     </div>
   </div>
@@ -201,11 +263,12 @@
         id="jira_service_desk_jira_auto_close_issue_number_field_name"
       />
       <span class="help-block">
-        To perform the auto close, the JIRA alert actions needs to be able to do
-        the link between the instance execution and the issue number. If using
-        the dedup option, this link is made automatically, otherwise the field
-        name must be defined here. If the modular alert cannot do the link with
-        the issue number, auto closure will be skipped.
+        <br />To perform the auto close, the JIRA alert actions needs to be able
+        to do the link between the instance execution and the issue number.<br />
+        <br />If using the dedup option, this link is made automatically,
+        otherwise the field name must be defined here.<br />
+        <br />If the modular alert cannot do the link with the issue number,
+        auto closure will be skipped.
       </span>
     </div>
   </div>
@@ -222,7 +285,7 @@
         id="jira_service_desk_jira_auto_close_status_transition_value"
       />
       <span class="help-block">
-        The status to be transitioned to when the auto close is triggered,
+        <br />The status to be transitioned to when the auto close is triggered,
         defaults is Done.
       </span>
     </div>
@@ -240,12 +303,20 @@
         id="jira_service_desk_jira_auto_close_status_transition_comment"
       />
       <span class="help-block">
-        You can use tokens here. (ex: $result.message$) - If defined, this is
-        added to the default comment - Defaults to: Auto-closure triggered by
-        Splunk alert action. Condition: {jira_auto_close_key_value_pair}
+        <br />You can use tokens here. (ex: $result.message$)<br />
+        <br />If defined, this is added to the default comment. <br />
+        <br />Defaults to: Auto-closure triggered by Splunk alert action.
+        Condition: {jira_auto_close_key_value_pair}
       </span>
     </div>
   </div>
+
+  <div>
+    <legend style="font-size: 14px; color: dodgerblue; font-weight: bold">
+      JIRA Assignee, Reporter and Metadata:
+    </legend>
+  </div>
+
   <div class="control-group">
     <label class="control-label" for="jira_service_desk_jira_assignee"
       >Assignee
@@ -320,6 +391,12 @@
     </div>
   </div>
 
+  <div>
+    <legend style="font-size: 14px; color: dodgerblue; font-weight: bold">
+      JIRA Dedup and Auto Update:
+    </legend>
+  </div>
+
   <div class="control-group">
     <label class="control-label" for="jira_service_desk_jira_dedup"
       >JIRA dedup behaviour:
@@ -344,8 +421,27 @@
         jira_dedup_content is defined)
         <br /><br />
         To define the content of the comment (defaults to: New alert triggered:
-        &lt;issue summary&gt;), generate a field named "jira_update_comment" and
-        this will be used as the comment automatically.
+        &lt;issue summary&gt;), use the comment option bellow or generate a
+        field named "jira_update_comment" and this will be used as the comment
+        automatically.
+      </span>
+    </div>
+  </div>
+
+  <div class="control-group">
+    <label class="control-label" for="jira_service_desk_jira_dedup_comment"
+      >JIRA dedup comment
+    </label>
+    <div class="controls">
+      <textarea
+        name="action.jira_service_desk.param.jira_dedup_comment"
+        id="jira_service_desk_jira_dedup_comment"
+        style="height: 60px"
+      ></textarea>
+      <span class="help-block">
+        <br />Optional comment to be added to the issue when the dedup is
+        triggered. If defined, this is added to the default comment 'New alert
+        triggered: Splunk Alert: $jira_summary$'
       </span>
     </div>
   </div>
@@ -393,53 +489,10 @@
     </div>
   </div>
 
-  <div class="control-group">
-    <label class="control-label" for="jira_service_desk_jira_attachment"
-      >Results attachment:
-    </label>
-    <div class="controls">
-      <select
-        name="action.jira_service_desk.param.jira_attachment"
-        id="jira_service_desk_jira_attachment"
-      >
-        <option value="disabled">Disabled</option>
-        <option value="enabled_csv">Enabled (CSV format)</option>
-        <option value="enabled_json">Enabled (JSON format)</option>
-        <option value="enabled_xlsx">Enabled (EXCEL format)</option>
-      </select>
-      <span class="help-block">
-        <br />Enable this option to automatically attach the Splunk results as
-        an attachment to the JIRA issue.<br />
-        <br />
-        Attachments can be added in CSV, JSON or XLSX format.<br />
-        <br />
-        Finally, the attachment action cannot be replayed by the resilient
-        store, shall the JIRA creation temporary fail, the attachment will not
-        be added if the issue creation had to be replayed due to a temporary
-        issue.
-        <br />
-      </span>
-    </div>
-  </div>
-
-  <div style="display: none" class="control-group">
-    <label class="control-label" for="jira_service_desk_jira_attachment_token"
-      >Attachment token</label
-    >
-    <div class="controls">
-      <input
-        type="text"
-        name="action.jira_service_desk.param.jira_attachment_token"
-        id="jira_service_desk_jira_attachment_token"
-      />
-      <span class="help-block"> <br />$results_file$ </span>
-    </div>
-  </div>
-
   <div>
-    <br />
-    <h4>JIRA custom field: (optional)</h4>
-    <br />
+    <legend style="font-size: 14px; color: dodgerblue; font-weight: bold">
+      JIRA Custom Fields:
+    </legend>
   </div>
 
   <div class="control-group">

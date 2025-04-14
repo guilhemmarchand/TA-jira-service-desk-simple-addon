@@ -683,6 +683,8 @@ def query_url(
         jira_dedup_enabled = True
     helper.log_debug(f"jira_dedup_enabled={jira_dedup_enabled}")
 
+    jira_dedup_comment = helper.get_param("jira_dedup_comment")
+
     jira_dedup_exclude_statuses = helper.get_param("jira_dedup_exclude_statuses")
     if jira_dedup_exclude_statuses in ["", "None", None]:
         jira_dedup_exclude_statuses = "Done"
@@ -1061,6 +1063,12 @@ def query_url(
                     for key, value in event.items():
                         if key in "jira_update_comment":
                             jira_update_comment = {"body": value}
+
+                    # if jira_dedup_comment is set, add it to the jira_update_comment
+                    if jira_dedup_comment:
+                        jira_update_comment["body"] = (
+                            f'{jira_update_comment["body"]} - {jira_dedup_comment}'
+                        )
 
                     helper.log_debug(f"jira_update_comment:={jira_update_comment}")
 

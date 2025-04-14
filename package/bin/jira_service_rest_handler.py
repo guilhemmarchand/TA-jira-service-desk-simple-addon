@@ -193,13 +193,12 @@ class Jira_v1(jira_rest_handler.RESTHandler):
 
                 # advanced configuration
                 if stanza.name == "advanced_configuration":
-                    if stanzakey == "timeout":
-                        timeout = stanzavalue
-
-                    # add to the response
-                    jira_service_desk["advanced_configuration"]["timeout"] = int(
-                        timeout
-                    )
+                    for stanzakey, stanzavalue in stanza.content.items():
+                        if stanzakey == "timeout":
+                            stanzavalue = int(stanzavalue)
+                        jira_service_desk["advanced_configuration"][
+                            stanzakey
+                        ] = stanzavalue
 
         # insert some useful additional information
         jira_service_desk["server_rest_uri"] = request_info.server_rest_uri
@@ -364,7 +363,7 @@ class Jira_v1(jira_rest_handler.RESTHandler):
         # Extract configuration
         jira_auth_mode = account_conf.get("auth_mode", "basic")
         jira_url = account_conf.get("jira_url", None)
-        jira_ssl_certificate_path = account_conf.get("ssl_certificate_path", None)
+        jira_ssl_certificate_path = account_conf.get("jira_ssl_certificate_path", None)
         jira_username = account_conf.get("username", None)
         jira_password = account_conf.get("jira_password", None)
         proxy_dict = jira_conf.get("proxy", {}).get("proxy_dict", {})
@@ -444,6 +443,8 @@ class Jira_v1(jira_rest_handler.RESTHandler):
                 describe = resp_dict["describe"]
                 if describe in ("true", "True"):
                     describe = True
+                # temp
+                logging.info(f"MARKER received resp_dict: {resp_dict}")
             except Exception as e:
                 describe = False
         else:
@@ -460,7 +461,7 @@ class Jira_v1(jira_rest_handler.RESTHandler):
                     "auth_mode": "The authentication mode (basic or pat)",
                     "username": "The username for basic auth or token name for PAT",
                     "jira_password": "The password for basic auth or token for PAT",
-                    "ssl_certificate_path": "Optional path to SSL certificate bundle",
+                    "jira_ssl_certificate_path": "Optional path to SSL certificate bundle",
                 },
             }
             return {"payload": response, "status": 200}
@@ -485,7 +486,7 @@ class Jira_v1(jira_rest_handler.RESTHandler):
             jira_auth_mode = resp_dict.get("auth_mode", "basic")
             jira_username = resp_dict["username"]
             jira_password = resp_dict["jira_password"]
-            jira_ssl_certificate_path = resp_dict.get("ssl_certificate_path", None)
+            jira_ssl_certificate_path = resp_dict.get("jira_ssl_certificate_path", None)
         except Exception as e:
             return {
                 "payload": {
@@ -547,18 +548,25 @@ class Jira_v1(jira_rest_handler.RESTHandler):
                     "response": response.text,
                     "status_code": response.status_code,
                     "result": f"The connection to the JIRA target {jira_url} successfully established and verified.",
+                    "jira_url": jira_url,
+                    "jira_auth_mode": jira_auth_mode,
+                    "jira_username": jira_username,
+                    "jira_ssl_certificate_path": jira_ssl_certificate_path,
+                    "ssl_config": ssl_config,
                 },
                 "status": 200,
             }
 
         except Exception as e:
             try:
-                response_status_code = response.status_code
-            except Exception as e:
+                response_status_code = (
+                    response.status_code if "response" in locals() else 500
+                )
+            except Exception:
                 response_status_code = 500
 
             logging.error(
-                f'JIRA connection validation failed with exception="{str(e)}"'
+                f'JIRA connection validation failed, status="failure", jira_url="{jira_url}", jira_auth_mode="{jira_auth_mode}", jira_username="{jira_username}", jira_ssl_certificate_path="{jira_ssl_certificate_path}", ssl_config="{ssl_config}", exception="{str(e)}"'
             )
             return {
                 "payload": {
@@ -566,6 +574,11 @@ class Jira_v1(jira_rest_handler.RESTHandler):
                     "response": str(e),
                     "status_code": response_status_code,
                     "result": f"The connection to the JIRA target {jira_url} failed.",
+                    "jira_url": jira_url,
+                    "jira_auth_mode": jira_auth_mode,
+                    "jira_username": jira_username,
+                    "jira_ssl_certificate_path": jira_ssl_certificate_path,
+                    "ssl_config": ssl_config,
                 },
                 "status": response_status_code,
             }
@@ -638,9 +651,7 @@ class Jira_v1(jira_rest_handler.RESTHandler):
                 break
 
         # Initialize a dictionary to store account data
-        account_data = {
-            "relay_account": None,
-        }
+        account_data = {}
 
         for stanza in confs:
             if stanza.name == str(account):

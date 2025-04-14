@@ -117,7 +117,9 @@ def jira_get_account(session_key, splunkd_uri, account):
     try:
         # Use a context manager to handle the request
         with session.post(
-            target_url, data=json.dumps({"account": account}), verify=False
+            target_url,
+            data=json.dumps({"account": account}),
+            verify=False,
         ) as response:
             if response.ok:
                 logging.debug(f'Success retrieving account, data="{response.text}"')
@@ -153,7 +155,9 @@ def jira_test_connectivity(session_key, splunkd_uri, account):
     try:
         # Use a context manager to handle the request
         with session.post(
-            target_url, data=json.dumps({"account": account}), verify=False
+            target_url,
+            data=json.dumps({"account": account}),
+            verify=False,
         ) as response:
             if response.ok:
                 logging.debug(

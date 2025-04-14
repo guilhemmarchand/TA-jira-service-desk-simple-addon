@@ -142,10 +142,9 @@
                             "help": "SSL certificate verication is mandatory, to verify a self-signed or internal PKI certificate, you must specify the local path to the certificate PEM file or bundle",
                             "validators": [
                                 {
-                                    "type": "string",
-                                    "errorMsg": "Max host length is 4096",
-                                    "minLength": 0,
-                                    "maxLength": 4096
+                                    "type": "regex",
+                                    "errorMsg": "Invalid value",
+                                    "pattern": "^.*$"
                                 }
                             ],
                             "field": "jira_ssl_certificate_path"

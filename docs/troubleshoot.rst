@@ -13,7 +13,8 @@ Connectivity to JIRA issues
 .. image:: img/config_check_connectivity.png
    :alt: config_check_connectivity.png
    :align: center
-   :width: 1200px   
+   :width: 1200px
+   :class: with-border
 
 If the connectivity fails for an account, for instance due to an authentication failure or due to network connectivity issues, the command returns the reason and response.    
 
@@ -38,7 +39,8 @@ Overview dashboard and Add-on logs
 .. image:: img/screenshot.png
    :alt: screenshot.png
    :align: center
-   :width: 1200px   
+   :width: 1200px 
+   :class: with-border  
 
 The dashboard exposes the JIRA issue workflow and direct links to access the Add-on logs.
 
@@ -54,7 +56,8 @@ Custom command logs
 .. image:: img/troubleshoot_custom_commands.png
    :alt: troubleshoot_custom_commands.png
    :align: center
-   :width: 1200px   
+   :width: 1200px
+   :class: with-border   
 
 Add-on logs for first REST call attempts
 ----------------------------------------
@@ -95,6 +98,17 @@ If a record exists in the KVstore, the Add-on will re-attempt the creation every
 An out of box alert named ``JIRA Service Desk - detection of permanent issue creation failure`` is provided to monitor and track permanent JIRA failures, **the alert is by default enabled**.
 
 After 7 days in the KVstore, a record is automatically and definitively purged.
+
+Add-on logs for the internal REST API endpoints
+-----------------------------------------------
+
+**The application implements a REST API for different purposes, notably allowing a least privilege approach.**
+
+Access the logs:
+
+::
+
+    index=_internal sourcetype=jira_service_desk:rest
 
 Root cause for failures
 -----------------------

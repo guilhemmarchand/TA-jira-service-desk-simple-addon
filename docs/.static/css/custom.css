@@ -11,4 +11,5 @@
 
 .with-border img {
   border: 1px solid #555;
+  margin-bottom: 30px !important;
 }

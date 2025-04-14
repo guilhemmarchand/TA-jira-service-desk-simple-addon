@@ -46,7 +46,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "TA-jira-service-desk-simple-addon"
-copyright = "2018-2020, Guilhem Marchand"
+copyright = "2018-2025, Guilhem Marchand"
 author = "Guilhem Marchand"
 
 # The version info for the project you're documenting, acts as replacement for
@@ -112,7 +112,7 @@ todo_include_todos = False
 import sphinx_rtd_theme
 
 html_theme = "sphinx_rtd_theme"
-html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+# html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the

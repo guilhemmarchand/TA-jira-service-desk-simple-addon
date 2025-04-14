@@ -10,13 +10,26 @@ You cannot perform the account configuration manually by creating the expecting 
 
 In a Search Head Cluster context, the generated configuration is automatically replicated across the members of the cluster.
 
+.. admonition:: **Automated connectivity validation**
+
+   - Since the version 2.1.0, the Add-on performs an automated connectivity validation at the time of the account configuration.
+   - This means that you cannot create an account, or update an existing account if the connectivity check fails. (network, authentication, etc.)
+   - If the connectivity check fails, you will be prompted with the reason of the failure, review the reason for the failure and the response from the JIRA API.
+
 *Configuration page:*
 
-.. image:: img/config1.png
-   :alt: config1.png
+.. image:: img/config-overview1.png
+   :alt: config-overview1.png
    :align: center
    :width: 1000px
    :class: with-border
+
+.. image:: img/config-overview2.png
+   :alt: config-overview2.png
+   :align: center
+   :width: 1000px
+   :class: with-border
+
 
 JIRA account configuration
 ==========================

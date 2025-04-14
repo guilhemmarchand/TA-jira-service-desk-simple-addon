@@ -23,21 +23,25 @@ Welcome to the Splunk Add-on for JIRA Atlassian Service Desk application documen
    :alt: screenshot.png
    :align: center
    :width: 1200px
+   :class: with-border
 
 .. image:: img/screenshot_projects.png
    :alt: screenshot_projects.png
    :align: center
    :width: 1200px
+   :class: with-border
 
 .. image:: img/screenshot_api.png
    :alt: screenshot_api.png
    :align: center
    :width: 1200px
+   :class: with-border
 
 .. image:: img/screenshot1.png
    :alt: screenshot1.png
    :align: center
-   :width: 800px
+   :width: 700px
+   :class: with-border
 
 Overview:
 =========

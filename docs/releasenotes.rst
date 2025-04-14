@@ -1,6 +1,29 @@
 Release notes
 #############
 
+Version 2.1.0
+=============
+
+Key information
+---------------
+
+- This release introduces a REST API in the application, with the principal objectives of implementing a least privileve approach to allow the actions to be called with restricted capabilities, and avoid problematic capabilities previously required.
+- This also provides a centralised API logic, these endpoints are globally called by the associated custom commands and alert actions.
+- Deep review and refactoring of the Python code was achieved.
+- New capabilities were added to the JIRA alert actions notably with Auto Closure of issues.
+- Automated validation of the JIRA connectivity before allowing the creation or update of a JIRA account.
+
+Detailed release notes
+----------------------
+
+- bug - Unreadable characters after adding alert data in JSON to the description #203
+- change - Define fields type in collections.conf #204
+- enhancement - Prevent REST API populating searches executed to populate the alert drilldown to be executed without a restricted time range, so Workload rules forbidding all time searches would not prevent dropdown from being populated #205
+- enhancements/bugs - Various Python code review and refresh #206
+- enhancement - Least Privilege approach and removing needs for privileged capabilities in Splunk #207
+- enhancement - Validates the JIRA connectivity before allowing the creation or update of a JIRA account #209
+- enhancement - Add built-in support for Issue auto-closure with new auto closure capabilities #210
+
 Version 2.0.20
 ==============
 

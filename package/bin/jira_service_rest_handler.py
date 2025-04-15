@@ -12,8 +12,8 @@ import sys
 import time
 import re
 import urllib3
-import base64
 import requests
+import tempfile
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -52,7 +52,13 @@ sys.path.append(
 import jira_rest_handler
 
 # import least privileges access libs
-from ta_jira_libs import jira_get_conf, jira_get_account
+from ta_jira_libs import (
+    jira_get_conf,
+    jira_get_account,
+    jira_get_accounts,
+    jira_build_headers,
+    jira_handle_ssl_certificate,
+)
 
 # import Splunk libs
 import splunklib.client as client
@@ -286,11 +292,53 @@ class Jira_v1(jira_rest_handler.RESTHandler):
 
             return {"payload": {"accounts": accounts}, "status": 200}
 
+    def _handle_ssl_certificate(
+        self, jira_ssl_certificate_path, jira_ssl_certificate_pem
+    ):
+        """
+        Helper function to handle SSL certificate configuration.
+        Returns a tuple of (ssl_config, temp_cert_file) where temp_cert_file is None if no temporary file was created.
+        """
+        temp_cert_file = None
+
+        if jira_ssl_certificate_pem:
+            # Create a temporary file for the certificate
+            temp_cert_file = tempfile.NamedTemporaryFile(mode="w", delete=False)
+
+            # First, remove any existing headers/footers and clean up the content
+            cert_content = jira_ssl_certificate_pem.replace("\n", "").replace(" ", "")
+            cert_content = cert_content.replace(
+                "-----BEGINCERTIFICATE-----", ""
+            ).replace("-----ENDCERTIFICATE-----", "")
+            cert_content = cert_content.replace(
+                "-----BEGIN CERTIFICATE-----", ""
+            ).replace("-----END CERTIFICATE-----", "")
+
+            # Format with proper line breaks (64 characters per line)
+            formatted_body = "\n".join(
+                [cert_content[i : i + 64] for i in range(0, len(cert_content), 64)]
+            )
+
+            # Add proper headers and footers
+            cert_content = f"-----BEGIN CERTIFICATE-----\n{formatted_body}\n-----END CERTIFICATE-----\n"
+
+            temp_cert_file.write(cert_content)
+            temp_cert_file.close()
+            ssl_config = temp_cert_file.name
+
+        elif jira_ssl_certificate_path and os.path.isfile(jira_ssl_certificate_path):
+            ssl_config = str(jira_ssl_certificate_path)
+        else:
+            ssl_config = True
+
+        return ssl_config, temp_cert_file
+
     def post_test_connectivity(self, request_info, **kwargs):
         """
         This endpoint tests the connectivity to a JIRA instance
         """
         describe = False
+        temp_cert_file = None
 
         # Retrieve from data
         try:
@@ -320,110 +368,114 @@ class Jira_v1(jira_rest_handler.RESTHandler):
             }
             return {"payload": response, "status": 200}
 
-        # Get account configuration
         try:
-            account = resp_dict["account"]
-        except Exception as e:
-            return {
-                "payload": {
-                    "error": "Missing required parameter: account",
-                    "details": str(e),
-                },
-                "status": 400,
-            }
+            # Get account configuration
+            try:
+                account = resp_dict["account"]
+            except Exception as e:
+                return {
+                    "payload": {
+                        "error": "Missing required parameter: account",
+                        "details": str(e),
+                    },
+                    "status": 400,
+                }
 
-        # Get account configuration
-        try:
-            account_conf = jira_get_account(
-                request_info.system_authtoken, request_info.server_rest_uri, account
+            # Get account configuration
+            try:
+                account_conf = jira_get_account(
+                    request_info.system_authtoken, request_info.server_rest_uri, account
+                )
+            except Exception as e:
+                return {
+                    "payload": {
+                        "error": f"Failed to get account configuration for {account}",
+                        "details": str(e),
+                    },
+                    "status": 500,
+                }
+
+            # Get global configuration
+            try:
+                jira_conf = jira_get_conf(
+                    request_info.system_authtoken, request_info.server_rest_uri
+                )
+            except Exception as e:
+                return {
+                    "payload": {
+                        "error": "Failed to get global configuration",
+                        "details": str(e),
+                    },
+                    "status": 500,
+                }
+
+            # Extract configuration
+            jira_auth_mode = account_conf.get("auth_mode", "basic")
+            jira_url = account_conf.get("jira_url", None)
+            jira_ssl_certificate_path = account_conf.get(
+                "jira_ssl_certificate_path", None
             )
-        except Exception as e:
-            return {
-                "payload": {
-                    "error": f"Failed to get account configuration for {account}",
-                    "details": str(e),
-                },
-                "status": 500,
-            }
-
-        # Get global configuration
-        try:
-            jira_conf = jira_get_conf(
-                request_info.system_authtoken, request_info.server_rest_uri
+            jira_ssl_certificate_pem = account_conf.get(
+                "jira_ssl_certificate_pem", None
             )
-        except Exception as e:
-            return {
-                "payload": {
-                    "error": "Failed to get global configuration",
-                    "details": str(e),
-                },
-                "status": 500,
-            }
+            jira_username = account_conf.get("username", None)
+            jira_password = account_conf.get("jira_password", None)
+            proxy_dict = jira_conf.get("proxy", {}).get("proxy_dict", {})
 
-        # Extract configuration
-        jira_auth_mode = account_conf.get("auth_mode", "basic")
-        jira_url = account_conf.get("jira_url", None)
-        jira_ssl_certificate_path = account_conf.get("jira_ssl_certificate_path", None)
-        jira_username = account_conf.get("username", None)
-        jira_password = account_conf.get("jira_password", None)
-        proxy_dict = jira_conf.get("proxy", {}).get("proxy_dict", {})
-
-        # Build the authentication header for JIRA
-        if str(jira_auth_mode) == "basic":
-            authorization = f"{jira_username}:{jira_password}"
-            b64_auth = base64.b64encode(authorization.encode()).decode()
-            jira_headers = {
-                "Authorization": f"Basic {b64_auth}",
-                "Content-Type": "application/json",
-            }
-        elif str(jira_auth_mode) == "pat":
-            jira_headers = {
-                "Authorization": f"Bearer {str(jira_password)}",
-                "Content-Type": "application/json",
-            }
-
-        # SSL verification is always true or the path to the CA bundle for the SSL certificate to be verified
-        if jira_ssl_certificate_path and os.path.isfile(jira_ssl_certificate_path):
-            ssl_config = str(jira_ssl_certificate_path)
-        else:
-            ssl_config = True
-
-        # Test connectivity
-        try:
-            response = requests.get(
-                url=f"{jira_url}/rest/api/latest/myself",
-                headers=jira_headers,
-                verify=ssl_config,
-                proxies=proxy_dict,
-                timeout=10,
+            # Build the authentication header for JIRA
+            jira_headers = jira_build_headers(
+                jira_auth_mode, jira_username, jira_password
             )
-            response.raise_for_status()
 
-            return {
-                "payload": {
-                    "status": "success",
-                    "account": account,
-                    "response": response.text,
-                    "status_code": response.status_code,
-                    "result": f"The connection to the JIRA target {jira_url} successfully established and verified.",
-                },
-                "status": 200,
-            }
-
-        except Exception as e:
-            logging.error(
-                f'JIRA connect verification failed for account="{account}" with exception="{str(e)}"'
+            # Handle SSL certificate configuration
+            ssl_config, temp_cert_file = jira_handle_ssl_certificate(
+                jira_ssl_certificate_path, jira_ssl_certificate_pem
             )
-            return {
-                "payload": {
-                    "status": "failure",
-                    "account": account,
-                    "response": str(e),
-                    "status_code": 500,
-                    "result": f"The connection to the JIRA target {jira_url} failed.",
-                },
-                "status": 500,
-            }
+
+            # Test connectivity
+            try:
+                response = requests.get(
+                    url=f"{jira_url}/rest/api/latest/myself",
+                    headers=jira_headers,
+                    verify=ssl_config,
+                    proxies=proxy_dict,
+                    timeout=10,
+                )
+                response.raise_for_status()
+
+                return {
+                    "payload": {
+                        "status": "success",
+                        "account": account,
+                        "response": response.text,
+                        "status_code": response.status_code,
+                        "result": f"The connection to the JIRA target {jira_url} successfully established and verified.",
+                    },
+                    "status": 200,
+                }
+
+            except Exception as e:
+                logging.error(
+                    f'JIRA connect verification failed for account="{account}" with exception="{str(e)}"'
+                )
+                return {
+                    "payload": {
+                        "status": "failure",
+                        "account": account,
+                        "response": str(e),
+                        "status_code": 500,
+                        "result": f"The connection to the JIRA target {jira_url} failed.",
+                    },
+                    "status": 500,
+                }
+
+        finally:
+            # Clean up the temporary file if it was created
+            if temp_cert_file:
+                try:
+                    os.unlink(temp_cert_file.name)
+                except:
+                    pass  # Ignore cleanup errors
 
     def post_validate_connection(self, request_info, **kwargs):
         """
@@ -431,6 +483,7 @@ class Jira_v1(jira_rest_handler.RESTHandler):
         before it is saved to the system configuration
         """
         describe = False
+        temp_cert_file = None
 
         # Retrieve from data
         try:
@@ -443,8 +496,6 @@ class Jira_v1(jira_rest_handler.RESTHandler):
                 describe = resp_dict["describe"]
                 if describe in ("true", "True"):
                     describe = True
-                # temp
-                logging.info(f"MARKER received resp_dict: {resp_dict}")
             except Exception as e:
                 describe = False
         else:
@@ -462,126 +513,125 @@ class Jira_v1(jira_rest_handler.RESTHandler):
                     "username": "The username for basic auth or token name for PAT",
                     "jira_password": "The password for basic auth or token for PAT",
                     "jira_ssl_certificate_path": "Optional path to SSL certificate bundle",
+                    "jira_ssl_certificate_pem": "Optional PEM content of SSL certificate",
                 },
             }
             return {"payload": response, "status": 200}
 
-        # Get global configuration for proxy settings
         try:
-            jira_conf = jira_get_conf(
-                request_info.system_authtoken, request_info.server_rest_uri
-            )
-        except Exception as e:
-            return {
-                "payload": {
-                    "error": "Failed to get global configuration",
-                    "details": str(e),
-                },
-                "status": 500,
-            }
-
-        # Extract configuration from payload
-        try:
-            jira_url = resp_dict["jira_url"]
-            jira_auth_mode = resp_dict.get("auth_mode", "basic")
-            jira_username = resp_dict["username"]
-            jira_password = resp_dict["jira_password"]
-            jira_ssl_certificate_path = resp_dict.get("jira_ssl_certificate_path", None)
-        except Exception as e:
-            return {
-                "payload": {
-                    "error": "Missing required parameters in payload",
-                    "details": str(e),
-                },
-                "status": 400,
-            }
-
-        # Get proxy settings from global config
-        proxy_dict = jira_conf.get("proxy", {}).get("proxy_dict", {})
-
-        # Build the authentication header for JIRA
-        if str(jira_auth_mode) == "basic":
-            authorization = f"{jira_username}:{jira_password}"
-            b64_auth = base64.b64encode(authorization.encode()).decode()
-            jira_headers = {
-                "Authorization": f"Basic {b64_auth}",
-                "Content-Type": "application/json",
-            }
-        elif str(jira_auth_mode) == "pat":
-            jira_headers = {
-                "Authorization": f"Bearer {str(jira_password)}",
-                "Content-Type": "application/json",
-            }
-        else:
-            return {
-                "payload": {
-                    "error": "Invalid authentication mode",
-                    "details": "auth_mode must be either 'basic' or 'pat'",
-                },
-                "status": 400,
-            }
-
-        # SSL verification is always true or the path to the CA bundle for the SSL certificate to be verified
-        if jira_ssl_certificate_path and os.path.isfile(jira_ssl_certificate_path):
-            ssl_config = str(jira_ssl_certificate_path)
-        else:
-            ssl_config = True
-
-        # Test connectivity
-        try:
-            # Ensure URL starts with https://
-            if not jira_url.startswith("https://"):
-                jira_url = f"https://{jira_url}"
-
-            response = requests.get(
-                url=f"{jira_url}/rest/api/latest/myself",
-                headers=jira_headers,
-                verify=ssl_config,
-                proxies=proxy_dict,
-                timeout=10,
-            )
-            response.raise_for_status()
-
-            return {
-                "payload": {
-                    "status": "success",
-                    "response": response.text,
-                    "status_code": response.status_code,
-                    "result": f"The connection to the JIRA target {jira_url} successfully established and verified.",
-                    "jira_url": jira_url,
-                    "jira_auth_mode": jira_auth_mode,
-                    "jira_username": jira_username,
-                    "jira_ssl_certificate_path": jira_ssl_certificate_path,
-                    "ssl_config": ssl_config,
-                },
-                "status": 200,
-            }
-
-        except Exception as e:
+            # Get global configuration for proxy settings
             try:
-                response_status_code = (
-                    response.status_code if "response" in locals() else 500
+                jira_conf = jira_get_conf(
+                    request_info.system_authtoken, request_info.server_rest_uri
                 )
-            except Exception:
-                response_status_code = 500
+            except Exception as e:
+                return {
+                    "payload": {
+                        "error": "Failed to get global configuration",
+                        "details": str(e),
+                    },
+                    "status": 500,
+                }
 
-            logging.error(
-                f'JIRA connection validation failed, status="failure", jira_url="{jira_url}", jira_auth_mode="{jira_auth_mode}", jira_username="{jira_username}", jira_ssl_certificate_path="{jira_ssl_certificate_path}", ssl_config="{ssl_config}", exception="{str(e)}"'
+            # Extract configuration from payload
+            try:
+                jira_url = resp_dict["jira_url"]
+                jira_auth_mode = resp_dict.get("auth_mode", "basic")
+                jira_username = resp_dict["username"]
+                jira_password = resp_dict["jira_password"]
+                jira_ssl_certificate_path = resp_dict.get(
+                    "jira_ssl_certificate_path", None
+                )
+                jira_ssl_certificate_pem = resp_dict.get(
+                    "jira_ssl_certificate_pem", None
+                )
+            except Exception as e:
+                return {
+                    "payload": {
+                        "error": "Missing required parameters in payload",
+                        "details": str(e),
+                    },
+                    "status": 400,
+                }
+
+            # Get proxy settings from global config
+            proxy_dict = jira_conf.get("proxy", {}).get("proxy_dict", {})
+
+            # Build the authentication header for JIRA
+            jira_headers = jira_build_headers(
+                jira_auth_mode, jira_username, jira_password
             )
-            return {
-                "payload": {
-                    "status": "failure",
-                    "response": str(e),
-                    "status_code": response_status_code,
-                    "result": f"The connection to the JIRA target {jira_url} failed.",
-                    "jira_url": jira_url,
-                    "jira_auth_mode": jira_auth_mode,
-                    "jira_username": jira_username,
-                    "jira_ssl_certificate_path": jira_ssl_certificate_path,
-                    "ssl_config": ssl_config,
-                },
-                "status": response_status_code,
-            }
+
+            # Handle SSL certificate configuration
+            ssl_config, temp_cert_file = jira_handle_ssl_certificate(
+                jira_ssl_certificate_path, jira_ssl_certificate_pem
+            )
+
+            # Test connectivity
+            try:
+                # Ensure URL starts with https://
+                if not jira_url.startswith("https://"):
+                    jira_url = f"https://{jira_url}"
+
+                response = requests.get(
+                    url=f"{jira_url}/rest/api/latest/myself",
+                    headers=jira_headers,
+                    verify=ssl_config,
+                    proxies=proxy_dict,
+                    timeout=10,
+                )
+                response.raise_for_status()
+
+                return {
+                    "payload": {
+                        "status": "success",
+                        "response": response.text,
+                        "status_code": response.status_code,
+                        "result": f"The connection to the JIRA target {jira_url} successfully established and verified.",
+                        "jira_url": jira_url,
+                        "jira_auth_mode": jira_auth_mode,
+                        "jira_username": jira_username,
+                        "jira_ssl_certificate_path": jira_ssl_certificate_path,
+                        "jira_ssl_certificate_pem": jira_ssl_certificate_pem,
+                        "ssl_config": ssl_config,
+                    },
+                    "status": 200,
+                }
+
+            except Exception as e:
+                try:
+                    response_status_code = (
+                        response.status_code if "response" in locals() else 500
+                    )
+                except Exception:
+                    response_status_code = 500
+
+                logging.error(
+                    f'JIRA connection validation failed, status="failure", jira_url="{jira_url}", jira_auth_mode="{jira_auth_mode}", jira_username="{jira_username}", jira_ssl_certificate_path="{jira_ssl_certificate_path}", jira_ssl_certificate_pem="{jira_ssl_certificate_pem}", ssl_config="{ssl_config}", exception="{str(e)}"'
+                )
+                return {
+                    "payload": {
+                        "status": "failure",
+                        "response": str(e),
+                        "status_code": response_status_code,
+                        "result": f"The connection to the JIRA target {jira_url} failed.",
+                        "jira_url": jira_url,
+                        "jira_auth_mode": jira_auth_mode,
+                        "jira_username": jira_username,
+                        "jira_ssl_certificate_path": jira_ssl_certificate_path,
+                        "jira_ssl_certificate_pem": jira_ssl_certificate_pem,
+                        "ssl_config": ssl_config,
+                    },
+                    "status": response_status_code,
+                }
+
+        finally:
+            # Clean up the temporary file if it was created
+            if temp_cert_file:
+                try:
+                    os.unlink(temp_cert_file.name)
+                except:
+                    pass  # Ignore cleanup errors
 
     # get account details with least privileges approach
     def post_get_account(self, request_info, **kwargs):

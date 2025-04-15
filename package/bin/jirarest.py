@@ -51,7 +51,7 @@ from ta_jira_libs import (
     jira_get_accounts,
     jira_get_account,
     jira_build_headers,
-    jira_build_ssl_config,
+    jira_handle_ssl_certificate,
     jira_test_connectivity,
 )
 
@@ -118,7 +118,8 @@ class GenerateTextCommand(GeneratingCommand):
 
         jira_auth_mode = account_conf.get("auth_mode", "basic")
         jira_url = account_conf.get("jira_url", None)
-        jira_ssl_certificate_path = account_conf.get("ssl_certificate_path", None)
+        jira_ssl_certificate_path = account_conf.get("jira_ssl_certificate_path", None)
+        jira_ssl_certificate_pem = account_conf.get("jira_ssl_certificate_pem", None)
         jira_username = account_conf.get("username", None)
         jira_password = account_conf.get("jira_password", None)
 
@@ -126,7 +127,10 @@ class GenerateTextCommand(GeneratingCommand):
         jira_headers = jira_build_headers(jira_auth_mode, jira_username, jira_password)
 
         # SSL verification is always true or the path to the CA bundle for the SSL certificate to be verified
-        ssl_config = jira_build_ssl_config(jira_ssl_certificate_path)
+        # Handle SSL certificate configuration
+        ssl_config, temp_cert_file = jira_handle_ssl_certificate(
+            jira_ssl_certificate_path, jira_ssl_certificate_pem
+        )
 
         # verify the method
         if self.method:

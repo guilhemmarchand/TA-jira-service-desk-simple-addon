@@ -156,6 +156,7 @@ def process_event(helper, *args, **kwargs):
     jira_auth_mode = account_conf.get("auth_mode", "basic")
     jira_url = account_conf.get("jira_url", None)
     jira_ssl_certificate_path = account_conf.get("ssl_certificate_path", None)
+    jira_ssl_certificate_pem = account_conf.get("ssl_certificate_pem", None)
     jira_username = account_conf.get("username", None)
     jira_password = account_conf.get("jira_password", None)
     # end of get configuration
@@ -164,7 +165,9 @@ def process_event(helper, *args, **kwargs):
     jira_headers = jira_build_headers(jira_auth_mode, jira_username, jira_password)
 
     # Splunk Cloud vetting notes: SSL verification is always true or the path to the CA bundle for the SSL certificate to be verified
-    ssl_config = jira_build_ssl_config(jira_ssl_certificate_path)
+    ssl_config = jira_build_ssl_config(
+        jira_ssl_certificate_path, jira_ssl_certificate_pem, account
+    )
 
     # test connectivity systematically but do not fail as the resilient tracker will retry
     try:

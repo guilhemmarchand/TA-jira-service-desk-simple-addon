@@ -43,6 +43,7 @@ class CustomRestHandlerCreateRemoteAccount(AdminExternalHandler):
             "username": self.payload.get("username"),
             "jira_password": self.payload.get("password"),
             "jira_ssl_certificate_path": self.payload.get("jira_ssl_certificate_path"),
+            "jira_ssl_certificate_pem": self.payload.get("jira_ssl_certificate_pem"),
         }
 
         try:

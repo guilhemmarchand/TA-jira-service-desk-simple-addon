@@ -1,5 +1,5 @@
-Support & donate
-################
+Support
+#######
 
 This application is community supported, no warranty is provided.
 

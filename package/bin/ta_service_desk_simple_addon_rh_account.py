@@ -94,9 +94,17 @@ fields = [
         required=False,
         encrypted=False,
         default=None,
-        validator=validator.String(
-            max_len=4096,
-            min_len=0,
+        validator=validator.Pattern(
+            regex=r"""^.*$""",
+        ),
+    ),
+    field.RestField(
+        "jira_ssl_certificate_pem",
+        required=False,
+        encrypted=False,
+        default=None,
+        validator=validator.Pattern(
+            regex=r"""^.*$""",
         ),
     ),
     field.RestField(

@@ -138,8 +138,8 @@
                         },
                         {
                             "type": "text",
-                            "label": "SSL certificate path",
-                            "help": "SSL certificate verication is mandatory, to verify a self-signed or internal PKI certificate, you must specify the local path to the certificate PEM file or bundle",
+                            "label": "Optional: SSL certificate file path",
+                            "help": "*** use certificate file path OR certificate pem, not both *** SSL certificate verication is mandatory, to verify a self-signed or internal PKI certificate, you can specify the local path to the certificate PEM file or bundle",
                             "validators": [
                                 {
                                     "type": "regex",
@@ -148,6 +148,19 @@
                                 }
                             ],
                             "field": "jira_ssl_certificate_path"
+                        },
+                        {
+                            "type": "text",
+                            "label": "Optional: SSL certificate PEM content",
+                            "help": "*** use certificate file path OR certificate pem, not both *** SSL certificate verication is mandatory, to verify a self-signed or internal PKI certificate, you can provide the PEM file content directly here",
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Invalid value",
+                                    "pattern": "^.*$"
+                                }
+                            ],
+                            "field": "jira_ssl_certificate_pem"
                         },
                         {
                             "field": "ssl_help_link",

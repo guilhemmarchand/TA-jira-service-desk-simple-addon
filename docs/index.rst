@@ -6,18 +6,19 @@
 Welcome to the Splunk Add-on for JIRA Atlassian Service Desk application documentation
 ======================================================================================
 
-**The Splunk Add-on for JIRA Atlassian Service Desk provides alerts action for JIRA issues creation:**
-
-- Trigger JIRA issue creation from Splunk core alerts and Enterprise Security correlation searches
-- Dynamic retrieval per JIRA project for types of issues and priority
-- Dynamic assignment of priority (optional)
-- Dynamic and/or static assignment of summary, description, assignee and labels
-- Custom fields full capabilities via the embedded custom field structure in alerts (optional)
-- Deduplication feature workflow with bi-directional integration, allows detecting a duplication issue creation request, and adding new comments automatically instead of creating duplicated issues
-- Attaching Splunk alert results to the JIRA issue in CSV or JSON format
-- Resilient store JIRA issue creation, shall a JIRA issue fails to be created, the resilient workflow handles automatic retries with a resilient policy
-- Monitoring of JIRA issue workflow via the embedded Overview dashboard and out of the box alerts
-- Get any information from JIRA via the REST API custom command wrapper, generate and index to summary events or the metric store issues statistics per projects
+.. admonition:: **The Splunk Add-on for JIRA Atlassian Service Desk provides alerts action for JIRA issues creation:**
+   
+   - Trigger JIRA issue creation from Splunk core alerts and Enterprise Security correlation searches
+   - Dynamic retrieval per JIRA project for types of issues and priority
+   - Dynamic assignment of priority (optional)
+   - Dynamic and/or static assignment of summary, description, assignee and labels
+   - Custom fields full capabilities via the embedded custom field structure in alerts (optional)
+   - Deduplication feature workflow with bi-directional integration, allows detecting a duplication issue creation request, and adding new comments automatically instead of creating duplicated issues
+   - Auto close JIRA issues based on pattern detection (state aware alerting)
+   - Attaching Splunk alert results to the JIRA issue in CSV, JSON or XLSXformat
+   - Resilient store JIRA issue creation, shall a JIRA issue fails to be created, the resilient workflow handles automatic retries with a resilient policy
+   - Monitoring of JIRA issue workflow via the embedded Overview dashboard and out of the box alerts
+   - Get any information from JIRA via the REST API custom command wrapper, generate and index to summary events or the metric store issues statistics per projects
 
 .. image:: img/screenshot.png
    :alt: screenshot.png

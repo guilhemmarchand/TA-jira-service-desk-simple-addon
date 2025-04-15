@@ -54,6 +54,17 @@ from ta_jira_libs import jira_get_conf, jira_get_bearer_token
 
 @Configuration(distributed=False)
 class GetJiraKv(GeneratingCommand):
+    """
+    A Splunk search command that retrieves data from a remote Splunk KVstore instance.
+    This command is used to get JIRA failure replay data from a distributed setup.
+
+    The command:
+    - Supports both local and remote KVstore instances
+    - Handles bearer token authentication
+    - Supports passthrough mode for distributed setups
+    - Provides verification capability
+    - Returns CSV-formatted data from the KVstore
+    """
 
     verify = Option(
         doc="""
@@ -65,6 +76,37 @@ class GetJiraKv(GeneratingCommand):
     )
 
     def generate(self, **kwargs):
+        """
+        Generates the search results by retrieving data from the KVstore.
+
+        This method:
+        1. Retrieves the JIRA configuration
+        2. Sets up logging
+        3. Gets the bearer token if needed
+        4. Determines the KVstore instance to use
+        5. Constructs and executes the search query
+        6. Processes and yields the results
+
+        The method handles:
+        - Local and remote KVstore instances
+        - Passthrough mode for distributed setups
+        - Bearer token authentication
+        - Error handling and logging
+        - CSV data processing
+
+        Yields:
+            dict: A dictionary containing:
+                - _time: The timestamp of the request
+                - uuid: The unique identifier of the record
+                - account: The JIRA account name
+                - data: The JIRA data
+                - status: The status of the record
+                - ctime: Creation timestamp
+                - mtime: Modification timestamp
+                - no_attempts: Number of replay attempts
+
+        If verification is enabled, yields a success/failure message instead.
+        """
 
         if self:
 

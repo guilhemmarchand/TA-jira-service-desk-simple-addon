@@ -65,11 +65,32 @@ import splunklib.client as client
 
 class Jira_v1(jira_rest_handler.RESTHandler):
     def __init__(self, command_line, command_arg):
+        """
+        Initializes the Jira_v1 REST handler.
+
+        Args:
+            command_line (str): The command line arguments
+            command_arg (str): The command argument
+        """
         super(Jira_v1, self).__init__(command_line, command_arg, logger)
 
     def get_get_conf(self, request_info, **kwargs):
         """
-        This endpoint returns the local configuration of the app as a JSON object
+        Retrieves the local configuration of the app as a JSON object.
+
+        Args:
+            request_info: The request information object containing server details and authentication
+            **kwargs: Additional keyword arguments
+
+        Returns:
+            dict: A dictionary containing:
+                - payload: The configuration data or description if requested
+                - status: HTTP status code (200 for success)
+
+        The configuration includes:
+            - Proxy settings
+            - Advanced configuration
+            - Server REST URI, host, and port
         """
 
         describe = False
@@ -213,6 +234,18 @@ class Jira_v1(jira_rest_handler.RESTHandler):
 
     # list accounts with least privileges approach
     def get_list_accounts(self, request_info, **kwargs):
+        """
+        Lists all configured JIRA accounts using a least privileges approach.
+
+        Args:
+            request_info: The request information object containing server details and authentication
+            **kwargs: Additional keyword arguments
+
+        Returns:
+            dict: A dictionary containing:
+                - payload: The list of accounts or description if requested
+                - status: HTTP status code (200 for success)
+        """
         describe = False
 
         # Retrieve from data
@@ -292,8 +325,19 @@ class Jira_v1(jira_rest_handler.RESTHandler):
         self, jira_ssl_certificate_path, jira_ssl_certificate_pem
     ):
         """
-        Helper function to handle SSL certificate configuration.
-        Returns a tuple of (ssl_config, temp_cert_file) where temp_cert_file is None if no temporary file was created.
+        Handles SSL certificate configuration for JIRA connection.
+
+        Args:
+            jira_ssl_certificate_path (str): Path to the SSL certificate file
+            jira_ssl_certificate_pem (str): PEM-encoded certificate content
+
+        Returns:
+            tuple: A tuple containing (ssl_config, temp_cert_file)
+                - ssl_config: The SSL configuration for requests
+                - temp_cert_file: The temporary certificate file path if created
+
+        Raises:
+            Exception: If SSL certificate handling fails
         """
         temp_cert_file = None
 
@@ -331,7 +375,21 @@ class Jira_v1(jira_rest_handler.RESTHandler):
 
     def post_test_connectivity(self, request_info, **kwargs):
         """
-        This endpoint tests the connectivity to a JIRA instance
+        Tests connectivity to a JIRA instance using the provided account.
+
+        Args:
+            request_info: The request information object containing server details and authentication
+            **kwargs: Additional keyword arguments
+
+        Returns:
+            dict: A dictionary containing:
+                - payload: The connectivity test results
+                - status: HTTP status code (200 for success, 500 for failure)
+
+        The test verifies:
+            - Account configuration
+            - SSL certificate handling
+            - JIRA API connectivity
         """
         describe = False
         temp_cert_file = None
@@ -478,8 +536,22 @@ class Jira_v1(jira_rest_handler.RESTHandler):
 
     def post_validate_connection(self, request_info, **kwargs):
         """
-        This endpoint validates the connectivity to a JIRA instance using provided configuration
-        before it is saved to the system configuration
+        Validates the connection to a JIRA instance with detailed error reporting.
+
+        Args:
+            request_info: The request information object containing server details and authentication
+            **kwargs: Additional keyword arguments
+
+        Returns:
+            dict: A dictionary containing:
+                - payload: The validation results with detailed error information
+                - status: HTTP status code (200 for success, 500 for failure)
+
+        The validation includes:
+            - Account configuration verification
+            - SSL certificate validation
+            - JIRA API endpoint testing
+            - Detailed error reporting for each step
         """
         describe = False
         temp_cert_file = None
@@ -511,7 +583,7 @@ class Jira_v1(jira_rest_handler.RESTHandler):
                     "auth_mode": "The authentication mode (basic or pat)",
                     "username": "The username for basic auth or token name for PAT",
                     "jira_password": "The password for basic auth or token for PAT",
-                    "jira_ssl_certificate_path": "Optional path to SSL certificate bundle",
+                    "jira_ssl_certificate_path": "Optional path to SSL certificate",
                     "jira_ssl_certificate_pem": "Optional PEM content of SSL certificate",
                 },
             }
@@ -637,6 +709,24 @@ class Jira_v1(jira_rest_handler.RESTHandler):
 
     # get account details with least privileges approach
     def post_get_account(self, request_info, **kwargs):
+        """
+        Retrieves account credentials for a specific JIRA account.
+
+        Args:
+            request_info: The request information object containing server details and authentication
+            **kwargs: Additional keyword arguments
+
+        Returns:
+            dict: A dictionary containing:
+                - payload: The account credentials or error message
+                - status: HTTP status code (200 for success, 500 for failure)
+
+        The account information includes:
+            - Authentication mode
+            - JIRA URL
+            - SSL certificate details
+            - Username and password
+        """
         describe = False
 
         # Retrieve from data
@@ -789,6 +879,18 @@ class Jira_v1(jira_rest_handler.RESTHandler):
 
     # Get the bearer token
     def get_get_bearer_token(self, request_info, **kwargs):
+        """
+        Retrieves a bearer token for JIRA authentication.
+
+        Args:
+            request_info: The request information object containing server details and authentication
+            **kwargs: Additional keyword arguments
+
+        Returns:
+            dict: A dictionary containing:
+                - payload: The bearer token or error message
+                - status: HTTP status code (200 for success, 500 for failure)
+        """
         describe = False
 
         # Retrieve from data

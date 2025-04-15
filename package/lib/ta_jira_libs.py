@@ -25,7 +25,17 @@ sys.path.append(
 # get configuration
 def jira_get_conf(session_key, splunkd_uri):
     """
-    get system wide conf with least privilege approach
+    Retrieves the system-wide configuration using a least privilege approach.
+
+    Args:
+        session_key (str): The Splunk session key for authentication
+        splunkd_uri (str): The URI of the Splunk server
+
+    Returns:
+        dict: The configuration data as a JSON object
+
+    Raises:
+        Exception: If the configuration retrieval fails
     """
 
     # Ensure splunkd_uri starts with "https://"
@@ -62,7 +72,17 @@ def jira_get_conf(session_key, splunkd_uri):
 # get accounts
 def jira_get_accounts(session_key, splunkd_uri):
     """
-    get list of configured accounts with least privilege approach
+    Retrieves the list of configured JIRA accounts using a least privilege approach.
+
+    Args:
+        session_key (str): The Splunk session key for authentication
+        splunkd_uri (str): The URI of the Splunk server
+
+    Returns:
+        dict: The list of accounts as a JSON object
+
+    Raises:
+        Exception: If the account list retrieval fails
     """
 
     # Ensure splunkd_uri starts with "https://"
@@ -99,7 +119,18 @@ def jira_get_accounts(session_key, splunkd_uri):
 # get account
 def jira_get_account(session_key, splunkd_uri, account):
     """
-    get account creds with least privilege approach
+    Retrieves account credentials for a specific JIRA account using a least privilege approach.
+
+    Args:
+        session_key (str): The Splunk session key for authentication
+        splunkd_uri (str): The URI of the Splunk server
+        account (str): The name of the account to retrieve
+
+    Returns:
+        dict: The account credentials as a JSON object
+
+    Raises:
+        Exception: If the account retrieval fails
     """
 
     # Ensure splunkd_uri starts with "https://"
@@ -140,7 +171,18 @@ def jira_get_account(session_key, splunkd_uri, account):
 # Test connectivity to Jira using our API endpoint
 def jira_test_connectivity(session_key, splunkd_uri, account):
     """
-    Test connectivity to a JIRA instance
+    Tests connectivity to a JIRA instance using the configured account.
+
+    Args:
+        session_key (str): The Splunk session key for authentication
+        splunkd_uri (str): The URI of the Splunk server
+        account (str): The name of the account to test
+
+    Returns:
+        dict: The connectivity test results as a JSON object
+
+    Raises:
+        Exception: If the connectivity test fails
     """
     temp_cert_file = None
 
@@ -183,6 +225,19 @@ def jira_test_connectivity(session_key, splunkd_uri, account):
 
 # Get bearer token using our API endpoint
 def jira_get_bearer_token(session_key, splunkd_uri):
+    """
+    Retrieves a bearer token for authentication with JIRA.
+
+    Args:
+        session_key (str): The Splunk session key for authentication
+        splunkd_uri (str): The URI of the Splunk server
+
+    Returns:
+        str: The bearer token
+
+    Raises:
+        Exception: If the bearer token retrieval fails
+    """
 
     # Ensure splunkd_uri starts with "https://"
     if not splunkd_uri.startswith("https://"):
@@ -221,7 +276,18 @@ def jira_get_bearer_token(session_key, splunkd_uri):
 # A simple function to build the jira headers
 def jira_build_headers(jira_auth_mode, jira_username, jira_password):
     """
-    Build JIRA headers based on authentication mode
+    Builds JIRA headers based on the specified authentication mode.
+
+    Args:
+        jira_auth_mode (str): The authentication mode ('basic' or 'pat')
+        jira_username (str): The JIRA username (for basic auth)
+        jira_password (str): The JIRA password or personal access token
+
+    Returns:
+        dict: The constructed headers for JIRA API requests
+
+    Raises:
+        Exception: If an invalid authentication mode is provided
     """
     # Build the authentication header for JIRA
     if str(jira_auth_mode) == "basic":
@@ -247,9 +313,20 @@ def jira_build_ssl_config(
     jira_ssl_certificate_path, jira_ssl_certificate_pem=None, account_name=None
 ):
     """
-    Build SSL configuration for JIRA connection.
-    Supports both certificate path and PEM content.
-    Returns a tuple of (ssl_config, temp_cert_file) where temp_cert_file is None if no temporary file was created.
+    Builds SSL configuration for JIRA connection.
+
+    Args:
+        jira_ssl_certificate_path (str): Path to the SSL certificate file
+        jira_ssl_certificate_pem (str, optional): PEM-encoded certificate content
+        account_name (str, optional): Name of the account for logging purposes
+
+    Returns:
+        tuple: A tuple containing (ssl_config, temp_cert_file)
+            - ssl_config: The SSL configuration for requests
+            - temp_cert_file: The temporary certificate file path if created
+
+    Raises:
+        Exception: If SSL configuration fails
     """
     temp_cert_file = None
 
@@ -288,8 +365,19 @@ def jira_build_ssl_config(
 
 def jira_handle_ssl_certificate(jira_ssl_certificate_path, jira_ssl_certificate_pem):
     """
-    Handle SSL certificate configuration.
-    Returns a tuple of (ssl_config, temp_cert_file) where temp_cert_file is None if no temporary file was created.
+    Handles SSL certificate configuration for JIRA connection.
+
+    Args:
+        jira_ssl_certificate_path (str): Path to the SSL certificate file
+        jira_ssl_certificate_pem (str, optional): PEM-encoded certificate content
+
+    Returns:
+        tuple: A tuple containing (ssl_config, temp_cert_file)
+            - ssl_config: The SSL configuration for requests
+            - temp_cert_file: The temporary certificate file path if created
+
+    Raises:
+        Exception: If SSL certificate handling fails
     """
     temp_cert_file = None
 

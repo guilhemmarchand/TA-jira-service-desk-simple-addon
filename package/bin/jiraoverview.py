@@ -58,9 +58,50 @@ from ta_jira_libs import (
 
 @Configuration(distributed=False)
 class GenerateTextCommand(GeneratingCommand):
+    """
+    A Splunk search command that provides an overview of JIRA projects and their metrics.
+    This command retrieves key performance indicators (KPIs) for all configured JIRA projects.
 
-    # Proceed
+    The command:
+    - Connects to all configured JIRA accounts
+    - Retrieves the list of projects for each account
+    - Collects metrics for each project including:
+        - Total number of issues
+        - Number of completed issues
+    """
+
     def generate(self):
+        """
+        Generates the search results by collecting JIRA project metrics.
+
+        This method:
+        1. Retrieves the JIRA configuration
+        2. Sets up logging and proxy settings
+        3. Gets the list of configured accounts
+        4. For each account:
+           - Retrieves account configuration
+           - Tests connectivity
+           - Gets the list of projects
+           - For each project:
+             - Gets total issue count
+             - Gets completed issue count
+             - Yields the metrics
+
+        The method handles:
+        - SSL certificate verification
+        - Proxy configuration
+        - Error handling and logging
+        - Multiple JIRA accounts
+
+        Yields:
+            dict: A dictionary containing:
+                - _time: The timestamp of the request
+                - _raw: The metrics data
+                - account: The JIRA account name
+                - project: The project key
+                - type: The metric type ('total_issues' or 'total_done')
+                - value: The metric value
+        """
 
         # get conf
         jira_conf = jira_get_conf(

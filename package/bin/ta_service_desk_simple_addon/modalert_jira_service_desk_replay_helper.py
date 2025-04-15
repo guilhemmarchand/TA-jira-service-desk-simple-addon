@@ -27,7 +27,24 @@ from ta_jira_libs import (
 
 
 def process_event(helper, *args, **kwargs):
+    """
+    Processes JIRA Service Desk replay events, handling failed ticket creation attempts.
 
+    Args:
+        helper: The helper object for logging and configuration
+        *args: Variable length argument list
+        **kwargs: Arbitrary keyword arguments
+
+    Returns:
+        int: 0 on success, error code on failure
+
+    The function:
+    1. Initializes logging and retrieves configuration
+    2. Validates the JIRA account
+    3. Sets up SSL and connectivity testing
+    4. Calls query_url to process the ticket
+    5. Cleans up temporary files
+    """
     # REPLAY START
     helper.set_log_level(helper.log_level)
     helper.log_info("Alert action jira_service_desk_replay started.")
@@ -112,7 +129,28 @@ def query_url(
     jira_password,
     ssl_config,
 ):
+    """
+    Handles the actual JIRA ticket creation or update request for replay.
 
+    Args:
+        helper: The helper object for logging and configuration
+        account (str): The JIRA account name
+        jira_auth_mode (str): Authentication mode (basic/bearer)
+        jira_url (str): Base JIRA URL
+        jira_username (str): JIRA username
+        jira_password (str): JIRA password
+        ssl_config: SSL configuration for HTTPS
+
+    Returns:
+        int: 0 on success, error code on failure
+
+    The function:
+    1. Retrieves configuration and sets up proxy/timeout
+    2. Processes ticket data and status
+    3. Handles distributed setup with KVstore
+    4. Attempts ticket creation/update
+    5. Manages retry attempts and cleanup
+    """
     # Retrieve the session_key
     helper.log_debug("Get session_key.")
     session_key = helper.session_key

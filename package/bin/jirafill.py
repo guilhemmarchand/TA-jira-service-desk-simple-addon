@@ -58,6 +58,10 @@ from ta_jira_libs import (
 
 @Configuration(distributed=False)
 class GenerateTextCommand(GeneratingCommand):
+    """
+    A Splunk search command that generates JIRA information based on the specified option.
+    This command can be used to test connectivity, get projects, issue types, priorities, statuses, and resolutions.
+    """
 
     account = Option(
         doc="""
@@ -78,6 +82,16 @@ class GenerateTextCommand(GeneratingCommand):
     )
 
     def jira_url(self, url, endpoint):
+        """
+        Constructs a proper JIRA API URL ensuring HTTPS protocol.
+
+        Args:
+            url (str): The base JIRA URL
+            endpoint (str): The API endpoint to append
+
+        Returns:
+            str: The complete HTTPS URL for the JIRA API endpoint
+        """
         # For Splunk Cloud vetting, the URL must start with https://
         if not url.startswith("https://"):
             return f"https://{url}/rest/api/latest/{endpoint}"
@@ -96,13 +110,31 @@ class GenerateTextCommand(GeneratingCommand):
         timeout,
     ):
         """
-        Get JIRA information based on the option
-        Option 0: Test connectivity
-        Option 1: Get projects
-        Option 2: Get issue types
-        Option 3: Get priorities
-        Option 4: Get statuses
-        Option 5: Get resolutions
+        Retrieves JIRA information based on the specified option.
+
+        Args:
+            jira_url (str): The base JIRA URL
+            jira_auth_mode (str): The authentication mode ('basic' or 'pat')
+            jira_username (str): The JIRA username
+            jira_password (str): The JIRA password or token
+            jira_ssl_certificate_path (str): Path to the SSL certificate file
+            jira_ssl_certificate_pem (str): PEM-encoded certificate content
+            proxy_dict (dict): Proxy configuration dictionary
+            timeout (int): Request timeout in seconds
+
+        Returns:
+            dict: The JIRA API response as a JSON object
+
+        The function supports the following options:
+            - 0: Test connectivity
+            - 1: Get projects
+            - 2: Get issue types
+            - 3: Get priorities
+            - 4: Get statuses
+            - 5: Get resolutions
+
+        Raises:
+            Exception: If the option is invalid or the API request fails
         """
         # Build the authentication header for JIRA
         jira_headers = jira_build_headers(jira_auth_mode, jira_username, jira_password)
@@ -190,7 +222,20 @@ class GenerateTextCommand(GeneratingCommand):
 
     def generate(self):
         """
-        Generate the results
+        Generates the search results by querying JIRA information for the specified account(s).
+
+        This method:
+        1. Retrieves the JIRA configuration
+        2. Sets up logging and proxy settings
+        3. Gets the list of configured accounts
+        4. For each account (or the specified one):
+           - Retrieves account configuration
+           - Tests connectivity
+           - Gets the requested JIRA information
+           - Yields the results
+
+        Yields:
+            dict: A dictionary containing the JIRA information for each account
         """
         # get conf
         jira_conf = jira_get_conf(

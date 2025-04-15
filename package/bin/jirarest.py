@@ -58,6 +58,17 @@ from ta_jira_libs import (
 
 @Configuration(distributed=False)
 class GenerateTextCommand(GeneratingCommand):
+    """
+    A Splunk search command that provides a REST interface to JIRA.
+    This command allows making HTTP requests to JIRA's REST API with various methods (GET, POST, PUT, DELETE).
+
+    The command supports:
+    - Configurable JIRA account selection
+    - Multiple HTTP methods
+    - JSON request payloads
+    - SSL certificate handling
+    - Proxy configuration
+    """
 
     account = Option(
         doc="""
@@ -82,8 +93,30 @@ class GenerateTextCommand(GeneratingCommand):
     )
     target = Option(require=True)
 
-    # Proceed
     def generate(self):
+        """
+        Generates the search results by making a REST request to JIRA.
+
+        This method:
+        1. Retrieves the JIRA configuration
+        2. Sets up logging and proxy settings
+        3. Gets the specified account configuration
+        4. Tests connectivity to JIRA
+        5. Makes the REST request with the specified method
+        6. Processes and yields the response
+
+        The method handles:
+        - Different HTTP methods (GET, POST, PUT, DELETE)
+        - JSON request payloads
+        - SSL certificate verification
+        - Proxy configuration
+        - Error handling and response formatting
+
+        Yields:
+            dict: A dictionary containing:
+                - _time: The timestamp of the request
+                - _raw: The JSON response from JIRA or an error message
+        """
 
         # get conf
         jira_conf = jira_get_conf(

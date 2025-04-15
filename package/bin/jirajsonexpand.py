@@ -51,6 +51,16 @@ from ta_jira_libs import jira_get_conf
 
 @Configuration()
 class TrackMePrettyJson(StreamingCommand):
+    """
+    A Splunk streaming command that expands and pretty-prints JSON data from JIRA responses.
+    This command is particularly useful for processing JIRA API responses that contain nested JSON structures.
+
+    The command:
+    - Takes a JSON input field
+    - Expands a specified subfield containing nested JSON
+    - Pretty-prints the expanded JSON
+    - Streams the results for further processing
+    """
 
     input = Option(
         doc="""
@@ -73,7 +83,34 @@ class TrackMePrettyJson(StreamingCommand):
     # status will be statically defined as imported
 
     def stream(self, records):
+        """
+        Processes and expands JSON records from the input stream.
 
+        This method:
+        1. Retrieves the JIRA configuration
+        2. Sets up logging
+        3. For each record in the input:
+           - Parses the JSON from the specified input field
+           - Extracts the specified subfield
+           - Pretty-prints each item in the subfield
+           - Yields the expanded results
+
+        The method handles:
+        - JSON parsing and validation
+        - Error handling and logging
+        - Pretty-printing of JSON output
+
+        Args:
+            records: An iterable of input records
+
+        Yields:
+            dict: A dictionary containing:
+                - _time: The timestamp of processing
+                - _raw: The pretty-printed JSON string
+
+        Raises:
+            Exception: If JSON parsing or processing fails
+        """
         # get conf
         jira_conf = jira_get_conf(
             self._metadata.searchinfo.session_key, self._metadata.searchinfo.splunkd_uri

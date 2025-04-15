@@ -114,9 +114,6 @@ class Jira_v1(jira_rest_handler.RESTHandler):
         # Initialize the jira_service_desk dictionary
         jira_service_desk = {}
 
-        # Initialize timeout
-        timeout = 30
-
         # Initialize the proxy-related variables
         proxy_enabled = "0"
         proxy_port = None
@@ -161,7 +158,7 @@ class Jira_v1(jira_rest_handler.RESTHandler):
 
                             # get proxy password, if any
                             storage_passwords = service.storage_passwords
-                            credential_realm = "__REST_CREDENTIAL__#TA-jira-service-desk-simple-addon#configs/conf-jira_service_desk_settings"
+                            credential_realm = "__REST_CREDENTIAL__#TA-jira-service-desk-simple-addon#configs/conf-ta_service_desk_simple_addon_settings"
                             for credential in storage_passwords:
                                 if (
                                     credential.content.get("realm")
@@ -179,7 +176,7 @@ class Jira_v1(jira_rest_handler.RESTHandler):
                             if proxy_type == "http":
                                 proxy_dict = {
                                     "http": f"http://{proxy_username}:{proxy_password}@{proxy_url}:{proxy_port}",
-                                    "https": f"https://{proxy_username}:{proxy_password}@{proxy_url}:{proxy_port}",
+                                    "https": f"http://{proxy_username}:{proxy_password}@{proxy_url}:{proxy_port}",
                                 }
                             else:
                                 proxy_dict = {

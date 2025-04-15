@@ -97,6 +97,9 @@ class GenerateTextCommand(GeneratingCommand):
         proxy_conf = jira_conf["proxy"]
         proxy_dict = proxy_conf.get("proxy_dict", {})
 
+        # set timeout
+        timeout = int(jira_conf["advanced_configuration"].get("timeout", 120))
+
         # get all acounts
         accounts_dict = jira_get_accounts(
             self._metadata.searchinfo.session_key, self._metadata.searchinfo.splunkd_uri
@@ -176,6 +179,7 @@ class GenerateTextCommand(GeneratingCommand):
                     headers=jira_headers,
                     verify=ssl_config,
                     proxies=proxy_dict,
+                    timeout=timeout,
                 )
             elif jira_method == "DELETE":
                 jira_fields_response = requests.delete(
@@ -183,6 +187,7 @@ class GenerateTextCommand(GeneratingCommand):
                     headers=jira_headers,
                     verify=ssl_config,
                     proxies=proxy_dict,
+                    timeout=timeout,
                 )
             elif jira_method == "POST":
                 jira_fields_response = requests.post(
@@ -191,6 +196,7 @@ class GenerateTextCommand(GeneratingCommand):
                     headers=jira_headers,
                     verify=ssl_config,
                     proxies=proxy_dict,
+                    timeout=timeout,
                 )
             elif jira_method == "PUT":
                 jira_fields_response = requests.put(
@@ -199,6 +205,7 @@ class GenerateTextCommand(GeneratingCommand):
                     headers=jira_headers,
                     verify=ssl_config,
                     proxies=proxy_dict,
+                    timeout=timeout,
                 )
 
             # Attenpt to get a JSON response, and render in Splunk

@@ -74,6 +74,9 @@ class GenerateTextCommand(GeneratingCommand):
         proxy_conf = jira_conf["proxy"]
         proxy_dict = proxy_conf.get("proxy_dict", {})
 
+        # set timeout
+        timeout = int(jira_conf["advanced_configuration"].get("timeout", 120))
+
         # get all acounts
         accounts_dict = jira_get_accounts(
             self._metadata.searchinfo.session_key, self._metadata.searchinfo.splunkd_uri
@@ -144,7 +147,7 @@ class GenerateTextCommand(GeneratingCommand):
                     headers=jira_headers,
                     verify=ssl_config,
                     proxies=proxy_dict,
-                    timeout=10,
+                    timeout=timeout,
                 )
                 if response.status_code not in (200, 201, 204):
                     raise Exception(
@@ -177,7 +180,7 @@ class GenerateTextCommand(GeneratingCommand):
                         headers=jira_headers,
                         verify=ssl_config,
                         proxies=proxy_dict,
-                        timeout=10,
+                        timeout=timeout,
                     )
                     if response.status_code not in (200, 201, 204):
                         logging.error(
@@ -215,7 +218,7 @@ class GenerateTextCommand(GeneratingCommand):
                         headers=jira_headers,
                         verify=ssl_config,
                         proxies=proxy_dict,
-                        timeout=10,
+                        timeout=timeout,
                     )
                     if response.status_code not in (200, 201, 204):
                         logging.error(
@@ -253,7 +256,7 @@ class GenerateTextCommand(GeneratingCommand):
                         headers=jira_headers,
                         verify=ssl_config,
                         proxies=proxy_dict,
-                        timeout=10,
+                        timeout=timeout,
                     )
                     if response.status_code not in (200, 201, 204):
                         logging.error(
@@ -291,7 +294,7 @@ class GenerateTextCommand(GeneratingCommand):
                         headers=jira_headers,
                         verify=ssl_config,
                         proxies=proxy_dict,
-                        timeout=10,
+                        timeout=timeout,
                     )
                     if response.status_code not in (200, 201, 204):
                         logging.error(

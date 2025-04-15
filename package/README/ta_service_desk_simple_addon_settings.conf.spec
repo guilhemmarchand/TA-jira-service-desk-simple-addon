@@ -11,5 +11,6 @@ proxy_rdns =
 loglevel = 
 
 [advanced_configuration]
+timeout =
 jira_passthrough_mode = 
 passthrough_help_link = 

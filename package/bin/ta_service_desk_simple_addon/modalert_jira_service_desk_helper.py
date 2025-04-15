@@ -31,7 +31,7 @@ from ta_jira_libs import (
     jira_get_account,
     jira_test_connectivity,
     jira_build_headers,
-    jira_build_ssl_config,
+    jira_handle_ssl_certificate,
 )
 
 
@@ -155,8 +155,8 @@ def process_event(helper, *args, **kwargs):
 
     jira_auth_mode = account_conf.get("auth_mode", "basic")
     jira_url = account_conf.get("jira_url", None)
-    jira_ssl_certificate_path = account_conf.get("ssl_certificate_path", None)
-    jira_ssl_certificate_pem = account_conf.get("ssl_certificate_pem", None)
+    jira_ssl_certificate_path = account_conf.get("jira_ssl_certificate_path", None)
+    jira_ssl_certificate_pem = account_conf.get("jira_ssl_certificate_pem", None)
     jira_username = account_conf.get("username", None)
     jira_password = account_conf.get("jira_password", None)
     # end of get configuration
@@ -165,8 +165,8 @@ def process_event(helper, *args, **kwargs):
     jira_headers = jira_build_headers(jira_auth_mode, jira_username, jira_password)
 
     # Splunk Cloud vetting notes: SSL verification is always true or the path to the CA bundle for the SSL certificate to be verified
-    ssl_config = jira_build_ssl_config(
-        jira_ssl_certificate_path, jira_ssl_certificate_pem, account
+    ssl_config, temp_cert_file = jira_handle_ssl_certificate(
+        jira_ssl_certificate_path, jira_ssl_certificate_pem
     )
 
     # test connectivity systematically but do not fail as the resilient tracker will retry
@@ -255,6 +255,7 @@ def attach_csv(
     jira_headers_attachment,
     ssl_config,
     proxy_dict,
+    timeout,
     *args,
     **kwargs,
 ):
@@ -298,6 +299,7 @@ def attach_csv(
             headers=jira_headers_attachment,
             verify=ssl_config,
             proxies=proxy_dict,
+            timeout=timeout,
         )
         helper.log_debug(f"response status_code:={response.status_code}")
 
@@ -340,6 +342,7 @@ def attach_json(
     jira_headers_attachment,
     ssl_config,
     proxy_dict,
+    timeout,
     *args,
     **kwargs,
 ):
@@ -388,6 +391,7 @@ def attach_json(
             headers=jira_headers_attachment,
             verify=ssl_config,
             proxies=proxy_dict,
+            timeout=timeout,
         )
 
         helper.log_debug(f"response status_code:={response.status_code}")
@@ -441,6 +445,7 @@ def attach_xlsx(
     jira_headers_attachment,
     ssl_config,
     proxy_dict,
+    timeout,
     *args,
     **kwargs,
 ):
@@ -509,6 +514,7 @@ def attach_xlsx(
             headers=jira_headers_attachment,
             verify=ssl_config,
             proxies=proxy_dict,
+            timeout=timeout,
         )
         helper.log_debug(f"response status_code:={response.status_code}")
 
@@ -660,6 +666,12 @@ def query_url(
 
     # splunkd_uri
     splunkd_uri = helper.settings["server_uri"]
+
+    # get conf
+    jira_conf = jira_get_conf(session_key, splunkd_uri)
+
+    # set timeout
+    timeout = int(jira_conf["advanced_configuration"].get("timeout", 120))
 
     # For Splunk Cloud vetting, the URL must start with https://
     if not jira_url.startswith("https://"):
@@ -991,7 +1003,7 @@ def query_url(
                         headers=headers,
                         verify=ssl_config,
                         proxies=proxy_dict,
-                        timeout=120,
+                        timeout=timeout,
                     )
                     helper.log_debug(f"response status_code:={response.status_code}")
 
@@ -1042,6 +1054,7 @@ def query_url(
                         jira_headers,
                         ssl_config,
                         proxy_dict,
+                        timeout,
                         event,
                         jira_auto_close,
                         jira_auto_close_key_value_pair,
@@ -1184,7 +1197,7 @@ def query_url(
                     headers=jira_headers,
                     verify=ssl_config,
                     proxies=proxy_dict,
-                    timeout=120,
+                    timeout=timeout,
                 )
                 helper.log_debug(f"response status_code:={response.status_code}")
 
@@ -1327,6 +1340,7 @@ def query_url(
                             jira_headers_attachment,
                             ssl_config,
                             proxy_dict,
+                            timeout,
                         )
 
                     elif jira_attachment in ("enabled_json"):
@@ -1338,6 +1352,7 @@ def query_url(
                             jira_headers_attachment,
                             ssl_config,
                             proxy_dict,
+                            timeout,
                         )
 
                     elif jira_attachment in ("enabled_xlsx"):
@@ -1349,6 +1364,7 @@ def query_url(
                             jira_headers_attachment,
                             ssl_config,
                             proxy_dict,
+                            timeout,
                         )
 
                 else:
@@ -1374,6 +1390,7 @@ def query_url(
                         jira_headers,
                         ssl_config,
                         proxy_dict,
+                        timeout,
                         event,
                         jira_auto_close,
                         jira_auto_close_key_value_pair,
@@ -1444,6 +1461,7 @@ def query_url(
                             jira_headers_attachment,
                             ssl_config,
                             proxy_dict,
+                            timeout,
                         )
 
                     elif jira_attachment in ("enabled_json"):
@@ -1455,6 +1473,7 @@ def query_url(
                             jira_headers_attachment,
                             ssl_config,
                             proxy_dict,
+                            timeout,
                         )
 
                     elif jira_attachment in ("enabled_xlsx"):
@@ -1466,6 +1485,7 @@ def query_url(
                             jira_headers_attachment,
                             ssl_config,
                             proxy_dict,
+                            timeout,
                         )
 
                 # Return the JIRA response as final word
@@ -1478,6 +1498,7 @@ def perform_auto_closure(
     jira_headers,
     ssl_config,
     proxy_dict,
+    timeout,
     event,
     jira_auto_close,
     jira_auto_close_key_value_pair,
@@ -1551,7 +1572,7 @@ def perform_auto_closure(
             headers=jira_headers,
             verify=ssl_config,
             proxies=proxy_dict,
-            timeout=120,
+            timeout=timeout,
         )
 
         if response.status_code not in (200, 201, 204):
@@ -1602,7 +1623,7 @@ def perform_auto_closure(
             headers=jira_headers,
             verify=ssl_config,
             proxies=proxy_dict,
-            timeout=120,
+            timeout=timeout,
         )
 
         if response.status_code not in (200, 201, 204):
@@ -1623,7 +1644,7 @@ def perform_auto_closure(
             headers=jira_headers,
             verify=ssl_config,
             proxies=proxy_dict,
-            timeout=120,
+            timeout=timeout,
         )
 
         if response.status_code not in (200, 201, 204):

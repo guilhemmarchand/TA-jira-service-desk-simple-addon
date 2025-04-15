@@ -55,7 +55,6 @@ import jira_rest_handler
 from ta_jira_libs import (
     jira_get_conf,
     jira_get_account,
-    jira_get_accounts,
     jira_build_headers,
     jira_handle_ssl_certificate,
 )
@@ -409,6 +408,9 @@ class Jira_v1(jira_rest_handler.RESTHandler):
                     "status": 500,
                 }
 
+            # set timeout
+            timeout = int(jira_conf["advanced_configuration"].get("timeout", 120))
+
             # Extract configuration
             jira_auth_mode = account_conf.get("auth_mode", "basic")
             jira_url = account_conf.get("jira_url", None)
@@ -439,7 +441,7 @@ class Jira_v1(jira_rest_handler.RESTHandler):
                     headers=jira_headers,
                     verify=ssl_config,
                     proxies=proxy_dict,
-                    timeout=10,
+                    timeout=timeout,
                 )
                 response.raise_for_status()
 
@@ -533,6 +535,9 @@ class Jira_v1(jira_rest_handler.RESTHandler):
                     "status": 500,
                 }
 
+            # set timeout
+            timeout = int(jira_conf["advanced_configuration"].get("timeout", 120))
+
             # Extract configuration from payload
             try:
                 jira_url = resp_dict["jira_url"]
@@ -578,7 +583,7 @@ class Jira_v1(jira_rest_handler.RESTHandler):
                     headers=jira_headers,
                     verify=ssl_config,
                     proxies=proxy_dict,
-                    timeout=10,
+                    timeout=timeout,
                 )
                 response.raise_for_status()
 

@@ -123,6 +123,9 @@ def query_url(
     # get conf
     jira_conf = jira_get_conf(session_key, server_uri)
 
+    # set timeout
+    timeout = int(jira_conf["advanced_configuration"].get("timeout", 120))
+
     # get proxy configuration
     proxy_conf = jira_conf["proxy"]
     proxy_dict = proxy_conf.get("proxy_dict", {})
@@ -236,7 +239,7 @@ def query_url(
                 headers=jira_headers,
                 verify=ssl_config if ssl_config else True,
                 proxies=proxy_dict,
-                timeout=120,
+                timeout=timeout,
             )
             helper.log_debug(f"response status_code:={response.status_code}")
 

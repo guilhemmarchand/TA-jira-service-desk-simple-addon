@@ -285,6 +285,24 @@
                     "title": "JIRA advanced configuration",
                     "entity": [
                         {
+                            "type": "text",
+                            "label": "timeout",
+                            "help": "The timeout value for JIRA REST API calls",
+                            "field": "timeout",
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Invalid value",
+                                    "pattern": "^\\d*$"
+                                }
+                            ],
+                            "options": {
+                                "display": true
+                            },
+                            "defaultValue": 120,
+                            "required": true
+                        },
+                        {
                             "type": "radio",
                             "label": "Passthrough mode",
                             "field": "jira_passthrough_mode",

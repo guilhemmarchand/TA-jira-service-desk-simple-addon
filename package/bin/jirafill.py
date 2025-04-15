@@ -93,6 +93,7 @@ class GenerateTextCommand(GeneratingCommand):
         jira_ssl_certificate_path,
         jira_ssl_certificate_pem,
         proxy_dict,
+        timeout,
     ):
         """
         Get JIRA information based on the option
@@ -119,7 +120,7 @@ class GenerateTextCommand(GeneratingCommand):
                 headers=jira_headers,
                 verify=ssl_config,
                 proxies=proxy_dict,
-                timeout=10,
+                timeout=timeout,
             )
             response.raise_for_status()
             return response.json()
@@ -131,7 +132,7 @@ class GenerateTextCommand(GeneratingCommand):
                 headers=jira_headers,
                 verify=ssl_config,
                 proxies=proxy_dict,
-                timeout=10,
+                timeout=timeout,
             )
             response.raise_for_status()
             return response.json()
@@ -143,7 +144,7 @@ class GenerateTextCommand(GeneratingCommand):
                 headers=jira_headers,
                 verify=ssl_config,
                 proxies=proxy_dict,
-                timeout=10,
+                timeout=timeout,
             )
             response.raise_for_status()
             return response.json()
@@ -155,7 +156,7 @@ class GenerateTextCommand(GeneratingCommand):
                 headers=jira_headers,
                 verify=ssl_config,
                 proxies=proxy_dict,
-                timeout=10,
+                timeout=timeout,
             )
             response.raise_for_status()
             return response.json()
@@ -167,7 +168,7 @@ class GenerateTextCommand(GeneratingCommand):
                 headers=jira_headers,
                 verify=ssl_config,
                 proxies=proxy_dict,
-                timeout=10,
+                timeout=timeout,
             )
             response.raise_for_status()
             return response.json()
@@ -179,7 +180,7 @@ class GenerateTextCommand(GeneratingCommand):
                 headers=jira_headers,
                 verify=ssl_config,
                 proxies=proxy_dict,
-                timeout=10,
+                timeout=timeout,
             )
             response.raise_for_status()
             return response.json()
@@ -202,6 +203,9 @@ class GenerateTextCommand(GeneratingCommand):
         # global configuration
         proxy_conf = jira_conf["proxy"]
         proxy_dict = proxy_conf.get("proxy_dict", {})
+
+        # set timeout
+        timeout = int(jira_conf["advanced_configuration"].get("timeout", 120))
 
         # get all acounts
         accounts_dict = jira_get_accounts(
@@ -289,6 +293,7 @@ class GenerateTextCommand(GeneratingCommand):
                         jira_ssl_certificate_path,
                         jira_ssl_certificate_pem,
                         proxy_dict,
+                        timeout,
                     ):
                         result_dict = {
                             "_time": time.time(),
@@ -313,6 +318,7 @@ class GenerateTextCommand(GeneratingCommand):
                         jira_ssl_certificate_path,
                         jira_ssl_certificate_pem,
                         proxy_dict,
+                        timeout,
                     ):
                         result_dict = {
                             "_time": time.time(),
@@ -335,6 +341,7 @@ class GenerateTextCommand(GeneratingCommand):
                         jira_ssl_certificate_path,
                         jira_ssl_certificate_pem,
                         proxy_dict,
+                        timeout,
                     ):
                         result_dict = {
                             "_time": time.time(),
@@ -357,6 +364,7 @@ class GenerateTextCommand(GeneratingCommand):
                         jira_ssl_certificate_path,
                         jira_ssl_certificate_pem,
                         proxy_dict,
+                        timeout,
                     ):
                         result_dict = {
                             "_time": time.time(),
@@ -456,6 +464,7 @@ class GenerateTextCommand(GeneratingCommand):
                     jira_ssl_certificate_path,
                     jira_ssl_certificate_pem,
                     proxy_dict,
+                    timeout,
                 ):
                     result_dict = {
                         "_time": time.time(),
@@ -480,6 +489,7 @@ class GenerateTextCommand(GeneratingCommand):
                     jira_ssl_certificate_path,
                     jira_ssl_certificate_pem,
                     proxy_dict,
+                    timeout,
                 ):
                     result_dict = {
                         "_time": time.time(),
@@ -502,6 +512,7 @@ class GenerateTextCommand(GeneratingCommand):
                     jira_ssl_certificate_path,
                     jira_ssl_certificate_pem,
                     proxy_dict,
+                    timeout,
                 ):
                     result_dict = {
                         "_time": time.time(),
@@ -524,6 +535,7 @@ class GenerateTextCommand(GeneratingCommand):
                     jira_ssl_certificate_path,
                     jira_ssl_certificate_pem,
                     proxy_dict,
+                    timeout,
                 ):
                     result_dict = {
                         "_time": time.time(),

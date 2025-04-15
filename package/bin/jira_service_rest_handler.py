@@ -24,11 +24,7 @@ from logging.handlers import RotatingFileHandler
 splunkhome = os.environ["SPLUNK_HOME"]
 
 # set logging
-logger = logging.getLogger("TA-jira-service-desk-simple-addon")
-# Remove any existing handlers to prevent duplicates
-for handler in logger.handlers[:]:
-    logger.removeHandler(handler)
-
+logger = logging.getLogger(__name__)
 filehandler = RotatingFileHandler(
     f"{splunkhome}/var/log/splunk/jira_service_desk_rest_api.log",
     mode="a",
@@ -40,8 +36,12 @@ formatter = logging.Formatter(
 )
 logging.Formatter.converter = time.gmtime
 filehandler.setFormatter(formatter)
-logger.addHandler(filehandler)
-logger.setLevel(logging.INFO)
+log = logging.getLogger()
+for hdlr in log.handlers[:]:
+    if isinstance(hdlr, logging.FileHandler):
+        log.removeHandler(hdlr)
+log.addHandler(filehandler)
+log.setLevel(logging.INFO)
 
 # append lib
 sys.path.append(
@@ -290,7 +290,7 @@ class Jira_v1(jira_rest_handler.RESTHandler):
                 for stanzakey, stanzavalue in stanza.content.items():
                     if stanzakey == "loglevel":
                         loglevel = stanzavalue
-        logger.setLevel(loglevel)
+        log.setLevel(loglevel)
 
         # get all acounts
         accounts = []
@@ -777,7 +777,7 @@ class Jira_v1(jira_rest_handler.RESTHandler):
                 for stanzakey, stanzavalue in stanza.content.items():
                     if stanzakey == "loglevel":
                         loglevel = stanzavalue
-        logger.setLevel(loglevel)
+        log.setLevel(loglevel)
 
         # Splunk credentials store
         storage_passwords = service.storage_passwords
@@ -936,7 +936,7 @@ class Jira_v1(jira_rest_handler.RESTHandler):
                 for stanzakey, stanzavalue in stanza.content.items():
                     if stanzakey == "loglevel":
                         loglevel = stanzavalue
-        logger.setLevel(loglevel)
+        log.setLevel(loglevel)
 
         # Splunk credentials store
         storage_passwords = service.storage_passwords

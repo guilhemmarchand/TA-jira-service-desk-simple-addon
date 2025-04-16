@@ -43,11 +43,32 @@
                             "required": true
                         },
                         {
+                            "type": "radio",
+                            "label": "Passthrough account",
+                            "field": "jira_passthrough_account",
+                            "defaultValue": "0",
+                            "help": "Set to True if creating a passthrough account",
+                            "required": false,
+                            "options": {
+                                "items": [
+                                    {
+                                        "value": "0",
+                                        "label": "False"
+                                    },
+                                    {
+                                        "value": "1",
+                                        "label": "True"
+                                    }
+                                ],
+                                "display": true
+                            }
+                        },
+                        {
                             "type": "text",
                             "label": "JIRA URL",
                             "help": "jira.atlassian.net (SSL is enforced and the URL submitted will be substituted with https://)",
                             "field": "jira_url",
-                            "required": true,
+                            "required": false,
                             "options": {
                                 "display": true
                             },
@@ -64,7 +85,7 @@
                             "label": "Username or PAT ID",
                             "help": "Enter the username for this account, or the Personal Access Token ID.",
                             "field": "username",
-                            "required": true,
+                            "required": false,
                             "validators": [
                                 {
                                     "type": "regex",
@@ -79,7 +100,7 @@
                             "encrypted": true,
                             "help": "Enter the password for this account, API token or Personal Access Token.",
                             "field": "password",
-                            "required": true,
+                            "required": false,
                             "validators": [
                                 {
                                     "type": "regex",
@@ -103,7 +124,7 @@
                             "field": "jira_auth_mode",
                             "defaultValue": "basic",
                             "help": "Use basic authentication with combo username/password, username/API token or Personal Access Token (PAT)",
-                            "required": true,
+                            "required": false,
                             "options": {
                                 "items": [
                                     {

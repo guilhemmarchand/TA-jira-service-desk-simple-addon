@@ -27,6 +27,29 @@ class CustomRestHandlerCreateRemoteAccount(AdminExternalHandler):
         # get conf
         jira_conf = jira_get_conf(self.getSessionKey(), self.handler._splunkd_uri)
 
+        # check if the account is a passthrough account, if so, skip the connectivity validation
+        jira_passthrough_account = int(self.payload.get("jira_passthrough_account", 0))
+        if jira_passthrough_account == 1:
+            return
+        else:
+            # check our mandatory fields, if none, raise an exception
+            if not self.payload.get("jira_url"):
+                raise Exception(
+                    "If not creating a passthrough account, JIRA URL is required"
+                )
+            if not self.payload.get("jira_auth_mode"):
+                raise Exception(
+                    "If not creating a passthrough account, JIRA Authentication mode is required"
+                )
+            if not self.payload.get("username"):
+                raise Exception(
+                    "If not creating a passthrough account, Username is required"
+                )
+            if not self.payload.get("password"):
+                raise Exception(
+                    "If not creating a passthrough account, Password or API token is required"
+                )
+
         # Call the validate_connection endpoint
         header = {
             "Authorization": f"Splunk {self.getSessionKey()}",

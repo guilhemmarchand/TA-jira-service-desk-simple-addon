@@ -35,8 +35,15 @@ special_fields = [
 
 fields = [
     field.RestField(
+        "jira_passthrough_account",
+        required=False,
+        encrypted=False,
+        default="0",
+        validator=None,
+    ),
+    field.RestField(
         "jira_url",
-        required=True,
+        required=False,
         encrypted=False,
         default=None,
         validator=validator.Pattern(
@@ -45,7 +52,7 @@ fields = [
     ),
     field.RestField(
         "username",
-        required=True,
+        required=False,
         encrypted=False,
         default=None,
         validator=validator.Pattern(
@@ -54,7 +61,7 @@ fields = [
     ),
     field.RestField(
         "password",
-        required=True,
+        required=False,
         encrypted=True,
         default=None,
         validator=validator.Pattern(
@@ -70,7 +77,7 @@ fields = [
     ),
     field.RestField(
         "jira_auth_mode",
-        required=True,
+        required=False,
         encrypted=False,
         default="basic",
         validator=None,

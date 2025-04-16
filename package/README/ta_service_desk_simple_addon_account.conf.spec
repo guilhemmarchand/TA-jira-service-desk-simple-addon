@@ -9,3 +9,4 @@ ssl_help_link =
 username = 
 using_api_token_help_link = 
 using_pat_help_link = 
+jira_passthrough_account =

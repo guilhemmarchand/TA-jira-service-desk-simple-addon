@@ -8,6 +8,8 @@ import sys
 import requests
 import json
 import logging
+from logging.handlers import RotatingFileHandler
+import time
 import base64
 import urllib3
 import tempfile
@@ -412,3 +414,41 @@ def jira_handle_ssl_certificate(jira_ssl_certificate_path, jira_ssl_certificate_
         ssl_config = True
 
     return ssl_config, temp_cert_file
+
+
+def setup_logger(name: str, logfile: str, level=logging.INFO) -> logging.Logger:
+    """
+    Set up a dedicated logger.
+
+    :param name: Unique name for the logger (e.g. 'myapp.rest.config')
+    :param logfile: Name of the log file (relative to $SPLUNK_HOME/var/log/splunk)
+    :param level: Logging level, defaults to logging.INFO
+    :return: Configured logger instance
+    """
+
+    # Get SPLUNK_HOME or fallback to default
+    splunkhome = os.environ.get("SPLUNK_HOME", "/opt/splunk")
+    log_path = os.path.join(splunkhome, "var", "log", "splunk", logfile)
+
+    # Create the logger
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+    logger.propagate = False  # Do not propagate to root logger
+
+    # Avoid duplicate handlers if the logger already exists
+    if not any(
+        isinstance(h, RotatingFileHandler)
+        and getattr(h, "baseFilename", None) == log_path
+        for h in logger.handlers
+    ):
+        handler = RotatingFileHandler(
+            log_path, mode="a", maxBytes=10 * 1024 * 1024, backupCount=1
+        )
+        formatter = logging.Formatter(
+            "%(asctime)s %(levelname)s %(name)s %(filename)s %(funcName)s %(lineno)d %(message)s"
+        )
+        logging.Formatter.converter = time.gmtime  # Use UTC
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+
+    return logger

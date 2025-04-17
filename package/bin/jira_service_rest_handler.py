@@ -23,41 +23,27 @@ from logging.handlers import RotatingFileHandler
 # splunk home
 splunkhome = os.environ["SPLUNK_HOME"]
 
-# set logging
-logger = logging.getLogger(__name__)
-filehandler = RotatingFileHandler(
-    f"{splunkhome}/var/log/splunk/jira_service_desk_rest_api.log",
-    mode="a",
-    maxBytes=10000000,
-    backupCount=1,
-)
-formatter = logging.Formatter(
-    "%(asctime)s %(levelname)s %(filename)s %(funcName)s %(lineno)d %(message)s"
-)
-logging.Formatter.converter = time.gmtime
-filehandler.setFormatter(formatter)
-log = logging.getLogger()
-for hdlr in log.handlers[:]:
-    if isinstance(hdlr, logging.FileHandler):
-        log.removeHandler(hdlr)
-log.addHandler(filehandler)
-log.setLevel(logging.INFO)
-
 # append lib
 sys.path.append(
     os.path.join(splunkhome, "etc", "apps", "TA-jira-service-desk-simple-addon", "lib")
 )
 
-# import API handler
-import jira_rest_handler
-
-# import least privileges access libs
+# import libs
 from ta_jira_libs import (
+    setup_logger,
     jira_get_conf,
     jira_get_account,
     jira_build_headers,
     jira_handle_ssl_certificate,
 )
+
+logger = setup_logger("ta_jira.rest.handler", "jira_service_desk_rest_api.log")
+# Redirect logging module calls
+logging.root.handlers = logger.handlers
+logging.root.setLevel(logger.level)
+
+# import API handler
+import jira_rest_handler
 
 # import Splunk libs
 import splunklib.client as client
@@ -290,7 +276,7 @@ class Jira_v1(jira_rest_handler.RESTHandler):
                 for stanzakey, stanzavalue in stanza.content.items():
                     if stanzakey == "loglevel":
                         loglevel = stanzavalue
-        log.setLevel(loglevel)
+        logger.setLevel(loglevel)
 
         # get all acounts
         accounts = []
@@ -777,7 +763,7 @@ class Jira_v1(jira_rest_handler.RESTHandler):
                 for stanzakey, stanzavalue in stanza.content.items():
                     if stanzakey == "loglevel":
                         loglevel = stanzavalue
-        log.setLevel(loglevel)
+        logger.setLevel(loglevel)
 
         # Splunk credentials store
         storage_passwords = service.storage_passwords
@@ -936,7 +922,7 @@ class Jira_v1(jira_rest_handler.RESTHandler):
                 for stanzakey, stanzavalue in stanza.content.items():
                     if stanzakey == "loglevel":
                         loglevel = stanzavalue
-        log.setLevel(loglevel)
+        logger.setLevel(loglevel)
 
         # Splunk credentials store
         storage_passwords = service.storage_passwords

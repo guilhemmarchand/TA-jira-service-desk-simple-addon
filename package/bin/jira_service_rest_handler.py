@@ -34,9 +34,6 @@ from ta_jira_libs import (
 )
 
 logger = setup_logger("ta_jira.rest.handler", "jira_service_desk_rest_api.log")
-# Redirect logging module calls
-logging.root.handlers = logger.handlers
-logging.root.setLevel(logger.level)
 
 # import API handler
 import jira_rest_handler
@@ -128,14 +125,14 @@ class Jira_v1(jira_rest_handler.RESTHandler):
 
         # Get conf
         for stanza in confs:
-            logging.debug(f'get_conf, Processing stanza.name="{stanza.name}"')
+            logger.debug(f'get_conf, Processing stanza.name="{stanza.name}"')
             # Create a sub-dictionary for the current stanza name if it doesn't exist
             if stanza.name not in jira_service_desk:
                 jira_service_desk[stanza.name] = {}
 
             # Store key-value pairs from the stanza content in the corresponding sub-dictionary
             for stanzakey, stanzavalue in stanza.content.items():
-                logging.debug(
+                logger.debug(
                     f'get_get_conf, Processing stanzakey="{stanzakey}", stanzavalue="{stanzavalue}"'
                 )
                 jira_service_desk[stanza.name][stanzakey] = stanzavalue
@@ -210,7 +207,7 @@ class Jira_v1(jira_rest_handler.RESTHandler):
         jira_service_desk["server_rest_host"] = request_info.server_rest_host
         jira_service_desk["server_rest_port"] = request_info.server_rest_port
 
-        logging.debug(f"get_get_conf, process result: {jira_service_desk}")
+        logger.debug(f"get_get_conf, process result: {jira_service_desk}")
 
         return {"payload": jira_service_desk, "status": 200}
 
@@ -494,7 +491,7 @@ class Jira_v1(jira_rest_handler.RESTHandler):
                 }
 
             except Exception as e:
-                logging.error(
+                logger.error(
                     f'JIRA connect verification failed for account="{account}" with exception="{str(e)}"'
                 )
                 return {
@@ -662,7 +659,7 @@ class Jira_v1(jira_rest_handler.RESTHandler):
                 except Exception:
                     response_status_code = 500
 
-                logging.error(
+                logger.error(
                     f'JIRA connection validation failed, status="failure", jira_url="{jira_url}", jira_auth_mode="{jira_auth_mode}", jira_username="{jira_username}", jira_ssl_certificate_path="{jira_ssl_certificate_path}", jira_ssl_certificate_pem="{jira_ssl_certificate_pem}", ssl_config="{ssl_config}", exception="{str(e)}"'
                 )
                 return {
@@ -781,7 +778,7 @@ class Jira_v1(jira_rest_handler.RESTHandler):
             if stanza.name == str(account):
                 for key, value in stanza.content.items():
                     account_data[key] = value
-        logging.debug(f"account_data {account_data}")
+        logger.debug(f"account_data {account_data}")
 
         # Access variables using the dictionary
         jira_url = account_data["jira_url"]
@@ -842,7 +839,7 @@ class Jira_v1(jira_rest_handler.RESTHandler):
 
             if not jira_password:
                 msg = "The jira_password could not be retrieved, cannot continue."
-                logging.error(msg)
+                logger.error(msg)
 
                 return {
                     "payload": {

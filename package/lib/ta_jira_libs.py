@@ -416,26 +416,27 @@ def jira_handle_ssl_certificate(jira_ssl_certificate_path, jira_ssl_certificate_
     return ssl_config, temp_cert_file
 
 
-def setup_logger(name: str, logfile: str, level=logging.INFO) -> logging.Logger:
+def setup_logger(
+    name: str, logfile: str, level=logging.INFO, redirect_root: bool = False
+) -> logging.Logger:
     """
     Set up a dedicated logger.
 
     :param name: Unique name for the logger (e.g. 'myapp.rest.config')
     :param logfile: Name of the log file (relative to $SPLUNK_HOME/var/log/splunk)
     :param level: Logging level, defaults to logging.INFO
+    :param redirect_root: If True, attach the same handler to the root logger (not recommended for shared apps)
     :return: Configured logger instance
     """
 
-    # Get SPLUNK_HOME or fallback to default
     splunkhome = os.environ.get("SPLUNK_HOME", "/opt/splunk")
     log_path = os.path.join(splunkhome, "var", "log", "splunk", logfile)
 
-    # Create the logger
     logger = logging.getLogger(name)
     logger.setLevel(level)
-    logger.propagate = False  # Do not propagate to root logger
+    logger.propagate = False  # Prevent bubbling
 
-    # Avoid duplicate handlers if the logger already exists
+    # Check if this handler is already attached
     if not any(
         isinstance(h, RotatingFileHandler)
         and getattr(h, "baseFilename", None) == log_path
@@ -447,8 +448,20 @@ def setup_logger(name: str, logfile: str, level=logging.INFO) -> logging.Logger:
         formatter = logging.Formatter(
             "%(asctime)s %(levelname)s %(name)s %(filename)s %(funcName)s %(lineno)d %(message)s"
         )
-        logging.Formatter.converter = time.gmtime  # Use UTC
+        logging.Formatter.converter = time.gmtime
         handler.setFormatter(formatter)
         logger.addHandler(handler)
+
+        # Optional: redirect root logger
+        if redirect_root:
+            root_logger = logging.getLogger()
+            root_logger.setLevel(level)
+            root_logger.propagate = False
+            if not any(
+                isinstance(h, RotatingFileHandler)
+                and getattr(h, "baseFilename", None) == log_path
+                for h in root_logger.handlers
+            ):
+                root_logger.addHandler(handler)
 
     return logger

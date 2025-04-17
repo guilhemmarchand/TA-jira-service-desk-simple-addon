@@ -9,16 +9,12 @@ import json
 import logging
 import os
 import sys
-import time
 import re
 import urllib3
 import requests
 import tempfile
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-# Third-party library imports
-from logging.handlers import RotatingFileHandler
 
 # splunk home
 splunkhome = os.environ["SPLUNK_HOME"]

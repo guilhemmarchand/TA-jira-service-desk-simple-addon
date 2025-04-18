@@ -409,13 +409,31 @@ def attach_csv(
 
     # filter fields (headers) starting with "__mv_"
     fieldnames = [name for name in reader.fieldnames if not name.startswith("__mv_")]
+    # Additional field filtering
+    fieldnames = [
+        name
+        for name in fieldnames
+        if not (
+            (
+                name.startswith("_") and name != "_raw"
+            )  # Exclude fields starting with _ except _raw
+            or name.startswith("tag::")  # Exclude fields starting with tag::
+            or name
+            in [
+                "punct",
+                "splunk_server",
+                "linecount",
+                "splunk_server_group",
+            ]  # Exclude specific fields
+        )
+    ]
 
     writer = csv.DictWriter(results_csv, fieldnames=fieldnames)
     writer.writeheader()
 
-    # filter out "__mv_" fields in rows
+    # filter out excluded fields in rows
     for row in reader:
-        row = {k: v for k, v in row.items() if not k.startswith("__mv_")}
+        row = {k: v for k, v in row.items() if k in fieldnames}
         writer.writerow(row)
 
     results_csv.seek(0)
@@ -524,9 +542,27 @@ def attach_json(
 
     # Convert CSV to JSON
     reader = csv.DictReader(open(results_csv.name))
-    # filter out "__mv_" fields in rows
+    # filter out excluded fields in rows
     data = [
-        {k: v for k, v in row.items() if not k.startswith("__mv_")} for row in reader
+        {
+            k: v
+            for k, v in row.items()
+            if not (
+                (
+                    k.startswith("_") and k != "_raw"
+                )  # Exclude fields starting with _ except _raw
+                or k.startswith("tag::")  # Exclude fields starting with tag::
+                or k
+                in [
+                    "punct",
+                    "splunk_server",
+                    "linecount",
+                    "splunk_server_group",
+                ]  # Exclude specific fields
+                or k.startswith("__mv_")  # Keep existing __mv_ filtering
+            )
+        }
+        for row in reader
     ]
     results_json.writelines(json.dumps(data, indent=2, ensure_ascii=False))
     results_json.seek(0)
@@ -655,9 +691,22 @@ def attach_xlsx(
     for row in reader:
         count += 1
         if count == 1:
-            # check for columns starting with "__mv_"
+            # check for columns to exclude
             for i, cell in enumerate(row):
-                if cell.startswith("__mv_"):
+                if (
+                    cell.startswith("__mv_")  # Exclude __mv_ fields
+                    or (
+                        cell.startswith("_") and cell != "_raw"
+                    )  # Exclude fields starting with _ except _raw
+                    or cell.startswith("tag::")  # Exclude fields starting with tag::
+                    or cell
+                    in [
+                        "punct",
+                        "splunk_server",
+                        "linecount",
+                        "splunk_server_group",
+                    ]  # Exclude specific fields
+                ):
                     excluded_indices.append(i)
             # only append non-excluded cells
             ws.append(

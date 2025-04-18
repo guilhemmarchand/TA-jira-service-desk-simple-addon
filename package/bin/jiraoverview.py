@@ -1,25 +1,25 @@
 #!/usr/bin/env python
 # coding=utf-8
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import sys
 import os
-import splunk
 import time
 import requests
 import urllib3
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 import json
-import base64
 import logging
+from logging.handlers import RotatingFileHandler
 
 splunkhome = os.environ["SPLUNK_HOME"]
 
 # set logging
-filehandler = logging.FileHandler(
-    splunkhome + "/var/log/splunk/ta_jira_jiraoverview.log", "a"
+filehandler = RotatingFileHandler(
+    f"{splunkhome}/var/log/splunk/ta_jira_jiraoverview.log",
+    mode="a",
+    maxBytes=10000000,
+    backupCount=1,
 )
 formatter = logging.Formatter(
     "%(asctime)s %(levelname)s %(filename)s %(funcName)s %(lineno)d %(message)s"
@@ -46,226 +46,153 @@ from splunklib.searchcommands import (
 )
 
 # Import JIRA libs
-from ta_jira_libs import test_jira_connect
+from ta_jira_libs import (
+    jira_get_conf,
+    jira_get_accounts,
+    jira_get_account,
+    jira_build_headers,
+    jira_handle_ssl_certificate,
+    jira_test_connectivity,
+)
 
 
 @Configuration(distributed=False)
 class GenerateTextCommand(GeneratingCommand):
+    """
+    A Splunk search command that provides an overview of JIRA projects and their metrics.
+    This command retrieves key performance indicators (KPIs) for all configured JIRA projects.
 
-    # Proceed
+    The command:
+    - Connects to all configured JIRA accounts
+    - Retrieves the list of projects for each account
+    - Collects metrics for each project including:
+        - Total number of issues
+        - Number of completed issues
+    """
+
     def generate(self):
+        """
+        Generates the search results by collecting JIRA project metrics.
 
-        storage_passwords = self.service.storage_passwords
+        This method:
+        1. Retrieves the JIRA configuration
+        2. Sets up logging and proxy settings
+        3. Gets the list of configured accounts
+        4. For each account:
+           - Retrieves account configuration
+           - Tests connectivity
+           - Gets the list of projects
+           - For each project:
+             - Gets total issue count
+             - Gets completed issue count
+             - Yields the metrics
 
-        # global configuration
-        conf_file = "ta_service_desk_simple_addon_settings"
-        confs = self.service.confs[str(conf_file)]
+        The method handles:
+        - SSL certificate verification
+        - Proxy configuration
+        - Error handling and logging
+        - Multiple JIRA accounts
+
+        Yields:
+            dict: A dictionary containing:
+                - _time: The timestamp of the request
+                - _raw: The metrics data
+                - account: The JIRA account name
+                - project: The project key
+                - type: The metric type ('total_issues' or 'total_done')
+                - value: The metric value
+        """
+
+        # get conf
+        jira_conf = jira_get_conf(
+            self._metadata.searchinfo.session_key, self._metadata.searchinfo.splunkd_uri
+        )
 
         # set loglevel
-        loglevel = "INFO"
-        for stanza in confs:
-            if stanza.name == "logging":
-                for stanzakey, stanzavalue in stanza.content.items():
-                    if stanzakey == "loglevel":
-                        loglevel = stanzavalue
-        logginglevel = logging.getLevelName(loglevel)
-        log.setLevel(logginglevel)
+        log.setLevel(jira_conf["logging"]["loglevel"])
 
-        # init
-        proxy_enabled = "0"
-        proxy_url = None
-        proxy_dict = None
-        proxy_username = None
-        for stanza in confs:
-            if stanza.name == "proxy":
-                for key, value in stanza.content.items():
-                    if key == "proxy_enabled":
-                        proxy_enabled = value
-                    if key == "proxy_port":
-                        proxy_port = value
-                    if key == "proxy_type":
-                        proxy_type = value
-                    if key == "proxy_url":
-                        proxy_url = value
-                    if key == "proxy_username":
-                        proxy_username = value
+        # global configuration
+        proxy_conf = jira_conf["proxy"]
+        proxy_dict = proxy_conf.get("proxy_dict", {})
 
-        if proxy_enabled == "1":
-
-            # get proxy password
-            if proxy_username:
-                proxy_password = None
-
-                # get proxy password, if any
-                credential_realm = "__REST_CREDENTIAL__#TA-jira-service-desk-simple-addon#configs/conf-ta_service_desk_simple_addon_settings"
-                for credential in storage_passwords:
-                    if (
-                        credential.content.get("realm") == str(credential_realm)
-                        and credential.content.get("clear_password").find(
-                            "proxy_password"
-                        )
-                        > 0
-                    ):
-                        proxy_password = json.loads(
-                            credential.content.get("clear_password")
-                        ).get("proxy_password")
-                        break
-
-                if proxy_type == "http":
-                    proxy_dict = {
-                        "http": "http://"
-                        + proxy_username
-                        + ":"
-                        + proxy_password
-                        + "@"
-                        + proxy_url
-                        + ":"
-                        + proxy_port,
-                        "https": "https://"
-                        + proxy_username
-                        + ":"
-                        + proxy_password
-                        + "@"
-                        + proxy_url
-                        + ":"
-                        + proxy_port,
-                    }
-                else:
-                    proxy_dict = {
-                        "http": str(proxy_type)
-                        + "://"
-                        + proxy_username
-                        + ":"
-                        + proxy_password
-                        + "@"
-                        + proxy_url
-                        + ":"
-                        + proxy_port,
-                        "https": str(proxy_type)
-                        + "://"
-                        + proxy_username
-                        + ":"
-                        + proxy_password
-                        + "@"
-                        + proxy_url
-                        + ":"
-                        + proxy_port,
-                    }
-
-            else:
-                proxy_dict = {
-                    "http": proxy_url + ":" + proxy_port,
-                    "https": proxy_url + ":" + proxy_port,
-                }
+        # set timeout
+        timeout = int(jira_conf["advanced_configuration"].get("timeout", 120))
 
         # get all acounts
-        accounts = []
-        conf_file = "ta_service_desk_simple_addon_account"
-        confs = self.service.confs[str(conf_file)]
-        for stanza in confs:
-            # get all accounts
-            for name in stanza.name:
-                accounts.append(stanza.name)
-                break
+        accounts_dict = jira_get_accounts(
+            self._metadata.searchinfo.session_key, self._metadata.searchinfo.splunkd_uri
+        )
+        accounts = accounts_dict.get("accounts", [])
 
         # loop through the accounts
         for account in accounts:
 
             # account configuration
-            jira_ssl_certificate_validation = None
-            jira_ssl_certificate_path = None
-            username = None
-            password = None
+            account_conf = jira_get_account(
+                self._metadata.searchinfo.session_key,
+                self._metadata.searchinfo.splunkd_uri,
+                account,
+            )
 
-            conf_file = "ta_service_desk_simple_addon_account"
-            confs = self.service.confs[str(conf_file)]
-            for stanza in confs:
-
-                if stanza.name == str(account):
-                    for key, value in stanza.content.items():
-                        if key == "jira_url":
-                            jira_url = value
-                        if key == "jira_ssl_certificate_validation":
-                            jira_ssl_certificate_validation = value
-                        if key == "jira_ssl_certificate_path":
-                            jira_ssl_certificate_path = value
-                        if key == "auth_type":
-                            auth_type = value
-                        if key == "jira_auth_mode":
-                            jira_auth_mode = value
-                        if key == "username":
-                            username = value
+            jira_auth_mode = account_conf.get("auth_mode", "basic")
+            jira_url = account_conf.get("jira_url", None)
+            jira_ssl_certificate_path = account_conf.get(
+                "jira_ssl_certificate_path", None
+            )
+            jira_ssl_certificate_pem = account_conf.get(
+                "jira_ssl_certificate_pem", None
+            )
+            jira_username = account_conf.get("username", None)
+            jira_password = account_conf.get("jira_password", None)
 
             # verify the url
             if not jira_url.startswith("https://"):
-                jira_url = "https://" + str(jira_url)
-
-            # end of get configuration
-
-            credential_username = str(account) + "``splunk_cred_sep``1"
-            credential_realm = "__REST_CREDENTIAL__#TA-jira-service-desk-simple-addon#configs/conf-ta_service_desk_simple_addon_account"
-            for credential in storage_passwords:
-                if (
-                    credential.content.get("username") == str(credential_username)
-                    and credential.content.get("realm") == str(credential_realm)
-                    and credential.content.get("clear_password").find("password") > 0
-                ):
-                    password = json.loads(credential.content.get("clear_password")).get(
-                        "password"
-                    )
-                    break
+                jira_url = f"https://{str(jira_url)}"
 
             # Build the authentication header for JIRA
-            if str(jira_auth_mode) == "basic":
-                authorization = username + ":" + password
-                b64_auth = base64.b64encode(authorization.encode()).decode()
-                jira_headers = {
-                    "Authorization": "Basic %s" % b64_auth,
-                    "Content-Type": "application/json",
-                }
-            elif str(jira_auth_mode) == "pat":
-                jira_headers = {
-                    "Authorization": "Bearer %s" % str(password),
-                    "Content-Type": "application/json",
-                }
+            jira_headers = jira_build_headers(
+                jira_auth_mode, jira_username, jira_password
+            )
 
-            # Splunk Cloud vetting notes: SSL verification is always true or the path to the CA bundle for the SSL certificate to be verified
-            if jira_ssl_certificate_path and os.path.isfile(jira_ssl_certificate_path):
-                ssl_config = str(jira_ssl_certificate_path)
-            else:
-                ssl_config = True
+            # SSL verification is always true, or the path to the SSL bundle, or the SSL bundle itself
+            ssl_config, temp_cert_file = jira_handle_ssl_certificate(
+                jira_ssl_certificate_path, jira_ssl_certificate_pem
+            )
 
             # ensures connectivity and proceed
+            # test connectivity systematically
+            connected = False
             try:
-                connectivity_check = test_jira_connect(
-                    account, jira_headers, jira_url, ssl_config, proxy_dict
+                healthcheck_response = jira_test_connectivity(
+                    self._metadata.searchinfo.session_key,
+                    self._metadata.searchinfo.splunkd_uri,
+                    account,
                 )
-                logging.debug(
-                    'account="{}", connectivity_check="{}"'.format(
-                        account, connectivity_check
-                    )
+                connected = True
+            except Exception as e:
+                raise Exception(
+                    f'JIRA connect verification failed for account="{account}" with exception="{str(e)}"'
                 )
 
-            except Exception as e:
-                logging.error(str(e))
-                raise Exception(str(e))
+            if not connected:
+                raise Exception(
+                    f'JIRA connect verification failed for account="{account}" with exception="{healthcheck_response.get("response")}"'
+                )
 
             # Get the list of projects
             projects_list = []
-            jira_check_url = jira_url + "/rest/api/latest/project"
+            jira_check_url = f"{jira_url}/rest/api/latest/project"
             try:
                 response = requests.get(
                     url=jira_check_url,
                     headers=jira_headers,
                     verify=ssl_config,
                     proxies=proxy_dict,
-                    timeout=10,
+                    timeout=timeout,
                 )
                 if response.status_code not in (200, 201, 204):
                     raise Exception(
-                        'JIRA operation failed, account="{}", url="{}", HTTP Error="{}", HTTP Response="{}"'.format(
-                            account, jira_check_url, response.status_code, response.text
-                        )
+                        f'JIRA operation failed, account="{account}", url="{jira_check_url}", HTTP Error="{response.status_code}", HTTP Response="{response.text}"'
                     )
                 else:
                     logging.debug(response.text)
@@ -273,43 +200,32 @@ class GenerateTextCommand(GeneratingCommand):
                     for project_response in json.loads(response.text):
                         projects_list.append(project_response.get("key"))
 
-                logging.debug('list of projects="{}"'.format(projects_list))
+                logging.debug(f'list of projects="{projects_list}"')
 
             except Exception as e:
                 logging.error(
-                    'JIRA operation failed for account="{}" with exception="{}"'.format(
-                        account, str(e)
-                    )
+                    f'JIRA operation failed for account="{account}" with exception="{str(e)}"'
                 )
                 raise Exception(
-                    'JIRA operation failedfor account="{}" with exception="{}"'.format(
-                        account, str(e)
-                    )
+                    f'JIRA operation failedfor account="{account}" with exception="{str(e)}"'
                 )
 
             # Loop through the projects, and return the KPIs
             for project in projects_list:
 
                 # total count of issues
-                jira_check_url = (
-                    jira_url
-                    + "/rest/api/latest/search?jql=project="
-                    + project
-                    + "&maxResults=0"
-                )
+                jira_check_url = f"{jira_url}/rest/api/latest/search?jql=project={project}&maxResults=0"
                 try:
                     response = requests.get(
                         url=jira_check_url,
                         headers=jira_headers,
                         verify=ssl_config,
                         proxies=proxy_dict,
-                        timeout=10,
+                        timeout=timeout,
                     )
                     if response.status_code not in (200, 201, 204):
                         logging.error(
-                            'JIRA operation failed for account="{}" with exception="{}"'.format(
-                                account, str(e)
-                            )
+                            f'JIRA operation failed for account="{account}" with exception="{str(e)}"'
                         )
                     else:
                         logging.debug(response.text)
@@ -332,31 +248,22 @@ class GenerateTextCommand(GeneratingCommand):
 
                 except Exception as e:
                     logging.error(
-                        'JIRA operation failed for account="{}" with exception="{}"'.format(
-                            account, str(e)
-                        )
+                        f'JIRA operation failed for account="{account}" with exception="{str(e)}"'
                     )
 
                 # total done
-                jira_check_url = (
-                    jira_url
-                    + "/rest/api/latest/search?jql=project="
-                    + project
-                    + "%20AND%20statuscategory%20IN%20%28%22Done%22%29&maxResults=0"
-                )
+                jira_check_url = f"{jira_url}/rest/api/latest/search?jql=project={project}%20AND%20statuscategory%20IN%20%28%22Done%22%29&maxResults=0"
                 try:
                     response = requests.get(
                         url=jira_check_url,
                         headers=jira_headers,
                         verify=ssl_config,
                         proxies=proxy_dict,
-                        timeout=10,
+                        timeout=timeout,
                     )
                     if response.status_code not in (200, 201, 204):
                         logging.error(
-                            'JIRA operation failed for account="{}" with exception="{}"'.format(
-                                account, str(e)
-                            )
+                            f'JIRA operation failed for account="{account}" with exception="{str(e)}"'
                         )
                     else:
                         logging.debug(response.text)
@@ -379,31 +286,22 @@ class GenerateTextCommand(GeneratingCommand):
 
                 except Exception as e:
                     logging.error(
-                        'JIRA operation failed for account="{}" with exception="{}"'.format(
-                            account, str(e)
-                        )
+                        f'JIRA operation failed for account="{account}" with exception="{str(e)}"'
                     )
 
                 # total todo
-                jira_check_url = (
-                    jira_url
-                    + "/rest/api/latest/search?jql=project="
-                    + project
-                    + "%20AND%20statuscategory%20IN%20%28%22To%20Do%22%29&maxResults=0"
-                )
+                jira_check_url = f"{jira_url}/rest/api/latest/search?jql=project={project}%20AND%20statuscategory%20IN%20%28%22To%20Do%22%29&maxResults=0"
                 try:
                     response = requests.get(
                         url=jira_check_url,
                         headers=jira_headers,
                         verify=ssl_config,
                         proxies=proxy_dict,
-                        timeout=10,
+                        timeout=timeout,
                     )
                     if response.status_code not in (200, 201, 204):
                         logging.error(
-                            'JIRA operation failed for account="{}" with exception="{}"'.format(
-                                account, str(e)
-                            )
+                            f'JIRA operation failed for account="{account}" with exception="{str(e)}"'
                         )
                     else:
                         logging.debug(response.text)
@@ -426,31 +324,22 @@ class GenerateTextCommand(GeneratingCommand):
 
                 except Exception as e:
                     logging.error(
-                        'JIRA operation failed for account="{}" with exception="{}"'.format(
-                            account, str(e)
-                        )
+                        f'JIRA operation failed for account="{account}" with exception="{str(e)}"'
                     )
 
                 # total todo
-                jira_check_url = (
-                    jira_url
-                    + "/rest/api/latest/search?jql=project="
-                    + project
-                    + "%20AND%20statuscategory%20IN%20%28%22In%20Progress%22%29&maxResults=0"
-                )
+                jira_check_url = f"{jira_url}/rest/api/latest/search?jql=project={project}%20AND%20statuscategory%20IN%20%28%22In%20Progress%22%29&maxResults=0"
                 try:
                     response = requests.get(
                         url=jira_check_url,
                         headers=jira_headers,
                         verify=ssl_config,
                         proxies=proxy_dict,
-                        timeout=10,
+                        timeout=timeout,
                     )
                     if response.status_code not in (200, 201, 204):
                         logging.error(
-                            'JIRA operation failed for account="{}" with exception="{}"'.format(
-                                account, str(e)
-                            )
+                            f'JIRA operation failed for account="{account}" with exception="{str(e)}"'
                         )
                     else:
                         logging.debug(response.text)
@@ -473,9 +362,7 @@ class GenerateTextCommand(GeneratingCommand):
 
                 except Exception as e:
                     logging.error(
-                        'JIRA operation failed for account="{}" with exception="{}"'.format(
-                            account, str(e)
-                        )
+                        f'JIRA operation failed for account="{account}" with exception="{str(e)}"'
                     )
 
 

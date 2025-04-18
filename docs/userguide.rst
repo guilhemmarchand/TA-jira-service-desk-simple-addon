@@ -1,6 +1,14 @@
 User guide
 ##########
 
+.. admonition:: **About the JIRA Alert Actions:**
+
+   - This application provides a sophisiticated and advanced alert action, which notably allows automated bi-directional integration with the JIRA API.
+   - There are various parameters that allow controlling its behaviors, which used in association with Splunk language capabilities allows for powerful interactions with JIRA.
+   - You can for instance automatically detect duplicated issues, and instead have the alery action adding a comment to the existing issue, or even automatically close the issue based on pattern detection.
+   - Not all parameters are mandatory, and in fact only a few few are required to be configured to get the alert actions working.
+   - Read this guide carefully to understand how to use the alert actions, and how to configure them properly.
+
 Using the JIRA Service Desk alert action from alerts and correlation searches
 =============================================================================
 
@@ -10,6 +18,7 @@ Using the JIRA Service Desk alert action from alerts and correlation searches
    :alt: userguide1.png
    :align: center
    :width: 800px
+   :class: with-border
 
 The configuration of the alert is pretty straightforward and described in detail in the further sections of the above documentation.
 
@@ -21,16 +30,21 @@ Using the JIRA Service Desk alert adaptive response action from Splunk Enterpris
 .. image:: img/userguide1_ar.png
    :alt: userguide1_ar.png
    :align: center
-   :width: 800px   
+   :width: 800px
+   :class: with-border
 
 The same options are available with the same level of features; however, tokens expansion will depend on the notable event context.
 
-JIRA project
-============
+JIRA account & project
+======================
 
-.. image:: img/userguide2.png
-   :alt: userguide2.png
+The JIRA account and the associated project you want to use are the first parameters to configure in the alert action, it allows you to select the JIRA project you want to use for the alert action.
+
+.. image:: img/userguide/select_account.png
+   :alt: select_account.png
    :align: center
+   :width: 600px
+   :class: with-border
 
 Several projects might have been created in your JIRA instance; you can choose any of the projects available on per alert basis.
 
@@ -43,9 +57,11 @@ The list of JIRA projects made available within the configuration screen is the 
 JIRA issue type
 ===============
 
-.. image:: img/userguide3.png
-   :alt: userguide3.png
+.. image:: img/userguide/select_issue_type.png
+   :alt: select_issue_type.png
    :align: center
+   :width: 600px
+   :class: with-border
 
 The type of issue to be created is a dynamic list provided by JIRA based on the types available for the project that has been selected, these are the result of the following command:
 
@@ -53,12 +69,19 @@ The type of issue to be created is a dynamic list provided by JIRA based on the 
 
     | jirafill account=_all opt=2 | stats values(issues) as issues by account
 
-JIRA issue priority
-===================
+JIRA issue priority & dynamic priority
+======================================
 
-.. image:: img/userguide4.png
-   :alt: userguide4.png
+You can define the priority of the issue in two ways, either statically or dynamically.
+
+.. image:: img/userguide/select_priority.png
+   :alt: select_priority.png
    :align: center
+   :width: 600px
+   :class: with-border
+
+Static priority
+---------------
 
 The priority of the issue is dynamically retrieved from the JIRA project based on the different priorities that are made available by your JIRA screen configuration, these are the results of the following command:
 
@@ -66,12 +89,8 @@ The priority of the issue is dynamically retrieved from the JIRA project based o
 
     | jirafill account=_all opt=3 | stats values(priorities) as priorities by account
 
-JIRA issue dynamic priority
-===========================
-
-.. image:: img/userguide5.png
-   :alt: userguide5.png
-   :align: center
+Dynamic priority
+----------------
 
 **The dynamic priority is a feature that allows you to dynamically define the priority based on the search result rather than a selected priority from the dynamic list provided by JIRA.**
 
@@ -90,9 +109,11 @@ The dynamic priority is entirely **optional** and is only used if it has been de
 JIRA summary and description
 ============================
 
-.. image:: img/userguide6.png
-   :alt: userguide6.png
+.. image:: img/userguide/summary_and_description.png
+   :alt: summary_and_description.png
    :align: center
+   :width: 600px
+   :class: with-border
 
 JIRA summary and description are the core information of a JIRA issue.
 
@@ -100,15 +121,156 @@ These two fields define the title of the JIRA issue, and its main content visibl
 
 Both fields will automatically handle any dynamic value that are available from the results of your search, which requires to be defined as ``$result.myfield$`` to be automatically translated into the relevant value.
 
-JIRA assignee & reporter
-========================
+JIRA attachment
+===============
+
+.. image:: img/userguide/select_attachment.png
+   :alt: select_attachment.png
+   :align: center
+   :width: 600px
+   :class: with-border
+
+**On a per alter basis, the results from the Splunk alert that triggered can automatically be attached to the JIRA issue.**
+
+**Features and limitations:**
+
+- The attachment feature is disabled by default, and needs to be enabled on a per alert basis
+- The format of the results can be attached in CSV format, JSON or XLS (Excel) format
+- The feature is not compatible with the resilient store, if the JIRA issue initially fails due to a temporary failure, the ticket will be created by the resilient tracker when possible but without the original attachment
+
+*When the attachment option is enabled, the following message will be logged if the attachment was successfully added to the JIRA issue, in addition with details of the ticket returned by JIRA:*
+
+``JIRA Service Desk ticket attachment file uploaded successfully``
+
+**File attachment in JIRA:**
+
+*Note: the file name is dynamically generated, prefixed with "splunk_alert_results_" and suffixed by the relevant file extension.*
+
+.. image:: img/userguide/attachement_example.png
+   :alt: attachement_example.png
+   :align: center
+   :width: 800px
+   :class: with-border
+
+JIRA Auto Close
+===============
+
+.. admonition:: **Auto Closure capabilities introduced in version 2.1.0**
+
+   - The JIRA Service Desk Add-on now supports the auto closure of issues based on pattern detection in the events of the alert
+   - This is advanced feature which only requires a few configuration options to be effective.
+   - Althrough it is enabled by default, it will not do any action until it is configured properly.
+   - By leveraging auto closure, you can close an issue based on the value of a field in the result of your SPL search, which provides a very powerful way to automatically manage state aware contexts.
+   - Finally, the ideal scenario is to use it in combination with the JIRA deduplication feature, which allows the JIRA App to automatically link the issue to the associated event.
+
+*Auto Close configuration items:*
+
+.. image:: img/userguide/jira_auto_close1.png
+   :alt: jira_auto_close1.png
+   :align: center
+   :width: 600px
+   :class: with-border
+
+.. image:: img/userguide/jira_auto_close2.png
+   :alt: jira_auto_close2.png
+   :align: center
+   :width: 600px
+   :class: with-border
+
+Auto Close scenario example
+---------------------------
+
+**In this example, we work with TrackMe StateFul alerts:**
+
+- https://docs.trackme-solutions.com/latest/admin_guide_alerts.html#introduction-to-stateful-alerting-in-trackme
+
+**We have defined an alert strategy which leverages the ready to use stateful events generated by TrackMe:**
+
+::
+
+   index=trackme_summary sourcetype="trackme:stateful_alerts" priority IN ("high", "critical")
+   | rename "messages{}" as messages
+   | table alert_status, detection_time, drilldown_link, event_id, incident_id, message_source, message_source_id, messages, alias, object_category, object_id, object, object_state, priority
+
+In these events, we have a field called ``incident_id`` which is the id of the incident generated by TrackMe for a given entity, from our perspective this provides out of the box what we can rely only to identify what should be a unique issue in JIRA!
+
+We will first intruct the JIRA alert action to use the ``incident_id`` as the content for the JIRA dedup condition:
+
+.. image:: img/userguide/jira_auto_close3.png
+   :alt: jira_auto_close3.png
+   :align: center
+   :width: 600px
+   :class: with-border
+
+Then, these events contain a field called ``alert_status`` which take values like:
+
+- ``open``
+- ``updated``
+- ``closed``
+
+We can transparently rely on this field to understand if the issue should be closed automatically, based on the fact that the source of the incident is now closed:
+
+.. image:: img/userguide/jira_auto_close4.png
+   :alt: jira_auto_close4.png
+   :align: center
+   :width: 600px
+   :class: with-border
+
+We will also include a field from the event called ``messages`` which will be included in the comment added when performing the issue status transition;
+
+.. image:: img/userguide/jira_auto_close5.png
+   :alt: jira_auto_close5.png
+   :align: center
+   :width: 600px
+   :class: with-border
+
+When an incident is created, the associated JIRA issue is created:
+
+.. image:: img/userguide/jira_auto_close_issue_example1.png
+   :alt: jira_auto_close_issue_example1.png
+   :align: center
+   :width: 1000px
+   :class: with-border
+
+if at some points, an update new event is created by TrackMe, our dedup feature detects it and adds a comment to the issue: (at this point, this is not a closure yet)
+
+.. image:: img/userguide/jira_auto_close_issue_example2.png
+   :alt: jira_auto_close_issue_example2.png
+   :align: center
+   :width: 1000px
+   :class: with-border
+
+Finally, when the incident is closed on the TrackMe side, and it generated an event with alert_status=closed, the JIRA alert action auto-close feature will detect it and close the issue:
+
+.. image:: img/userguide/jira_auto_close_issue_example3.png
+   :alt: jira_auto_close_issue_example3.png
+   :align: center
+   :width: 1000px
+   :class: with-border
+
+JIRA Assignee, Reporter and Metadata
+====================================
+
+.. image:: img/userguide/select_metadata.png
+   :alt: select_metadata.png
+   :align: center
+   :width: 600px
+   :class: with-border
+
+Assignee and Reporter
+---------------------
+
+.. image:: img/userguide/selects_assignee_reporter.png
+   :alt: selects_assignee_reporter.png
+   :align: center
+   :width: 600px
+   :class: with-border
 
 **Both the assignee and the reporter can be defined in the alert action, to do so the follow these instructions:**
 
 - Retrieve the accountId value for the target JIRA user
 - This ID is the value you need to submit in both fields, in most JIRA configuration emails or usernames will be refused and ignored by JIRA
 - You can get retrieve easily the accountId value using any valid JIRA issue, as follows
-
 
 ::
 
@@ -120,6 +282,7 @@ JIRA assignee & reporter
    :alt: assignee_and_reporter.png
    :align: center
    :width: 800px
+   :class: with-border
 
 *Finally, assign the accountId value in your alert action, example:*
 
@@ -127,24 +290,31 @@ JIRA assignee & reporter
    :alt: assignee_and_reporter2.png
    :align: center
    :width: 500px
+   :class: with-border
 
-JIRA labels
-===========
-
-.. image:: img/userguide8.png
-   :alt: userguide8.png
-   :align: center
+Labels
+------
 
 JIRA labels is an **optional** field, which can be defined as a comma separated list of values to assign a list of labels to the JIRA issue.
 
-JIRA components
-===============
-
-.. image:: img/components.png
-   :alt: components.png
+.. image:: img/userguide/select_labels.png
+   :alt: select_labels.png
    :align: center
+   :width: 600px
+   :class: with-border
+
+
+Components
+----------
 
 JIRA components is an **optional** field, which can be defined as a comma separated list of values to assign a list of components to the JIRA issue. (by their names)
+
+.. image:: img/userguide/select_components.png
+   :alt: select_components.png
+   :align: center
+   :width: 600px
+   :class: with-border
+
 
 JIRA dedup behavior
 ====================
@@ -153,6 +323,7 @@ JIRA dedup behavior
    :alt: dedup1.png
    :align: center
    :width: 800px
+   :class: with-border
 
 **The JIRA deduplication is a powerful feature that allows to automatically control the decision to create or update an issue, which relies on a bidirectional integration with JIRA.**
 
@@ -176,6 +347,7 @@ JIRA dedup behavior
    :alt: dedup2.png
    :align: center
    :width: 1200px
+   :class: with-border
 
 - everytime the alert triggers, the values for user, action and reason remain the same
 - the time value differs every time the action triggers
@@ -186,6 +358,7 @@ Let's enable the JIRA alert action, we'll include in the description field all t
    :alt: dedup4.png
    :align: center
    :width: 800px
+   :class: with-border
 
 For now, we didn't enable the dedup feature, if we use the ``DEBUG`` logging mode, the logs will show the full JSON payload sent to the JIRA API in pretty print manner:
 
@@ -194,7 +367,8 @@ For now, we didn't enable the dedup feature, if we use the ``DEBUG`` logging mod
 .. image:: img/dedup/dedup4.png
    :alt: dedup4.png
    :align: center
-   :width: 1200px   
+   :width: 1200px 
+   :class: with-border  
 
 Even if we didn't enable yet the feature, the Addon calculates an MD5 sum which is recorded in a KVstore collection, traces are logged about this:
 
@@ -213,12 +387,14 @@ As every ticket corresponds to a new issue, the status is "created".
 .. image:: img/dedup/dedup5.png
    :alt: dedup5.png
    :align: center
-   :width: 800px   
+   :width: 800px 
+   :class: with-border  
 
 .. image:: img/dedup/dedup6.png
    :alt: dedup6.png
    :align: center
-   :width: 800px   
+   :width: 800px 
+   :class: with-border  
 
 As the content of the JSON is exactly the same (we removed the time from the description), the Addon will detect it and perform an update of first created issue, adding a comment, and updating the record in the KVstore lookup:
 
@@ -231,21 +407,24 @@ As the content of the JSON is exactly the same (we removed the time from the des
 .. image:: img/dedup/dedup7.png
    :alt: dedup7.png
    :align: center
-   :width: 1200px   
+   :width: 1200px  
+   :class: with-border 
 
 **The Addon UI shows as well that updates were performed rather than new issues creation:**
 
 .. image:: img/dedup/dedup8.png
    :alt: dedup8.png
    :align: center
-   :width: 1200px   
+   :width: 1200px  
+   :class: with-border 
 
 **The issue itself in JIRA shows new comments added everytime the alert triggered for the same content:**
 
 .. image:: img/dedup/dedup9.png
    :alt: dedup9.png
    :align: center
-   :width: 1200px   
+   :width: 1200px 
+   :class: with-border  
 
 **We can control the content of the comment added to the issue by creating a custom field in the resulting Splunk alert, let's modify the alert to include a new field used to control the comment:**
 
@@ -263,21 +442,24 @@ As the content of the JSON is exactly the same (we removed the time from the des
 .. image:: img/dedup/dedup10.png
    :alt: dedup10.png
    :align: center
-   :width: 1200px   
+   :width: 1200px 
+   :class: with-border  
 
 *Issue updated with our comment field:*
 
 .. image:: img/dedup/dedup11.png
    :alt: dedup11.png
    :align: center
-   :width: 1200px   
+   :width: 1200px 
+   :class: with-border  
 
 *Now, let's say this issue is taken in charge in JIRA, it status is changed to Done as we think the underneath condition is fixed:*
 
 .. image:: img/dedup/dedup12.png
    :alt: dedup12.png
    :align: center
-   :width: 1200px   
+   :width: 1200px 
+   :class: with-border  
 
 This is where the second dedup option acts, thanks to this bi-directional integration, the Addon knows that the issue was fixed and decides to open a new issue.
 
@@ -309,6 +491,7 @@ note: ``$result.dedup_condition$`` is how you will instruct Splunk to recycle dy
    :alt: dedup13.png
    :align: center
    :width: 800px   
+   :class: with-border
 
 We have now changed the way we idenfity what is a duplicate, and what is not, we can have fields which content will always change like our time field without breaking the dedup idenfitication:
 
@@ -318,6 +501,7 @@ We have now changed the way we idenfity what is a duplicate, and what is not, we
    :alt: dedup14.png
    :align: center
    :width: 1200px   
+   :class: with-border
 
 The same workflow applies again, if we fix the issue the Addon will detect it and create a new ticket, if something happens to be different in the condition for the dedup idenfitication, a new ticket will be created.
 
@@ -337,40 +521,13 @@ Powerful, isn't?!
    :align: center
    :width: 1200px   
 
-JIRA attachment
-===============
-
-.. image:: img/attachment1.png
-   :alt: attachment1.png
-   :align: center
-
-**On a per alter basis, the results from the Splunk alert that triggered can automatically be attached to the JIRA issue.**
-
-**Features and limitations:**
-
-- The attachment feature is disabled by default, and needs to be enabled on a per alert basis
-- The format of the results can be attached in CSV format, JSON or XLS (Excel) format
-- The feature is not compatible with the resilient store, if the JIRA issue initially fails due to a temporary failure, the ticket will be created by the resilient tracker when possible but without the original attachment
-
-*When the attachment option is enabled, the following message will be logged if the attachment was successfully added to the JIRA issue, in addition with details of the ticket returned by JIRA:*
-
-``JIRA Service Desk ticket attachment file uploaded successfully``
-
-**File attachment in JIRA:**
-
-*Note: the file name is dynamically generated, prefixed with "splunk_alert_results_" and suffixed by the relevant file extension.*
-
-.. image:: img/attachment2.png
-   :alt: attachment2.png
-   :align: center
-   :width: 1200px   
-
 JIRA custom fields
 ==================
 
 .. image:: img/userguide9.png
    :alt: userguide9.png
    :align: center
+   :class: with-border
 
 **JIRA custom fields are fields that can designed by your JIRA administrators to be available during the issue creation.**
 
@@ -383,7 +540,8 @@ https://developer.atlassian.com/server/jira/platform/jira-rest-api-examples
 .. image:: img/userguide10.png
    :alt: userguide10.png
    :align: center
-   :width: 800px   
+   :width: 800px  
+   :class: with-border 
 
 **Depending on the format of the custom field, you need to use the proper syntax, the most common are:**
 
@@ -420,7 +578,8 @@ In some circumstances, the built-in parser rules may fail to recognize an unexpe
 .. image:: img/customfields_parsing.png
    :alt: img/customfields_parsing.png
    :align: center
-   :width: 800px    
+   :width: 800px 
+   :class: with-border   
 
 Datetime picker example:
 ------------------------
@@ -458,6 +617,7 @@ How to retrieve the IDs of the custom fields configured ?
    :alt: userguide_getfields1.png
    :align: center
    :width: 1200px   
+   :class: with-border
 
 **This report achieves a REST call to JIRA to get the list of fields and their details per project and per type of issues, search for custom fields:**
 
@@ -465,6 +625,7 @@ How to retrieve the IDs of the custom fields configured ?
    :alt: userguide_getfields2.png
    :align: center
    :width: 1200px   
+   :class: with-border
 
 JIRA REST API wrapper
 =====================
@@ -482,6 +643,7 @@ By default, it uses method GET. Additional methods are supported DELETE, POST, P
    :alt: jirarest_001.png
    :align: center
    :width: 1200px   
+   :class: with-border
 
 **The following report is provided to retrieve issues statistics per project and per status categories:**
 
@@ -493,6 +655,7 @@ By default, it uses method GET. Additional methods are supported DELETE, POST, P
    :alt: jirarest_002.png
    :align: center
    :width: 1200px   
+   :class: with-border
 
 JIRA Overview custom command
 ============================
@@ -509,6 +672,7 @@ This command is used by the Overview JIRA Projects dashboards.
    :alt: jirarest_002.png
    :align: center
    :width: 1200px
+   :class: with-border
 
 Indexing JIRA statistics for reporting purposes
 -----------------------------------------------
@@ -527,7 +691,8 @@ You can use the ``collect`` command to automatically index the report results in
 .. image:: img/jirarest_003.png
    :alt: jirarest_003.png
    :align: center
-   :width: 1200px   
+   :width: 1200px 
+   :class: with-border  
 
 Indexing the results to a metric index
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -555,7 +720,8 @@ Each statistic is stored as a metric_name with a prefix "jira\_", while the proj
 .. image:: img/jirarest_004.png
    :alt: jirarest_004.png
    :align: center
-   :width: 1200px   
+   :width: 1200px  
+   :class: with-border 
 
 
 Additional examples for JIRA API wrapper

@@ -10,13 +10,27 @@ You cannot perform the account configuration manually by creating the expecting 
 
 In a Search Head Cluster context, the generated configuration is automatically replicated across the members of the cluster.
 
+.. admonition:: **Automated connectivity validation**
+
+   - Since the version 2.1.0, the Add-on performs an automated connectivity validation at the time of the account configuration.
+   - This means that you cannot create an account, or update an existing account if the connectivity check fails. (network, authentication, etc.)
+   - If the connectivity check fails, you will be prompted with the reason of the failure, review the reason for the failure and the response from the JIRA API.
+   - SSL validation is mandatory, if needed you can validate the SSL certificate by providing either the file path to the SSL certificate, or the PEM content of the SSL certificate.
+
 *Configuration page:*
 
-.. image:: img/config1.png
-   :alt: config1.png
+.. image:: img/config-overview1.png
+   :alt: config-overview1.png
    :align: center
    :width: 1000px
    :class: with-border
+
+.. image:: img/config-overview2.png
+   :alt: config-overview2.png
+   :align: center
+   :width: 600px
+   :class: with-border
+
 
 JIRA account configuration
 ==========================
@@ -26,7 +40,7 @@ The Add-on for JIRA supports multiple accounts to be configured, an account cons
 - **account name:** a name of your choice to represent this instance of JIRA
 - **JIRA URL:** the URL value which will be used for this instance, in the format ``<address>:<port>``
 - **Authentication type:** currently the Add-on supports ``basic authenticaton`` (user/password), ``API token`` (user/API token), and ``PAT`` (Personal Access Token)
-- **SSL related configuration items:** SSL certificate verification and SSL certificate bundle
+- **SSL certificate bundle file path or content:** If needed for the SSL certificate verification, you can provide the file path to the SSL certificate bundle, or the PEM content of the SSL certificate.
 
 .. image:: img/config2.png
    :alt: config2.png
@@ -253,19 +267,36 @@ JIRA instance configuration and authentication
 About SSL certificate validation
 ================================
 
-SSL usage is enforced, this means you cannot access to a JIRA instance if it is not using SSL.
+**SSL Validation is mandatory for Splunk Cloud vetting requirements:**
 
-**Since the version 2.0.18, SSL certificate verification is mandatory due to Splunk Cloud vetting requirements.**
+- If you JIRA presents a valid SSL certificate (such as JIRA Cloud), you have nothing to do.
+- If you JIRA presents a self-signed certificate, or a custom certificate, you need to provide the file path to the SSL certificate bundle, or the PEM content of the SSL certificate.
 
-**When using SSL, there might be different conditions:**
+.. image:: img/ssl_certs.png
+   :alt: ssl_certs.png
+   :align: center
+   :width: 600px
+   :class: with-border
 
-- The SSL certificate is from an official third party certificate authority and it is valid, you normally can tick the SSL validation box which enforces the fact that we expect the certificate to be valid. If the certificate is not valid, we will not allow any action to be performed.
+**The recommended and more flexible option is to provide the SSL certificate bundle content. (option 2)**
 
-- The SSL certificate is a self-signed certificate, you cannot verify the SSL certificate as it not a valid certificate, therefore the SSL validation box must not be ticked.
+Option 1: Provide the file path to the SSL certificate bundle
+-------------------------------------------------------------
 
-- The SSL certificate is from an internal PKI, it is valid but not trusted by default by the operating system, you can use the SSL certificate path to specifiy the local path to the corresponding certificate bundle and tick the validation box. If the file exists, it will be used during the REST calls, otherwise the SSL validation will be ignored.
+**In a nustshell:**
 
-For more information about validating an internal certificate: https://docs.python-requests.org/en/stable/user/advanced/#ssl-cert-verification
+- Retrieve the SSL certificate bundle content
+- Store it in a file which is made available to the Add-on on the Search Head file system
+- Configure its full path in the SSL certificate bundle file path field
+
+Option 2: Provide the PEM content of the SSL certificate
+--------------------------------------------------------
+
+**In a nutshell:**
+
+- Retrieve the SSL certificate bundle content
+- Copy/paste the whole content in the SSL certificate bundle content field
+- The Add-on will take care of the rest for you
 
 Logging level
 =============

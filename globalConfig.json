@@ -43,21 +43,56 @@
                             "required": true
                         },
                         {
+                            "type": "radio",
+                            "label": "Passthrough account",
+                            "field": "jira_passthrough_account",
+                            "defaultValue": "0",
+                            "help": "Set to True if creating a passthrough account",
+                            "required": false,
+                            "options": {
+                                "items": [
+                                    {
+                                        "value": "0",
+                                        "label": "False"
+                                    },
+                                    {
+                                        "value": "1",
+                                        "label": "True"
+                                    }
+                                ],
+                                "display": true
+                            }
+                        },
+                        {
                             "type": "text",
                             "label": "JIRA URL",
                             "help": "jira.atlassian.net (SSL is enforced and the URL submitted will be substituted with https://)",
                             "field": "jira_url",
-                            "required": true,
+                            "required": false,
                             "options": {
                                 "display": true
-                            }
+                            },
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Invalid JIRA URL",
+                                    "pattern": "^https?://.*"
+                                }
+                            ]
                         },
                         {
                             "type": "text",
                             "label": "Username or PAT ID",
                             "help": "Enter the username for this account, or the Personal Access Token ID.",
                             "field": "username",
-                            "required": true
+                            "required": false,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Invalid username",
+                                    "pattern": "^.*$"
+                                }
+                            ]
                         },
                         {
                             "type": "text",
@@ -65,7 +100,14 @@
                             "encrypted": true,
                             "help": "Enter the password for this account, API token or Personal Access Token.",
                             "field": "password",
-                            "required": true
+                            "required": false,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Invalid password",
+                                    "pattern": "^.*$"
+                                }
+                            ]
                         },
                         {
                             "field": "configuration_help_link",
@@ -82,7 +124,7 @@
                             "field": "jira_auth_mode",
                             "defaultValue": "basic",
                             "help": "Use basic authentication with combo username/password, username/API token or Personal Access Token (PAT)",
-                            "required": true,
+                            "required": false,
                             "options": {
                                 "items": [
                                     {
@@ -117,17 +159,29 @@
                         },
                         {
                             "type": "text",
-                            "label": "SSL certificate path",
-                            "help": "SSL certificate verication is mandatory, to verify a self-signed or internal PKI certificate, you must specify the local path to the certificate PEM file or bundle",
+                            "label": "Optional: SSL certificate file path",
+                            "help": "*** use certificate file path OR certificate pem, not both *** SSL certificate verication is mandatory, to verify a self-signed or internal PKI certificate, you can specify the local path to the certificate PEM file or bundle",
                             "validators": [
                                 {
-                                    "type": "string",
-                                    "errorMsg": "Max host length is 4096",
-                                    "minLength": 0,
-                                    "maxLength": 4096
+                                    "type": "regex",
+                                    "errorMsg": "Invalid value",
+                                    "pattern": "^.*$"
                                 }
                             ],
                             "field": "jira_ssl_certificate_path"
+                        },
+                        {
+                            "type": "text",
+                            "label": "Optional: SSL certificate PEM content",
+                            "help": "*** use certificate file path OR certificate pem, not both *** SSL certificate verication is mandatory, to verify a self-signed or internal PKI certificate, you can provide the PEM file content directly here",
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Invalid value",
+                                    "pattern": "^.*$"
+                                }
+                            ],
+                            "field": "jira_ssl_certificate_pem"
                         },
                         {
                             "field": "ssl_help_link",
@@ -170,7 +224,14 @@
                                 ]
                             },
                             "defaultValue": "http",
-                            "field": "proxy_type"
+                            "field": "proxy_type",
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Invalid proxy type",
+                                    "pattern": "^.*$"
+                                }
+                            ]
                         },
                         {
                             "type": "text",
@@ -245,6 +306,24 @@
                     "title": "JIRA advanced configuration",
                     "entity": [
                         {
+                            "type": "text",
+                            "label": "timeout",
+                            "help": "The timeout value for JIRA REST API calls",
+                            "field": "timeout",
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Invalid value",
+                                    "pattern": "^\\d*$"
+                                }
+                            ],
+                            "options": {
+                                "display": true
+                            },
+                            "defaultValue": 120,
+                            "required": true
+                        },
+                        {
                             "type": "radio",
                             "label": "Passthrough mode",
                             "field": "jira_passthrough_mode",
@@ -279,6 +358,13 @@
                             "label": "KVstore instance and port",
                             "help": "For client instances, define the KVstore instance in the format of <server>:<port>, example: acme.splunk.com:8089",
                             "field": "kvstore_instance",
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Invalid KVstore instance",
+                                    "pattern": "^.*$"
+                                }
+                            ],
                             "options": {
                                 "display": true
                             },
@@ -290,6 +376,13 @@
                             "label": "Bearer token",
                             "help": "For client instances, set the bearer token used for remote access to the KVstore instance",
                             "field": "bearer_token",
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Invalid bearer token",
+                                    "pattern": "^.*$"
+                                }
+                            ],
                             "options": {
                                 "display": true
                             },
@@ -302,6 +395,13 @@
                             "label": "KVstore search filters",
                             "help": "You can setup a search filter string if required, example: (account=\"LAB1\")",
                             "field": "kvstore_search_filters",
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Invalid KVstore search filters",
+                                    "pattern": "^.*$"
+                                }
+                            ],
                             "options": {
                                 "display": true
                             },
@@ -351,7 +451,7 @@
                     "type": "singleSelectSplunkSearch",
                     "label": "Select JIRA Account",
                     "field": "account",
-                    "search": "| rest splunk_server=local /servicesNS/nobody/TA-jira-service-desk-simple-addon/ta_service_desk_simple_addon_account | dedup title",
+                    "search": "| rest splunk_server=local /servicesNS/nobody/TA-jira-service-desk-simple-addon/ta_service_desk_simple_addon_account | dedup title | where isnotnull(title) | table title",
                     "valueField": "title",
                     "labelField": "title",
                     "help": "Select the JIRA account from the dropdown",
@@ -409,6 +509,55 @@
                     "required": true
                 },
                 {
+                    "type": "singleSelect",
+                    "label": "Auto close issue:",
+                    "field": "jira_auto_close",
+                    "defaultValue": "enabled",
+                    "help": "This options allows you to automatically close the issue if a certain field key value pair is found in the search results., it requires the Auto close key value pair to be defined to be effective.",
+                    "required": true,
+                    "options": {
+                        "items": [
+                            {
+                                "value": "enabled",
+                                "label": "Enabled"
+                            },
+                            {
+                                "value": "disabled",
+                                "label": "Disabled"
+                            }
+                        ],
+                        "display": true
+                    }
+                },
+                {
+                    "type": "text",
+                    "label": "Auto close key value pair",
+                    "help": "Required for auto close to be effective, enter the key value pair in the format of key=value, example: alert_status=closed.",
+                    "field": "jira_auto_close_key_value_pair",
+                    "required": false
+                },
+                {
+                    "type": "text",
+                    "label": "Auto close issue number field name",
+                    "help": "To perform the auto close, the JIRA alert actions needs to be able to do the link between the instance execution and the issue number. If using the dedup option, this link is made automatically, otherwise the field name must be defined here. If the modular alert cannot do the link with the issue number, auto closure will be skipped.",
+                    "field": "jira_auto_close_issue_number_field_name",
+                    "required": false
+                },
+                {
+                    "type": "text",
+                    "label": "Auto close status transition value",
+                    "help": "The status to be transitioned to when the auto close is triggered, defaults is Done.",
+                    "field": "jira_auto_close_status_transition_value",
+                    "required": false
+                },
+                {
+                    "type": "text",
+                    "label": "Auto close status transition comment",
+                    "help": "The comment added to the issue when the auto close is triggered, you can use tokens here. (ex: $result.message$) - If defined, this is added to the default comment - Defaults to: Auto-closure triggered by Splunk alert action. Condition: {jira_auto_close_key_value_pair}",
+                    "field": "jira_auto_close_status_transition_comment",
+                    "required": false
+                },
+                {
                     "type": "text",
                     "label": "Assignee",
                     "help": "(Optional) Issue assignee.",
@@ -456,6 +605,13 @@
                         ],
                         "display": true
                     }
+                },
+                {
+                    "type": "text",
+                    "label": "JIRA dedup comment",
+                    "help": "Optional comment to be added to the issue when the dedup is triggered. If defined, this is added to the default comment 'New alert triggered: Splunk Alert: $jira_summary$'",
+                    "field": "jira_dedup_comment",
+                    "required": false
                 },
                 {
                     "type": "text",
@@ -615,7 +771,7 @@
     "meta": {
         "name": "TA-jira-service-desk-simple-addon",
         "restRoot": "ta_service_desk_simple_addon",
-        "version": "2.0.20",
+        "version": "2.1.0",
         "displayName": "JIRA Service Desk simple addon",
         "schemaVersion": "0.0.9",
         "_uccVersion": "5.53.0"

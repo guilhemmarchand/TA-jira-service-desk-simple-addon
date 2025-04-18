@@ -19,15 +19,20 @@
 	</collection>
 	<collection label="Logging reports">
 		<a href="search?q=index%3D_internal%20sourcetype%3Djira%3Acustom_commands%3A*">ALL - search all custom command logs</a>
-		<a href="search?q=index%3D_internal%20sourcetype%3Djira%3Acustom_commands%3Ajirafill">jirafill - custom command</a>
-		<a href="search?q=index%3D_internal%20sourcetype%3Djira%3Acustom_commands%3Ajirarest">jirarest - custom command</a>
-		<a href="search?q=index%3D_internal%20sourcetype%3Djira%3Acustom_commands%3Ajiraoverview">jiraoverview - custom command</a>
-		<a href="search?q=index%3D_internal%20sourcetype%3Djira%3Acustom_commands%3Agetjirakv">getjirakv - custom command</a>
+		<collection label="Per custom command">
+			<a href="search?q=index%3D_internal%20sourcetype%3Djira%3Acustom_commands%3Ajirafill">jirafill - custom command</a>
+			<a href="search?q=index%3D_internal%20sourcetype%3Djira%3Acustom_commands%3Ajirarest">jirarest - custom command</a>
+			<a href="search?q=index%3D_internal%20sourcetype%3Djira%3Acustom_commands%3Ajiraoverview">jiraoverview - custom command</a>
+			<a href="search?q=index%3D_internal%20sourcetype%3Djira%3Acustom_commands%3Agetjirakv">getjirakv - custom command</a>
+		</collection>
 		<saved name="JIRA Service Desk - modular action logs" />
 		<saved name="JIRA Service Desk - modular resilient store action logs" />
-		<saved name="JIRA Service Desk - Issue creation successes" />
-		<saved name="JIRA Service Desk - temporary issue creation failures" />
-		<saved name="JIRA Service Desk - permanent issue creation failures" />
+		<collection label="Per action status">
+			<saved name="JIRA Service Desk - Issue creation successes" />
+			<saved name="JIRA Service Desk - temporary issue creation failures" />
+			<saved name="JIRA Service Desk - permanent issue creation failures" />
+		</collection>
+		<a href="search?q=index%3D_internal%20sourcetype%3Djira_service_desk:rest">REST API endpoints logs</a>
 	</collection>
 	<collection label="Statistic JIRA reports">
 		<saved name="JIRA Service Desk - Issues statistics report per project" />

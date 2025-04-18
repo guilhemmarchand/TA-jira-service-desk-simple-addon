@@ -1,16 +1,13 @@
 #!/usr/bin/env python
 # coding=utf-8
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import json
 import sys
 import os
-import splunk
 import time
 import requests
 import logging
-import base64
+from logging.handlers import RotatingFileHandler
 import urllib3
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -18,8 +15,11 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 splunkhome = os.environ["SPLUNK_HOME"]
 
 # set logging
-filehandler = logging.FileHandler(
-    splunkhome + "/var/log/splunk/ta_jira_jirarest.log", "a"
+filehandler = RotatingFileHandler(
+    f"{splunkhome}/var/log/splunk/ta_jira_jirarest.log",
+    mode="a",
+    maxBytes=10000000,
+    backupCount=1,
 )
 formatter = logging.Formatter(
     "%(asctime)s %(levelname)s %(filename)s %(funcName)s %(lineno)d %(message)s"
@@ -46,11 +46,29 @@ from splunklib.searchcommands import (
 )
 
 # Import JIRA libs
-from ta_jira_libs import test_jira_connect
+from ta_jira_libs import (
+    jira_get_conf,
+    jira_get_accounts,
+    jira_get_account,
+    jira_build_headers,
+    jira_handle_ssl_certificate,
+    jira_test_connectivity,
+)
 
 
 @Configuration(distributed=False)
 class GenerateTextCommand(GeneratingCommand):
+    """
+    A Splunk search command that provides a REST interface to JIRA.
+    This command allows making HTTP requests to JIRA's REST API with various methods (GET, POST, PUT, DELETE).
+
+    The command supports:
+    - Configurable JIRA account selection
+    - Multiple HTTP methods
+    - JSON request payloads
+    - SSL certificate handling
+    - Proxy configuration
+    """
 
     account = Option(
         doc="""
@@ -75,121 +93,51 @@ class GenerateTextCommand(GeneratingCommand):
     )
     target = Option(require=True)
 
-    # Proceed
     def generate(self):
+        """
+        Generates the search results by making a REST request to JIRA.
 
-        storage_passwords = self.service.storage_passwords
+        This method:
+        1. Retrieves the JIRA configuration
+        2. Sets up logging and proxy settings
+        3. Gets the specified account configuration
+        4. Tests connectivity to JIRA
+        5. Makes the REST request with the specified method
+        6. Processes and yields the response
 
-        # global configuration
-        conf_file = "ta_service_desk_simple_addon_settings"
-        confs = self.service.confs[str(conf_file)]
+        The method handles:
+        - Different HTTP methods (GET, POST, PUT, DELETE)
+        - JSON request payloads
+        - SSL certificate verification
+        - Proxy configuration
+        - Error handling and response formatting
+
+        Yields:
+            dict: A dictionary containing:
+                - _time: The timestamp of the request
+                - _raw: The JSON response from JIRA or an error message
+        """
+
+        # get conf
+        jira_conf = jira_get_conf(
+            self._metadata.searchinfo.session_key, self._metadata.searchinfo.splunkd_uri
+        )
 
         # set loglevel
-        loglevel = "INFO"
-        for stanza in confs:
-            if stanza.name == "logging":
-                for stanzakey, stanzavalue in stanza.content.items():
-                    if stanzakey == "loglevel":
-                        loglevel = stanzavalue
-        logginglevel = logging.getLevelName(loglevel)
-        log.setLevel(logginglevel)
+        log.setLevel(jira_conf["logging"]["loglevel"])
 
-        # init
-        proxy_enabled = "0"
-        proxy_url = None
-        proxy_dict = None
-        proxy_username = None
-        for stanza in confs:
-            if stanza.name == "proxy":
-                for key, value in stanza.content.items():
-                    if key == "proxy_enabled":
-                        proxy_enabled = value
-                    if key == "proxy_port":
-                        proxy_port = value
-                    if key == "proxy_type":
-                        proxy_type = value
-                    if key == "proxy_url":
-                        proxy_url = value
-                    if key == "proxy_username":
-                        proxy_username = value
+        # global configuration
+        proxy_conf = jira_conf["proxy"]
+        proxy_dict = proxy_conf.get("proxy_dict", {})
 
-        if proxy_enabled == "1":
-
-            # get proxy password
-            if proxy_username:
-                proxy_password = None
-
-                # get proxy password, if any
-                credential_realm = "__REST_CREDENTIAL__#TA-jira-service-desk-simple-addon#configs/conf-ta_service_desk_simple_addon_settings"
-                for credential in storage_passwords:
-                    if (
-                        credential.content.get("realm") == str(credential_realm)
-                        and credential.content.get("clear_password").find(
-                            "proxy_password"
-                        )
-                        > 0
-                    ):
-                        proxy_password = json.loads(
-                            credential.content.get("clear_password")
-                        ).get("proxy_password")
-                        break
-
-                if proxy_type == "http":
-                    proxy_dict = {
-                        "http": "http://"
-                        + proxy_username
-                        + ":"
-                        + proxy_password
-                        + "@"
-                        + proxy_url
-                        + ":"
-                        + proxy_port,
-                        "https": "https://"
-                        + proxy_username
-                        + ":"
-                        + proxy_password
-                        + "@"
-                        + proxy_url
-                        + ":"
-                        + proxy_port,
-                    }
-                else:
-                    proxy_dict = {
-                        "http": str(proxy_type)
-                        + "://"
-                        + proxy_username
-                        + ":"
-                        + proxy_password
-                        + "@"
-                        + proxy_url
-                        + ":"
-                        + proxy_port,
-                        "https": str(proxy_type)
-                        + "://"
-                        + proxy_username
-                        + ":"
-                        + proxy_password
-                        + "@"
-                        + proxy_url
-                        + ":"
-                        + proxy_port,
-                    }
-
-            else:
-                proxy_dict = {
-                    "http": proxy_url + ":" + proxy_port,
-                    "https": proxy_url + ":" + proxy_port,
-                }
+        # set timeout
+        timeout = int(jira_conf["advanced_configuration"].get("timeout", 120))
 
         # get all acounts
-        accounts = []
-        conf_file = "ta_service_desk_simple_addon_account"
-        confs = self.service.confs[str(conf_file)]
-        for stanza in confs:
-            # get all accounts
-            for name in stanza.name:
-                accounts.append(stanza.name)
-                break
+        accounts_dict = jira_get_accounts(
+            self._metadata.searchinfo.session_key, self._metadata.searchinfo.splunkd_uri
+        )
+        accounts = accounts_dict.get("accounts", [])
 
         # define the account target
         if not self.account or self.account == "_any":
@@ -198,76 +146,27 @@ class GenerateTextCommand(GeneratingCommand):
             account = str(self.account)
 
         # account configuration
-        isfound = False
-        jira_ssl_certificate_path = None
-        username = None
-        password = None
+        account_conf = jira_get_account(
+            self._metadata.searchinfo.session_key,
+            self._metadata.searchinfo.splunkd_uri,
+            account,
+        )
 
-        conf_file = "ta_service_desk_simple_addon_account"
-        confs = self.service.confs[str(conf_file)]
-        for stanza in confs:
+        jira_auth_mode = account_conf.get("auth_mode", "basic")
+        jira_url = account_conf.get("jira_url", None)
+        jira_ssl_certificate_path = account_conf.get("jira_ssl_certificate_path", None)
+        jira_ssl_certificate_pem = account_conf.get("jira_ssl_certificate_pem", None)
+        jira_username = account_conf.get("username", None)
+        jira_password = account_conf.get("jira_password", None)
 
-            if stanza.name == str(account):
-                isfound = True
-                for key, value in stanza.content.items():
-                    if key == "jira_url":
-                        jira_url = value
-                    if key == "jira_ssl_certificate_path":
-                        jira_ssl_certificate_path = value
-                    if key == "auth_type":
-                        auth_type = value
-                    if key == "jira_auth_mode":
-                        jira_auth_mode = value
-                    if key == "username":
-                        username = value
+        # Build the authentication header for JIRA
+        jira_headers = jira_build_headers(jira_auth_mode, jira_username, jira_password)
 
-        # end of get configuration
-
-        # Stop here if we cannot find the submitted account
-        if not isfound:
-            self.logger.fatal(
-                "This acount has not been configured on this instance, cannot proceed!: %s",
-                self,
-            )
-
-        # else get the password
-        else:
-            credential_username = str(account) + "``splunk_cred_sep``1"
-            credential_realm = "__REST_CREDENTIAL__#TA-jira-service-desk-simple-addon#configs/conf-ta_service_desk_simple_addon_account"
-            for credential in storage_passwords:
-                if (
-                    credential.content.get("username") == str(credential_username)
-                    and credential.content.get("realm") == str(credential_realm)
-                    and credential.content.get("clear_password").find("password") > 0
-                ):
-                    password = json.loads(credential.content.get("clear_password")).get(
-                        "password"
-                    )
-                    break
-
-            # Build the authentication header for JIRA
-            if str(jira_auth_mode) == "basic":
-                authorization = username + ":" + password
-                b64_auth = base64.b64encode(authorization.encode()).decode()
-                jira_headers = {
-                    "Authorization": "Basic %s" % b64_auth,
-                    "Content-Type": "application/json",
-                }
-            elif str(jira_auth_mode) == "pat":
-                jira_headers = {
-                    "Authorization": "Bearer %s" % str(password),
-                    "Content-Type": "application/json",
-                }
-
-        # verify the url
-        if not jira_url.startswith("https://"):
-            jira_url = "https://" + str(jira_url)
-
-        # handle SSL verification and bundle
-        if jira_ssl_certificate_path and os.path.isfile(jira_ssl_certificate_path):
-            ssl_config = str(jira_ssl_certificate_path)
-        else:
-            ssl_config = True
+        # SSL verification is always true or the path to the CA bundle for the SSL certificate to be verified
+        # Handle SSL certificate configuration
+        ssl_config, temp_cert_file = jira_handle_ssl_certificate(
+            jira_ssl_certificate_path, jira_ssl_certificate_pem
+        )
 
         # verify the method
         if self.method:
@@ -280,113 +179,98 @@ class GenerateTextCommand(GeneratingCommand):
         else:
             if jira_method == "POST" or jira_method == "PUT":
                 raise Exception(
-                    "jirarest: method {} requires a valid json_request. It is empty".format(
-                        jira_method
-                    )
+                    f"jirarest: method {jira_method} requires a valid json_request. It is empty"
                 )
 
-        # check connectivity and proceed
+        # test connectivity systematically
+        connected = False
         try:
-            connectivity_check = test_jira_connect(
-                account, jira_headers, jira_url, ssl_config, proxy_dict
+            healthcheck_response = jira_test_connectivity(
+                self._metadata.searchinfo.session_key,
+                self._metadata.searchinfo.splunkd_uri,
+                account,
             )
+            connected = True
             logging.debug(
-                'connectivity_check="{}"'.format(json.dumps(connectivity_check))
+                f'JIRA connect verification successful for account="{account}", response="{json.dumps(healthcheck_response)}"'
             )
-
-            # Splunk Cloud vetting notes: ssl_config is always True or or path to a CA bundle for the validation of the SSL certificate
-
-            if self.target:
-                # set proper headers
-                if jira_method == "GET":
-                    jira_fields_response = requests.get(
-                        url=str(jira_url) + "/" + str(self.target),
-                        headers=jira_headers,
-                        verify=ssl_config,
-                        proxies=proxy_dict,
-                    )
-                elif jira_method == "DELETE":
-                    jira_fields_response = requests.delete(
-                        url=str(jira_url) + "/" + str(self.target),
-                        headers=jira_headers,
-                        verify=ssl_config,
-                        proxies=proxy_dict,
-                    )
-                elif jira_method == "POST":
-                    jira_fields_response = requests.post(
-                        url=str(jira_url) + "/" + str(self.target),
-                        data=json.dumps(body_dict).encode("utf-8"),
-                        headers=jira_headers,
-                        verify=ssl_config,
-                        proxies=proxy_dict,
-                    )
-                elif jira_method == "PUT":
-                    jira_fields_response = requests.put(
-                        url=str(jira_url) + "/" + str(self.target),
-                        data=json.dumps(body_dict).encode("utf-8"),
-                        headers=jira_headers,
-                        verify=ssl_config,
-                        proxies=proxy_dict,
-                    )
-
-                # Attenpt to get a JSON response, and render in Splunk
-                try:
-
-                    json_response = jira_fields_response.json()
-                    data = {"_time": time.time(), "_raw": json.dumps(json_response)}
-                    yield data
-
-                except Exception as e:
-
-                    # Build a custom response for Splunk dynamically
-
-                    # Create an action field, convenient to quickly understanding when things go wrong
-                    if jira_fields_response.status_code in (200, 201, 204):
-                        response_action = "success"
-                    else:
-                        response_action = "failure"
-
-                    # render
-                    if jira_fields_response.text:
-                        json_response = (
-                            '{"action": "'
-                            + str(response_action)
-                            + '", "status_code": "'
-                            + str(jira_fields_response.status_code)
-                            + '", "text": "'
-                            + str(jira_fields_response.text)
-                            + '"}'
-                        )
-                    else:
-                        json_response = (
-                            '{"action": "'
-                            + str(response_action)
-                            + '", "status_code": "'
-                            + str(jira_fields_response.status_code)
-                            + '"}'
-                        )
-                    data = {
-                        "_time": time.time(),
-                        "_raw": str(
-                            json.dumps(
-                                json.loads(json_response, strict=False), indent=4
-                            )
-                        ),
-                    }
-
-                    yield data
-
         except Exception as e:
-            logging.error(
-                'JIRA connect verification failed for account="{}" with exception="{}"'.format(
-                    account, str(e)
-                )
-            )
             raise Exception(
-                'JIRA connect verification failed for account="{}" with exception="{}"'.format(
-                    account, str(e)
-                )
+                f'JIRA connect verification failed for account="{account}" with exception="{str(e)}"'
             )
+
+        #
+        # main
+        #
+
+        if connected:
+
+            # set proper headers
+            if jira_method == "GET":
+                jira_fields_response = requests.get(
+                    url=f"{str(jira_url)}/{str(self.target)}",
+                    headers=jira_headers,
+                    verify=ssl_config,
+                    proxies=proxy_dict,
+                    timeout=timeout,
+                )
+            elif jira_method == "DELETE":
+                jira_fields_response = requests.delete(
+                    url=f"{str(jira_url)}/{str(self.target)}",
+                    headers=jira_headers,
+                    verify=ssl_config,
+                    proxies=proxy_dict,
+                    timeout=timeout,
+                )
+            elif jira_method == "POST":
+                jira_fields_response = requests.post(
+                    url=f"{str(jira_url)}/{str(self.target)}",
+                    data=json.dumps(body_dict).encode("utf-8"),
+                    headers=jira_headers,
+                    verify=ssl_config,
+                    proxies=proxy_dict,
+                    timeout=timeout,
+                )
+            elif jira_method == "PUT":
+                jira_fields_response = requests.put(
+                    url=f"{str(jira_url)}/{str(self.target)}",
+                    data=json.dumps(body_dict).encode("utf-8"),
+                    headers=jira_headers,
+                    verify=ssl_config,
+                    proxies=proxy_dict,
+                    timeout=timeout,
+                )
+
+            # Attenpt to get a JSON response, and render in Splunk
+            try:
+
+                json_response = jira_fields_response.json()
+                data = {"_time": time.time(), "_raw": json.dumps(json_response)}
+                yield data
+
+            except Exception as e:
+
+                # Build a custom response for Splunk dynamically
+
+                # Create an action field, convenient to quickly understanding when things go wrong
+                if jira_fields_response.status_code in (200, 201, 204):
+                    response_action = "success"
+                else:
+                    response_action = "failure"
+
+                # render
+                if jira_fields_response.text:
+                    json_response = f'{{"action": "{response_action}", "status_code": "{jira_fields_response.status_code}", "text": "{jira_fields_response.text}"}}'
+                else:
+                    json_response = f'{{"action": "{response_action}", "status_code": "{jira_fields_response.status_code}"}}'
+                data = {
+                    "_time": time.time(),
+                    "_raw": str(
+                        json.dumps(json.loads(json_response, strict=False), indent=4)
+                    ),
+                }
+
+                yield data
 
 
 dispatch(GenerateTextCommand, sys.argv, sys.stdin, sys.stdout, __name__)

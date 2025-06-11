@@ -1218,7 +1218,7 @@ def query_url(
                 try:
                     response = requests.get(
                         jira_url_status,
-                        headers=headers,
+                        headers=jira_headers,
                         verify=ssl_config,
                         proxies=proxy_dict,
                         timeout=timeout,

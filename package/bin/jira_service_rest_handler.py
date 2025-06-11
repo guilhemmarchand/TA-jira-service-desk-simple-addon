@@ -446,7 +446,7 @@ class Jira_v1(jira_rest_handler.RESTHandler):
             timeout = int(jira_conf["advanced_configuration"].get("timeout", 120))
 
             # Extract configuration
-            jira_auth_mode = account_conf.get("auth_mode", "basic")
+            jira_auth_mode = account_conf.get("jira_auth_mode", "basic")
             jira_url = account_conf.get("jira_url", None)
             jira_ssl_certificate_path = account_conf.get(
                 "jira_ssl_certificate_path", None
@@ -589,7 +589,7 @@ class Jira_v1(jira_rest_handler.RESTHandler):
             # Extract configuration from payload
             try:
                 jira_url = resp_dict["jira_url"]
-                jira_auth_mode = resp_dict.get("auth_mode", "basic")
+                jira_auth_mode = resp_dict.get("jira_auth_mode", "basic")
                 jira_username = resp_dict["username"]
                 jira_password = resp_dict["jira_password"]
                 jira_ssl_certificate_path = resp_dict.get(

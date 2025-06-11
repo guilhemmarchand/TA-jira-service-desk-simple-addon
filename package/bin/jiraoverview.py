@@ -134,7 +134,7 @@ class GenerateTextCommand(GeneratingCommand):
                 account,
             )
 
-            jira_auth_mode = account_conf.get("auth_mode", "basic")
+            jira_auth_mode = account_conf.get("jira_auth_mode", "basic")
             jira_url = account_conf.get("jira_url", None)
             jira_ssl_certificate_path = account_conf.get(
                 "jira_ssl_certificate_path", None

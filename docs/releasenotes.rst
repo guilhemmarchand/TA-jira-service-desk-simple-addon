@@ -1,6 +1,12 @@
 Release notes
 #############
 
+Version 2.1.1
+=============
+
+- bug - basic authentication is unexpectly used due to a bug in 2.1.0 which affects Jira on-premise instances #215
+- bug - dedup get Jira issue failed due to invalid credentials #216
+
 Version 2.1.0
 =============
 

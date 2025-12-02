@@ -300,8 +300,11 @@ def jira_build_headers(jira_auth_mode, jira_username, jira_password):
             "Content-Type": "application/json",
         }
     elif str(jira_auth_mode) == "pat":
+        # For on-premise JIRA, PAT tokens use Basic auth with username:token format
+        authorization = f"{jira_username}:{jira_password}"
+        b64_auth = base64.b64encode(authorization.encode()).decode()
         jira_headers = {
-            "Authorization": f"Bearer {str(jira_password)}",
+            "Authorization": f"Basic {b64_auth}",
             "Content-Type": "application/json",
         }
     else:

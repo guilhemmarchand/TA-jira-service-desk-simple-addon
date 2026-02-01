@@ -24,6 +24,7 @@ param.jira_attachment = <list> Results attachment:. It's a required parameter. I
 param.jira_results_description = <list> Add results to description:. It's a required parameter. It's default value is disabled.
 param.jira_attachment_token = <string> Attachment token.
 param.jira_customfields = <string> custom fields structure.
+param.jira_customfields_parsing = <list> Custom fields parsing. It's a required parameter. It's default value is enabled.
 
 [jira_service_desk_replay]
 param.account = <list> Select Account. It's a required parameter.

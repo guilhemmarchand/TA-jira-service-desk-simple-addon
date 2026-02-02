@@ -987,6 +987,19 @@ def query_url(
         f"auto-close parameters: jira_auto_close={jira_auto_close}, jira_auto_close_key_value_pair={jira_auto_close_key_value_pair}, jira_auto_close_status_transition_value={jira_auto_close_status_transition_value}, jira_auto_close_issue_number_field_name={jira_auto_close_issue_number_field_name}"
     )
 
+    #
+    # ES Notable Integration capabilities
+    #
+    es_notable_update_enabled = helper.get_param("es_notable_update_enabled")
+    if es_notable_update_enabled in ["", "None", None]:
+        es_notable_update_enabled = "disabled"
+    es_notable_status = helper.get_param("es_notable_status")
+    es_notable_comment = helper.get_param("es_notable_comment")
+    helper.log_debug(
+        f"ES Notable parameters: es_notable_update_enabled={es_notable_update_enabled}, "
+        f"es_notable_status={es_notable_status}, es_notable_comment={es_notable_comment}"
+    )
+
     # Loop within events and proceed
     events = helper.get_events()
     for event in events:
@@ -1520,6 +1533,22 @@ def query_url(
                     )
                     jira_creation_response = response.text
 
+                    # Update ES Notable if enabled (only works from ES Incident Review)
+                    if es_notable_update_enabled == "enabled":
+                        # Extract base JIRA URL (without /rest/api/...)
+                        jira_base_url = jira_root_url.split("/rest/api/")[0] if "/rest/api/" in jira_root_url else jira_root_url
+                        update_es_notable(
+                            helper,
+                            session_key,
+                            splunkd_uri,
+                            event,
+                            es_notable_status,
+                            es_notable_comment,
+                            jira_backlog_key,
+                            jira_backlog_id,
+                            jira_base_url,
+                        )
+
                     # Update the backlog collection entry
                     record = {
                         "account": str(account),
@@ -1617,6 +1646,22 @@ def query_url(
                         jira_auto_close_status_transition_comment,
                         jira_created_key,
                     )
+
+                    # Update ES Notable if enabled (only works from ES Incident Review)
+                    if es_notable_update_enabled == "enabled":
+                        # Extract base JIRA URL (without /rest/api/...)
+                        jira_base_url = jira_root_url.split("/rest/api/")[0] if "/rest/api/" in jira_root_url else jira_root_url
+                        update_es_notable(
+                            helper,
+                            session_key,
+                            splunkd_uri,
+                            event,
+                            es_notable_status,
+                            es_notable_comment,
+                            jira_created_key,
+                            jira_created_id,
+                            jira_base_url,
+                        )
 
                     record_url = (
                         f"{splunkd_uri}/servicesNS/nobody/"
@@ -1883,3 +1928,124 @@ def perform_auto_closure(
 
     except Exception as e:
         helper.log_error(f"Error during auto-closure process: {str(e)}")
+
+
+def update_es_notable(
+    helper,
+    session_key,
+    server_uri,
+    event,
+    es_notable_status,
+    es_notable_comment,
+    jira_created_key,
+    jira_created_id,
+    jira_url,
+):
+    """
+    Updates an ES Notable event with status and comment after JIRA ticket creation.
+
+    This function is only effective when the alert action is invoked from 
+    Splunk Enterprise Security (ES) Incident Review as an Adaptive Response Action.
+
+    Args:
+        helper: The helper object for logging
+        session_key (str): Splunk session key for authentication
+        server_uri (str): Splunk server URI
+        event (dict): The event data containing the Notable event information
+        es_notable_status (str): The status to set on the Notable event
+        es_notable_comment (str): The comment template to add to the Notable event
+        jira_created_key (str): The JIRA issue key (e.g., PROJ-123)
+        jira_created_id (str): The JIRA issue ID
+        jira_url (str): The base JIRA URL
+
+    The function:
+    - Checks if running in ES Adaptive Response context (event_id present)
+    - Replaces tokens in the comment template
+    - Calls the ES notable_update endpoint to update status and add comment
+    """
+    
+    # Check if we have the event_id field which indicates this is from ES Incident Review
+    event_id = event.get("event_id") or event.get("orig_event_id")
+    
+    if not event_id:
+        helper.log_debug(
+            "ES Notable update skipped: No event_id found in event data. "
+            "This feature only works when invoked from ES Incident Review on Notable Events."
+        )
+        return
+    
+    helper.log_info(f"ES Notable update: Processing event_id={event_id}")
+    
+    # Get current user from the event or helper
+    current_user = event.get("user") or event.get("owner") or "unknown"
+    
+    # Try to get from helper settings if available
+    try:
+        if hasattr(helper, 'settings') and helper.settings:
+            current_user = helper.settings.get("owner", current_user)
+    except Exception:
+        pass
+    
+    # Get current time
+    current_time = strftime("%Y-%m-%d %H:%M:%S", localtime())
+    
+    # Build the full JIRA ticket URL
+    jira_ticket_url = f"{jira_url.rstrip('/')}/browse/{jira_created_key}"
+    
+    # Replace tokens in the comment (using {{token}} syntax to avoid Splunk variable conflicts)
+    if es_notable_comment:
+        comment = es_notable_comment
+        comment = comment.replace("{{jira_key}}", str(jira_created_key))
+        comment = comment.replace("{{jira_id}}", str(jira_created_id))
+        comment = comment.replace("{{jira_url}}", jira_ticket_url)
+        comment = comment.replace("{{current_user}}", str(current_user))
+        comment = comment.replace("{{current_time}}", current_time)
+    else:
+        # Default comment if none provided
+        comment = f"JIRA ticket {jira_created_key} created by {current_user} at {current_time}. URL: {jira_ticket_url}"
+    
+    helper.log_debug(f"ES Notable update: Prepared comment: {comment}")
+    
+    # Build the notable_update endpoint URL
+    # ES provides the notable_update REST endpoint
+    notable_update_url = f"{server_uri}/services/notable_update"
+    
+    headers = {
+        "Authorization": f"Splunk {session_key}",
+        "Content-Type": "application/x-www-form-urlencoded",
+    }
+    
+    # Build the update data
+    update_data = {
+        "ruleUIDs": event_id,
+        "comment": comment,
+    }
+    
+    # Add status if specified
+    if es_notable_status and es_notable_status.strip():
+        update_data["status"] = es_notable_status
+        helper.log_debug(f"ES Notable update: Setting status to: {es_notable_status}")
+    
+    try:
+        response = requests.post(
+            notable_update_url,
+            headers=headers,
+            data=update_data,
+            verify=False,
+            timeout=30,
+        )
+        
+        if response.status_code in (200, 201, 204):
+            helper.log_info(
+                f"ES Notable update successful for event_id={event_id}. "
+                f"Status: {es_notable_status if es_notable_status else 'unchanged'}, "
+                f"Comment added: {comment[:100]}..."
+            )
+        else:
+            helper.log_error(
+                f"ES Notable update failed for event_id={event_id}. "
+                f"HTTP Status: {response.status_code}, Response: {response.text}"
+            )
+            
+    except Exception as e:
+        helper.log_error(f"ES Notable update error for event_id={event_id}: {str(e)}")

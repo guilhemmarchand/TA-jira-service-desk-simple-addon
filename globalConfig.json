@@ -698,6 +698,44 @@
                     "help": "(Optional) Jira custom field",
                     "field": "jira_customfields",
                     "required": false
+                },
+                {
+                    "type": "singleSelect",
+                    "label": "Update ES Notable",
+                    "field": "es_notable_update_enabled",
+                    "defaultValue": "disabled",
+                    "help": "(ES Only) Enable to update the ES Notable event status and add a comment after JIRA ticket creation. This feature only works when invoked from ES Incident Review on Notable Events.",
+                    "required": false,
+                    "options": {
+                        "items": [
+                            {
+                                "value": "disabled",
+                                "label": "Disabled"
+                            },
+                            {
+                                "value": "enabled",
+                                "label": "Enabled"
+                            }
+                        ],
+                        "display": true
+                    }
+                },
+                {
+                    "type": "singleSelectSplunkSearch",
+                    "label": "Notable Status",
+                    "field": "es_notable_status",
+                    "search": "| rest splunk_server=local /servicesNS/nobody/SplunkEnterpriseSecuritySuite/alerts/reviewstatuses | table status_id, label | rename status_id as value, label as label | sort value",
+                    "valueField": "value",
+                    "labelField": "label",
+                    "help": "(ES Only) Select the status to set on the ES Notable event after JIRA ticket creation. Leave blank to not change status.",
+                    "required": false
+                },
+                {
+                    "type": "text",
+                    "label": "Notable Comment",
+                    "help": "(ES Only) Comment to add to the Notable event. Tokens: {{jira_key}}, {{jira_id}}, {{jira_url}}, {{current_user}}, {{current_time}}",
+                    "field": "es_notable_comment",
+                    "required": false
                 }
             ]
         },

@@ -575,4 +575,90 @@
       </span>
     </div>
   </div>
+
+  <div>
+    <legend style="font-size: 14px; color: dodgerblue; font-weight: bold">
+      Splunk ES Notable Integration:
+    </legend>
+  </div>
+
+  <div class="control-group">
+    <label class="control-label" for="jira_service_desk_es_notable_update_enabled"
+      >Update ES Notable:
+    </label>
+    <div class="controls">
+      <select
+        name="action.jira_service_desk.param.es_notable_update_enabled"
+        id="jira_service_desk_es_notable_update_enabled"
+      >
+        <option value="disabled">Disabled</option>
+        <option value="enabled">Enabled</option>
+      </select>
+      <span class="help-block">
+        <br />Enable this option to automatically update the ES Notable event
+        status and add a comment after successfully creating a JIRA ticket.
+        <br />
+        <br />
+        <strong>Important:</strong> This feature only works when invoked from ES Incident Review
+        on Notable Events. It requires access to the event_id field from the Notable event.
+      </span>
+    </div>
+  </div>
+
+  <div class="control-group">
+    <label class="control-label" for="jira_service_desk_es_notable_status"
+      >Notable Status
+    </label>
+    <div class="controls">
+      <splunk-search-dropdown
+        name="action.jira_service_desk.param.es_notable_status"
+        id="jira_service_desk_es_notable_status"
+        search="| rest splunk_server=local /servicesNS/nobody/SplunkEnterpriseSecuritySuite/alerts/reviewstatuses | search status_type=&quot;notable&quot; | table title, label | rename title as value, label as label | sort value | head 20"
+        value-field="value"
+        label-field="label"
+      ></splunk-search-dropdown>
+      <span class="help-block">
+        (Optional) Select the status to set on the ES Notable event after the JIRA
+        ticket is successfully created. Leave blank to not change the status.
+        <br />
+        <br />
+        Status values are dynamically loaded from your ES instance. Common statuses:
+        <br />- 0: Unassigned
+        <br />- 1: New
+        <br />- 2: In Progress
+        <br />- 3: Pending
+        <br />- 4: Resolved
+        <br />- 5: Closed
+      </span>
+    </div>
+  </div>
+
+  <div class="control-group">
+    <label class="control-label" for="jira_service_desk_es_notable_comment"
+      >Notable Comment
+    </label>
+    <div class="controls">
+      <textarea
+        name="action.jira_service_desk.param.es_notable_comment"
+        id="jira_service_desk_es_notable_comment"
+        style="height: 80px"
+      ></textarea>
+      <span class="help-block">
+        <br />(Optional) Comment to add to the ES Notable event. Supports the following tokens:
+        <br />
+        <br />- {{jira_key}} - The JIRA issue key (e.g., PROJ-123)
+        <br />- {{jira_id}} - The JIRA issue ID
+        <br />- {{jira_url}} - Full URL to the JIRA ticket
+        <br />- {{current_user}} - The Splunk user who triggered the action
+        <br />- {{current_time}} - Timestamp when the action was executed
+        <br />
+        <br />Example: JIRA ticket {{jira_key}} created by {{current_user}}
+        <br />
+        <br />
+        <strong>Note:</strong> Use double curly braces syntax for tokens,
+        not $$ syntax, to avoid conflicts with Splunk's native variable replacement.
+      </span>
+    </div>
+  </div>
+
 </form>

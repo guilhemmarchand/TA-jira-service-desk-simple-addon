@@ -937,7 +937,7 @@ class Jira_v1(jira_rest_handler.RESTHandler):
 
         # extract a clean json object
         bearer_token_rawvalue_match = re.search(
-            '\{"bearer_token":\s*"(.*)"\}', bearer_token_rawvalue
+            r'\{"bearer_token":\s*"(.*)"\}', bearer_token_rawvalue
         )
         if bearer_token_rawvalue_match:
             bearer_token = bearer_token_rawvalue_match.group(1)

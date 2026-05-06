@@ -6,6 +6,10 @@ Version 2.1.2
 
 Maintenance release: bug fixes, Splunk Cloud / Splunk Enterprise 10.2+ readiness, and full refresh of bundled libraries.
 
+.. note::
+
+   The minimum supported Python runtime is now **Python 3.9**, declared explicitly via ``python.required = 3.9,3.13``. Splunk Enterprise 9.2.x and later default to Python 3.9; Splunk Enterprise 9.1.x users must switch the search head to Python 3.9 (supported but not the default — see Splunk's Python 3 Migration documentation). The previous 2.1.1 release implicitly required Python 3.8+ as well via the bundled ``requests >= 2.32.3``; this release just makes the runtime requirement explicit and aligns it with the Splunk Cloud / 10.2+ Python 3.13 stack.
+
 - bug - Fix PAT authentication for on-premise JIRA: ``jirafill`` was reading the wrong configuration key (``auth_mode`` instead of ``jira_auth_mode``) and silently fell back to Basic auth even when PAT was selected, leading to ``403 Client Error`` on ``/rest/api/latest/project`` while ``Test connectivity`` reported success #223
 - bug - Splunk Cloud / Splunk Enterprise 10.2+ pre-check readiness: declare ``python.required = 3.9,3.13`` alongside the legacy ``python.version = python3`` directive in ``alert_actions.conf``, ``commands.conf`` and ``restmap.conf`` so the add-on continues to load on Splunk 9.x / 10.x (Python 3.9) and is accepted by Splunk Cloud Pre-Check on Splunk Enterprise 10.2+ (Python 3.13) #227
 - bug - Fix ``SyntaxWarning: invalid escape sequence '\{'`` raised on Python 3.12+ from the bearer-token regex in ``jira_service_rest_handler.py`` (would become ``SyntaxError`` on Python 3.14); converted the pattern to a raw string literal #227

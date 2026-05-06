@@ -1,6 +1,24 @@
 Release notes
 #############
 
+Version 2.1.2
+=============
+
+Maintenance release: bug fixes, Splunk Cloud / Splunk Enterprise 10.2+ readiness, and full refresh of bundled libraries.
+
+- bug - Fix PAT authentication for on-premise JIRA: ``jirafill`` was reading the wrong configuration key (``auth_mode`` instead of ``jira_auth_mode``) and silently fell back to Basic auth even when PAT was selected, leading to ``403 Client Error`` on ``/rest/api/latest/project`` while ``Test connectivity`` reported success #223
+- bug - Splunk Cloud / Splunk Enterprise 10.2+ pre-check readiness: declare ``python.required = 3.9,3.13`` alongside the legacy ``python.version = python3`` directive in ``alert_actions.conf``, ``commands.conf`` and ``restmap.conf`` so the add-on continues to load on Splunk 9.x / 10.x (Python 3.9) and is accepted by Splunk Cloud Pre-Check on Splunk Enterprise 10.2+ (Python 3.13) #227
+- bug - Fix ``SyntaxWarning: invalid escape sequence '\{'`` raised on Python 3.12+ from the bearer-token regex in ``jira_service_rest_handler.py`` (would become ``SyntaxError`` on Python 3.14); converted the pattern to a raw string literal #227
+- change - Refresh build toolchain and bundled runtime libraries:
+
+  - ``splunk-add-on-ucc-framework`` 5.44.0 → 6.4.0
+  - ``splunktaucclib`` 6.2.0 → 8.1.0
+  - ``solnlib`` pinned to ``>=7.0.0,<8.0.0`` to avoid the heavy OpenTelemetry/grpc transitive stack pulled by ``solnlib`` 8.x
+  - ``requests`` is now declared explicitly in ``package/lib/requirements.txt`` (no longer a transitive dependency of ``splunktaucclib`` since 7.0.0) and bumped to 2.33.1
+  - ``openpyxl`` 3.1.2 → 3.1.5
+  - documentation toolchain: ``sphinx`` 7.2.6 → 8.1.3, ``sphinx-rtd-theme`` 2.0.0 → 3.0.2, ``jinja2`` 3.1.4 → 3.1.6
+  - GitHub Actions build matrix moved to Python 3.13; Read the Docs builder moved to Ubuntu 24.04 / Python 3.13
+
 Version 2.1.1
 =============
 

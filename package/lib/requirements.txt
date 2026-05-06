@@ -1,2 +1,7 @@
-splunktaucclib>=6.2.0
-openpyxl>=3.1.2
+splunktaucclib>=8.1.0
+solnlib>=7.0.0,<8.0.0
+openpyxl>=3.1.5
+# requests 2.33.0 dropped Python 3.9 support; we still ship the add-on on
+# Splunk 9.x / 10.x stacks (Python 3.9) per python.required = 3.9,3.13.
+# Pin to the 2.32.x line, which supports Python 3.9 -> 3.14.
+requests>=2.32.5,<2.33

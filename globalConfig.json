@@ -451,7 +451,7 @@
                     "type": "singleSelectSplunkSearch",
                     "label": "Select JIRA Account",
                     "field": "account",
-                    "search": "| rest splunk_server=local /servicesNS/nobody/TA-jira-service-desk-simple-addon/ta_service_desk_simple_addon_account | dedup title | where isnotnull(title) | table title",
+                    "search": "| rest splunk_server=local /servicesNS/nobody/TA-jira-service-desk-simple-addon/ta_service_desk_simple_addon_account | dedup title | where isnotnull(title) AND len(title)>0 | table title",
                     "valueField": "title",
                     "labelField": "title",
                     "help": "Select the JIRA account from the dropdown",
@@ -461,9 +461,9 @@
                     "type": "singleSelectSplunkSearch",
                     "label": "Project",
                     "field": "jira_project",
-                    "search": "| `get_jira_projects`",
+                    "search": "| `get_jira_projects(_all)`",
                     "valueField": "key",
-                    "labelField": "key",
+                    "labelField": "key_projects",
                     "help": "Select the JIRA project from the dropdown",
                     "required": true
                 },
@@ -471,7 +471,7 @@
                     "type": "singleSelectSplunkSearch",
                     "label": "Issue Type",
                     "field": "jira_issue_type",
-                    "search": "| `get_jira_issue_types`",
+                    "search": "| `get_jira_issue_types(_all)`",
                     "valueField": "issues",
                     "labelField": "issues",
                     "help": "Select the type of issue from the dropdown",
@@ -481,7 +481,7 @@
                     "type": "singleSelectSplunkSearch",
                     "label": "Priority",
                     "field": "jira_priority",
-                    "search": "| `get_jira_priorities`",
+                    "search": "| `get_jira_priorities(_all)`",
                     "valueField": "priorities",
                     "labelField": "priorities",
                     "help": "Select the priority for this issue",
@@ -710,7 +710,7 @@
                     "type": "singleSelectSplunkSearch",
                     "label": "Select Account",
                     "field": "account",
-                    "search": "| rest splunk_server=local /servicesNS/nobody/TA-jira-service-desk-simple-addon/ta_service_desk_simple_addon_account | dedup title",
+                    "search": "| rest splunk_server=local /servicesNS/nobody/TA-jira-service-desk-simple-addon/ta_service_desk_simple_addon_account | dedup title | where isnotnull(title) AND len(title)>0 | table title",
                     "valueField": "title",
                     "labelField": "title",
                     "help": "Select the account from the dropdown",
@@ -771,9 +771,8 @@
     "meta": {
         "name": "TA-jira-service-desk-simple-addon",
         "restRoot": "ta_service_desk_simple_addon",
-        "version": "2.1.1",
+        "version": "0.0.0+a635509",
         "displayName": "JIRA Service Desk simple addon",
-        "schemaVersion": "0.0.9",
-        "_uccVersion": "5.53.0"
+        "schemaVersion": "0.0.10"
     }
 }

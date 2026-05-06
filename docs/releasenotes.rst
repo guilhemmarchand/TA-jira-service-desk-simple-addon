@@ -1,6 +1,30 @@
 Release notes
 #############
 
+Version 2.1.2
+=============
+
+Maintenance release: bug fixes, Splunk Cloud / Splunk Enterprise 10.2+ readiness, and full refresh of bundled libraries.
+
+.. note::
+
+   The minimum supported Python runtime is now **Python 3.9**, declared explicitly via ``python.required = 3.9,3.13``. Splunk Enterprise 9.2.x and later default to Python 3.9; Splunk Enterprise 9.1.x users must switch the search head to Python 3.9 (supported but not the default — see Splunk's Python 3 Migration documentation). The previous 2.1.1 release implicitly required Python 3.8+ as well via the bundled ``requests >= 2.32.3``; this release just makes the runtime requirement explicit and aligns it with the Splunk Cloud / 10.2+ Python 3.13 stack.
+
+- bug - Fix PAT authentication for on-premise JIRA: ``jirafill`` was reading the wrong configuration key (``auth_mode`` instead of ``jira_auth_mode``) and silently fell back to Basic auth even when PAT was selected, leading to ``403 Client Error`` on ``/rest/api/latest/project`` while ``Test connectivity`` reported success #223
+- bug - Splunk Cloud / Splunk Enterprise 10.2+ pre-check readiness: declare ``python.required = 3.9,3.13`` alongside the legacy ``python.version = python3`` directive in ``alert_actions.conf``, ``commands.conf`` and ``restmap.conf`` so the add-on continues to load on Splunk 9.x / 10.x (Python 3.9) and is accepted by Splunk Cloud Pre-Check on Splunk Enterprise 10.2+ (Python 3.13) #227
+- bug - Fix ``SyntaxWarning: invalid escape sequence '\{'`` raised on Python 3.12+ from the bearer-token regex in ``jira_service_rest_handler.py`` (would become ``SyntaxError`` on Python 3.14); converted the pattern to a raw string literal #227
+- bug - Alert action UI: the JIRA Account dropdown rendered a phantom empty pre-selected entry next to the actual account, because the REST search filter (``where isnotnull(title)``) accepted an empty title (in SPL, ``isnotnull("")`` is true). Tightened the filter to ``where isnotnull(title) AND len(title)>0`` on both the ``Open/Update/Close`` and ``Replay`` alert actions, mirrored in ``globalConfig.json``.
+- bug - Alert action UI: the Project, Issue Type and Priority dropdowns in ``globalConfig.json`` referenced ``get_jira_projects`` / ``get_jira_issue_types`` / ``get_jira_priorities`` without arguments, but these macros are defined as 1-arg macros in ``macros.conf``; if anyone regenerated the alert HTML from ``globalConfig.json`` (e.g. by removing the manual ``alerts/*.html`` files before ``ucc-gen build``) the dropdowns would not resolve. Aligned ``globalConfig.json`` to call them with ``_all`` so it stays in sync with the macros and the manually authored alert HTML.
+- change - Refresh build toolchain and bundled runtime libraries:
+
+  - ``splunk-add-on-ucc-framework`` 5.44.0 → 6.4.0
+  - ``splunktaucclib`` 6.2.0 → 8.1.0
+  - ``solnlib`` pinned to ``>=7.0.0,<8.0.0`` to avoid the heavy OpenTelemetry/grpc transitive stack pulled by ``solnlib`` 8.x
+  - ``requests`` is now declared explicitly in ``package/lib/requirements.txt`` (no longer a transitive dependency of ``splunktaucclib`` since 7.0.0) and bumped to 2.33.1
+  - ``openpyxl`` 3.1.2 → 3.1.5
+  - documentation toolchain: ``sphinx`` 7.2.6 → 8.1.3, ``sphinx-rtd-theme`` 2.0.0 → 3.0.2, ``jinja2`` 3.1.4 → 3.1.6
+  - GitHub Actions build matrix moved to Python 3.13; Read the Docs builder moved to Ubuntu 24.04 / Python 3.13
+
 Version 2.1.1
 =============
 

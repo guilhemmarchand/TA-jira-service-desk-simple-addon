@@ -21,7 +21,7 @@ splunkhome = os.environ["SPLUNK_HOME"]
 
 # append lib
 sys.path.append(
-    os.path.join(splunkhome, "etc", "apps", "TA-jira-service-desk-simple-addon", "lib")
+    os.path.join(splunkhome, "etc", "apps", "TA-jira-service-desk-simple-addon-local", "lib")
 )
 
 # import libs
@@ -102,13 +102,13 @@ class Jira_v1(jira_rest_handler.RESTHandler):
         # Get service
         service = client.connect(
             owner="nobody",
-            app="TA-jira-service-desk-simple-addon",
+            app="TA-jira-service-desk-simple-addon-local",
             port=request_info.server_rest_port,
             token=request_info.system_authtoken,
         )
 
         # set and get conf
-        conf_file = "ta_service_desk_simple_addon_settings"
+        conf_file = "ta_service_desk_simple_addon_local_settings"
         confs = service.confs[str(conf_file)]
 
         # Initialize the jira_service_desk dictionary
@@ -158,7 +158,7 @@ class Jira_v1(jira_rest_handler.RESTHandler):
 
                             # get proxy password, if any
                             storage_passwords = service.storage_passwords
-                            credential_realm = "__REST_CREDENTIAL__#TA-jira-service-desk-simple-addon#configs/conf-ta_service_desk_simple_addon_settings"
+                            credential_realm = "__REST_CREDENTIAL__#TA-jira-service-desk-simple-addon-local#configs/conf-ta_service_desk_simple_addon_local_settings"
                             for credential in storage_passwords:
                                 if (
                                     credential.content.get("realm")
@@ -255,14 +255,14 @@ class Jira_v1(jira_rest_handler.RESTHandler):
         # Get service
         service = client.connect(
             owner="nobody",
-            app="TA-jira-service-desk-simple-addon",
+            app="TA-jira-service-desk-simple-addon-local",
             port=request_info.server_rest_port,
             token=request_info.system_authtoken,
         )
 
         # set loglevel
         loglevel = "INFO"
-        conf_file = "ta_service_desk_simple_addon_settings"
+        conf_file = "ta_service_desk_simple_addon_local_settings"
         confs = service.confs[str(conf_file)]
         for stanza in confs:
             if stanza.name == "logging":
@@ -273,7 +273,7 @@ class Jira_v1(jira_rest_handler.RESTHandler):
 
         # get all acounts
         accounts = []
-        conf_file = "ta_service_desk_simple_addon_account"
+        conf_file = "ta_service_desk_simple_addon_local_account"
         confs = service.confs[str(conf_file)]
         for stanza in confs:
             # get all accounts
@@ -742,14 +742,14 @@ class Jira_v1(jira_rest_handler.RESTHandler):
         # Get service
         service = client.connect(
             owner="nobody",
-            app="TA-jira-service-desk-simple-addon",
+            app="TA-jira-service-desk-simple-addon-local",
             port=request_info.server_rest_port,
             token=request_info.system_authtoken,
         )
 
         # set loglevel
         loglevel = "INFO"
-        conf_file = "ta_service_desk_simple_addon_settings"
+        conf_file = "ta_service_desk_simple_addon_local_settings"
         confs = service.confs[str(conf_file)]
         for stanza in confs:
             if stanza.name == "logging":
@@ -763,7 +763,7 @@ class Jira_v1(jira_rest_handler.RESTHandler):
 
         # get all acounts
         accounts = []
-        conf_file = "ta_service_desk_simple_addon_account"
+        conf_file = "ta_service_desk_simple_addon_local_account"
         confs = service.confs[str(conf_file)]
         for stanza in confs:
             # get all accounts
@@ -822,7 +822,7 @@ class Jira_v1(jira_rest_handler.RESTHandler):
 
             # realm
             credential_username = f"{str(account)}``splunk_cred_sep``1"
-            credential_realm = "__REST_CREDENTIAL__#TA-jira-service-desk-simple-addon#configs/conf-ta_service_desk_simple_addon_account"
+            credential_realm = "__REST_CREDENTIAL__#TA-jira-service-desk-simple-addon-local#configs/conf-ta_service_desk_simple_addon_local_account"
 
             for credential in storage_passwords:
                 if credential.content.get("username") == str(
@@ -901,14 +901,14 @@ class Jira_v1(jira_rest_handler.RESTHandler):
         # Get service
         service = client.connect(
             owner="nobody",
-            app="TA-jira-service-desk-simple-addon",
+            app="TA-jira-service-desk-simple-addon-local",
             port=request_info.server_rest_port,
             token=request_info.system_authtoken,
         )
 
         # set loglevel
         loglevel = "INFO"
-        conf_file = "ta_service_desk_simple_addon_settings"
+        conf_file = "ta_service_desk_simple_addon_local_settings"
         confs = service.confs[str(conf_file)]
         for stanza in confs:
             if stanza.name == "logging":
@@ -926,7 +926,7 @@ class Jira_v1(jira_rest_handler.RESTHandler):
         # The bearer token is stored in the credential store
         # However, likely due to the number of chars, the credential.content.get SDK command is unable to return its value in a single operation
         # As a workaround, we concatenate the different values return to form a complete object, finally we use a regex approach to extract its clear text value
-        credential_realm = "__REST_CREDENTIAL__#TA-jira-service-desk-simple-addon#configs/conf-ta_service_desk_simple_addon_settings"
+        credential_realm = "__REST_CREDENTIAL__#TA-jira-service-desk-simple-addon-local#configs/conf-ta_service_desk_simple_addon_local_settings"
         bearer_token_rawvalue = ""
 
         for credential in storage_passwords:
@@ -937,7 +937,7 @@ class Jira_v1(jira_rest_handler.RESTHandler):
 
         # extract a clean json object
         bearer_token_rawvalue_match = re.search(
-            '\{"bearer_token":\s*"(.*)"\}', bearer_token_rawvalue
+            r'\{"bearer_token":\s*"(.*)"\}', bearer_token_rawvalue
         )
         if bearer_token_rawvalue_match:
             bearer_token = bearer_token_rawvalue_match.group(1)
